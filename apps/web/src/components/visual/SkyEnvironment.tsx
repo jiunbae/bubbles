@@ -1,4 +1,3 @@
-import { Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import type { PlaceTheme } from '@bubbles/shared';
 
@@ -26,7 +25,6 @@ function GroundPlane({ color = '#3a3a4a' }: { color?: string }) {
 function RooftopEnvironment() {
   return (
     <>
-      <Environment preset="sunset" background={false} />
       <color attach="background" args={['#1a1a2e']} />
       <directionalLight color="#ffa54f" intensity={2.5} position={[8, 6, 3]} />
       <directionalLight color="#87ceeb" intensity={0.6} position={[-5, 4, -5]} />
@@ -53,7 +51,6 @@ function RooftopEnvironment() {
 function ParkEnvironment() {
   return (
     <>
-      <Environment preset="park" background={false} />
       <color attach="background" args={['#0e1a0e']} />
       <directionalLight color="#fffbe6" intensity={2.0} position={[5, 10, 5]} />
       <directionalLight color="#b3d9ff" intensity={0.5} position={[-4, 6, -3]} />
@@ -88,7 +85,6 @@ function ParkEnvironment() {
 function AlleyEnvironment() {
   return (
     <>
-      <Environment preset="night" background={false} />
       <color attach="background" args={['#0a0808']} />
       <pointLight color="#ffaa44" intensity={6} position={[-3, 3, -3]} distance={12} decay={2} />
       <pointLight color="#ff8833" intensity={4} position={[3, 2.5, -2]} distance={10} decay={2} />

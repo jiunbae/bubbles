@@ -1,4 +1,4 @@
-FROM registry.jiun.dev/library/node:22-slim AS base
+FROM registry.jiun.dev/library/node:22-alpine AS base
 RUN corepack enable pnpm
 WORKDIR /app
 
@@ -22,14 +22,6 @@ RUN pnpm build
 
 # Serve with nginx
 FROM registry.jiun.dev/library/nginx:alpine
-
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup && \
-    chown -R appuser:appgroup /var/cache/nginx /var/log/nginx /etc/nginx/conf.d && \
-    touch /var/run/nginx.pid && chown appuser:appgroup /var/run/nginx.pid
-
-COPY --from=build --chown=appuser:appgroup /app/apps/web/dist /usr/share/nginx/html
+COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
-
-USER appuser
 EXPOSE 80

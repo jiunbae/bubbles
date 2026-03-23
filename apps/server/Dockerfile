@@ -1,4 +1,4 @@
-FROM registry.jiun.dev/library/node:22-slim AS base
+FROM registry.jiun.dev/library/node:22-alpine AS base
 RUN corepack enable pnpm
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY apps/server/package.json apps/server/
 RUN pnpm install --frozen-lockfile --prod=false
 
 # Build with bun
-FROM registry.jiun.dev/oven/bun:1 AS build
+FROM registry.jiun.dev/oven/bun:1-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules node_modules
 COPY --from=deps /app/packages/shared/node_modules packages/shared/node_modules
@@ -21,14 +21,9 @@ WORKDIR /app/apps/server
 RUN bun build src/index.ts --outdir dist --target bun
 
 # Run
-FROM registry.jiun.dev/oven/bun:1-slim
+FROM registry.jiun.dev/oven/bun:1-alpine
 WORKDIR /app
-
-RUN addgroup --system --gid 1001 appgroup && \
-    adduser --system --uid 1001 --ingroup appgroup appuser
-
-COPY --from=build --chown=appuser:appgroup /app/apps/server/dist ./
-
-USER appuser
+COPY --from=build /app/apps/server/dist ./
+USER bun
 EXPOSE 3001
 CMD ["bun", "index.js"]

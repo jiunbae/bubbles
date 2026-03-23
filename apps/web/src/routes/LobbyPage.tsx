@@ -135,23 +135,22 @@ export function LobbyPage() {
 
         {/* Places grid */}
         {!isLoading && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {sortedPlaces.map((place, i) => (
-              <React.Fragment key={place.id}>
-                <PlaceCard place={place} />
-                {/* Insert infeed ad after 3rd place card */}
-                {i === 2 && (
-                  <div className="col-span-full">
-                    <AdInfeed />
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
-            <CreatePlaceForm />
-          </div>
-
-          {/* Display ad at bottom of lobby */}
-          <AdDisplay />
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {sortedPlaces.map((place, i) => (
+                <React.Fragment key={place.id}>
+                  <PlaceCard place={place} />
+                  {i === 2 && (
+                    <div className="col-span-full">
+                      <AdInfeed />
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+              <CreatePlaceForm />
+            </div>
+            <AdDisplay />
+          </>
         )}
       </div>
     </div>

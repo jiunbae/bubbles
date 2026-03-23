@@ -61,6 +61,10 @@ function spawnBatch(color: string): number {
   return useBubbleStore.getState().bubbles.size;
 }
 
+// Global flag to prevent canvas spawner from firing when button is clicked
+let buttonActive = false;
+export function isButtonBlowing() { return buttonActive; }
+
 export function BubbleControls() {
   const intervalRef = useRef<number | null>(null);
   const [bubbleCount, setBubbleCount] = useState(0);
@@ -73,6 +77,7 @@ export function BubbleControls() {
 
   const startBlowing = () => {
     if (intervalRef.current !== null) return;
+    buttonActive = true;
     setIsBlowing(true);
     spawnBatch(BUBBLE_COLORS[1]);
 
@@ -83,6 +88,7 @@ export function BubbleControls() {
   };
 
   const stopBlowing = () => {
+    buttonActive = false;
     setIsBlowing(false);
     if (intervalRef.current !== null) {
       window.clearInterval(intervalRef.current);

@@ -4,6 +4,7 @@ import { useThree } from '@react-three/fiber';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { useUIStore } from '@/stores/ui-store';
 import { globalWsClient } from '@/lib/ws-client';
+import { isButtonBlowing } from './BubbleControls';
 import { BUBBLE_LIFETIME } from '@bubbles/shared';
 import type { BubbleInfo, BubbleSize } from '@bubbles/shared';
 import { BubbleMesh } from './BubbleMesh';
@@ -92,6 +93,7 @@ function BubbleSpawner() {
   ptRef.current = pointer;
 
   const spawnBatch = useCallback(() => {
+    if (isButtonBlowing()) return; // button handles its own spawning
     const store = useBubbleStore.getState();
     if (store.bubbles.size >= MAX_BUBBLES) return;
 

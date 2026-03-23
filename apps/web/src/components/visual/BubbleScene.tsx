@@ -107,7 +107,7 @@ function BubbleSpawner() {
 
     const count = BATCH_SIZE;
     for (let i = 0; i < count; i++) {
-      const spread = 0.6;
+      const spread = 0.15;
       const bubble = createBubbleAt(
         center.x + (Math.random() - 0.5) * spread,
         center.y + (Math.random() - 0.5) * spread * 0.5,
@@ -166,13 +166,13 @@ function BubbleSpawner() {
 // ONE shared MeshStandardMaterial — compiled once, cloned per bubble (same shader program)
 const sharedBubbleMaterial = new THREE.MeshStandardMaterial({
   metalness: 0.1,
-  roughness: 0.0,
+  roughness: 0.1,
   transparent: true,
-  opacity: 0.5,
+  opacity: 0.3,
   side: THREE.DoubleSide,
   depthWrite: false,
   emissive: new THREE.Color('#4488cc'),
-  emissiveIntensity: 0.15,
+  emissiveIntensity: 0.05,
 });
 
 function BubbleRenderer() {

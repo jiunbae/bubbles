@@ -51,7 +51,7 @@ export function BubbleMesh({
   const material = useMemo(() => {
     const mat = sharedMaterial.clone();
     mat.color = bubbleColor;
-    mat.emissive = bubbleColor.clone().multiplyScalar(0.3);
+    mat.emissive = bubbleColor.clone().multiplyScalar(0.1);
     mat.envMapIntensity = 0; // disable environment map reflection (removes sprite artifacts)
     return mat;
   }, [sharedMaterial, bubbleColor]);

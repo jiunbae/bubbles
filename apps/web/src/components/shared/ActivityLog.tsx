@@ -1,41 +1,88 @@
 import { useEffect, useRef, useState } from 'react';
-import { getPlaceLogs, type ActionLog } from '@/lib/api';
+import { useBubbleStore } from '@/stores/bubble-store';
+import { usePlaceStore } from '@/stores/place-store';
 
 interface ActivityLogProps {
   placeId: string;
   onClose: () => void;
 }
 
+interface LogEntry {
+  id: number;
+  time: Date;
+  text: string;
+}
+
 const MAX_ENTRIES = 50;
+let _logId = 0;
 
-export function ActivityLog({ placeId, onClose }: ActivityLogProps) {
-  const [logs, setLogs] = useState<ActionLog[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function ActivityLog({ placeId: _placeId, onClose }: ActivityLogProps) {
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevBubbleCountRef = useRef<number>(0);
+  const prevUsersRef = useRef<Set<string>>(new Set());
 
+  // Track bubble blows (batch: "5 bubbles blown")
   useEffect(() => {
-    let cancelled = false;
-    setIsLoading(true);
-    getPlaceLogs(placeId)
-      .then(({ logs: data }) => {
-        if (!cancelled) {
-          setLogs(data.slice(0, MAX_ENTRIES));
-          setIsLoading(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setIsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [placeId]);
+    const unsub = useBubbleStore.subscribe((state) => {
+      const count = state.bubbles.size;
+      const prev = prevBubbleCountRef.current;
+      if (count > prev) {
+        const diff = count - prev;
+        const entry: LogEntry = {
+          id: ++_logId,
+          time: new Date(),
+          text: diff === 1 ? 'A bubble was blown' : `${diff} bubbles were blown`,
+        };
+        setLogs((l) => [entry, ...l].slice(0, MAX_ENTRIES));
+      }
+      prevBubbleCountRef.current = count;
+    });
+    return unsub;
+  }, []);
 
-  function formatTime(dateStr: string): string {
-    const date = new Date(dateStr);
+  // Track user join/leave
+  useEffect(() => {
+    const unsub = usePlaceStore.subscribe((state) => {
+      const currentIds = new Set(state.onlineUsers.map((u) => u.sessionId));
+      const prev = prevUsersRef.current;
+
+      // Joined
+      for (const user of state.onlineUsers) {
+        if (!prev.has(user.sessionId)) {
+          setLogs((l) =>
+            [{ id: ++_logId, time: new Date(), text: `${user.displayName} joined` }, ...l].slice(
+              0,
+              MAX_ENTRIES,
+            ),
+          );
+        }
+      }
+
+      // Left
+      for (const sid of prev) {
+        if (!currentIds.has(sid)) {
+          setLogs((l) =>
+            [{ id: ++_logId, time: new Date(), text: 'A user left' }, ...l].slice(0, MAX_ENTRIES),
+          );
+        }
+      }
+
+      prevUsersRef.current = currentIds;
+    });
+    return unsub;
+  }, []);
+
+  // Auto-scroll to top on new entries
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [logs.length]);
+
+  function formatTime(date: Date): string {
     return date.toLocaleTimeString(undefined, {
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
     });
   }
 
@@ -80,13 +127,7 @@ export function ActivityLog({ placeId, onClose }: ActivityLogProps) {
           </button>
         </div>
 
-        {isLoading && (
-          <div className="flex justify-center py-8">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-          </div>
-        )}
-
-        {!isLoading && logs.length === 0 && (
+        {logs.length === 0 && (
           <p className="py-8 text-center text-sm text-text-muted">
             No activity yet
           </p>
@@ -99,9 +140,9 @@ export function ActivityLog({ placeId, onClose }: ActivityLogProps) {
               className="flex items-baseline gap-2 rounded px-2 py-1 text-sm hover:bg-bg-card"
             >
               <span className="shrink-0 text-xs text-text-muted">
-                {formatTime(log.createdAt)}
+                {formatTime(log.time)}
               </span>
-              <span className="text-text-secondary">{log.details}</span>
+              <span className="text-text-secondary">{log.text}</span>
             </div>
           ))}
         </div>

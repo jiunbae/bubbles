@@ -29,6 +29,7 @@ export function PlacePage() {
   const { currentPlace, setCurrentPlace, onlineUsers } = usePlaceStore();
   const bubbleCount = useBubbleStore((s) => s.bubbles.size);
   const [isLogOpen, setIsLogOpen] = useState(false);
+  const [showUsers, setShowUsers] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load place data
@@ -116,23 +117,35 @@ export function PlacePage() {
             {bubbleCount} {'\u{1FAE7}'}
           </span>
 
-          {/* Online users with count */}
-          <div className="flex items-center gap-1.5" title={onlineUsers.map(u => u.displayName).join(', ')}>
-            <span className="text-sm text-text-secondary">{onlineUsers.length}</span>
-            <div className="flex -space-x-1">
-              {onlineUsers.slice(0, 6).map((user) => (
-                <div
-                  key={user.sessionId}
-                  className="h-3 w-3 rounded-full border border-bg-primary"
-                  style={{ backgroundColor: user.color }}
-                  title={user.displayName}
-                />
-              ))}
-            </div>
-            {onlineUsers.length > 6 && (
-              <span className="text-xs text-text-muted">
-                +{onlineUsers.length - 6}
-              </span>
+          {/* Online users with count + dropdown */}
+          <div className="relative">
+            <button onClick={() => setShowUsers(!showUsers)} className="flex items-center gap-1.5" title="Online users">
+              <span className="text-sm text-text-secondary">{onlineUsers.length}</span>
+              <div className="flex -space-x-1">
+                {onlineUsers.slice(0, 6).map((user) => (
+                  <div
+                    key={user.sessionId}
+                    className="h-3 w-3 rounded-full border border-bg-primary"
+                    style={{ backgroundColor: user.color }}
+                  />
+                ))}
+              </div>
+              {onlineUsers.length > 6 && (
+                <span className="text-xs text-text-muted">
+                  +{onlineUsers.length - 6}
+                </span>
+              )}
+            </button>
+            {showUsers && (
+              <div className="absolute right-0 top-full mt-2 z-50 bg-bg-card border border-border rounded-lg shadow-lg p-3 min-w-[180px]">
+                <div className="text-xs text-text-muted mb-2">{onlineUsers.length} online</div>
+                {onlineUsers.map((user) => (
+                  <div key={user.sessionId} className="flex items-center gap-2 py-1">
+                    <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: user.color }} />
+                    <span className="text-sm text-text-primary">{user.displayName}</span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 

@@ -80,9 +80,9 @@ export const DEFAULT_CONFIG: PhysicsConfig = {
 
 // Size to radius mapping
 export const SIZE_RADIUS: Record<BubbleSize, number> = {
-  S: 0.15,
-  M: 0.25,
-  L: 0.4,
+  S: 0.08,
+  M: 0.15,
+  L: 0.25,
 };
 
 // Max speed clamp

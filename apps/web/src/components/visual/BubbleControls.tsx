@@ -39,9 +39,9 @@ function spawnBatch(color: string): number {
     const bubble: BubbleInfo = {
       bubbleId: id,
       blownBy: { sessionId: 'local', displayName: 'You', isAuthenticated: false, color: c },
-      x: (Math.random() - 0.5) * 2,  // fixed world position ±1
-      y: 0.5 + Math.random() * 1.0,
-      z: (Math.random() - 0.5) * 2,
+      x: (Math.random() - 0.5) * 0.3,  // tight spawn near center
+      y: 0.5 + Math.random() * 0.3,
+      z: (Math.random() - 0.5) * 0.3,
       size, color: c, pattern: 'plain',
       seed: Math.random() * 10000,
       createdAt: now, expiresAt: now + lifetime,

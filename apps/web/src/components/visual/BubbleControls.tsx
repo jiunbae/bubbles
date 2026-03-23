@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { globalWsClient } from '@/lib/ws-client';
+import { analytics } from '@/lib/analytics';
 import { BUBBLE_COLORS, BUBBLE_LIFETIME } from '@bubbles/shared';
 import type { BubbleInfo, BubbleSize } from '@bubbles/shared';
 import { scheduleExpiry } from './BubbleScene';
@@ -47,6 +48,7 @@ function spawnBatch(color: string): number {
     };
     useBubbleStore.getState().addBubble(bubble);
     scheduleExpiry(id, lifetime);
+    analytics.bubbleBlow(size);
 
     // Send to server for other users
     if (globalWsClient.isConnected()) {

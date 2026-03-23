@@ -116,19 +116,22 @@ export function PlacePage() {
             {bubbleCount} {'\u{1FAE7}'}
           </span>
 
-          {/* Online user dots */}
-          <div className="flex items-center gap-1" title={`${onlineUsers.length} online`}>
-            {onlineUsers.slice(0, 8).map((user) => (
-              <div
-                key={user.sessionId}
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: user.color }}
-                title={user.displayName}
-              />
-            ))}
-            {onlineUsers.length > 8 && (
+          {/* Online users with count */}
+          <div className="flex items-center gap-1.5" title={onlineUsers.map(u => u.displayName).join(', ')}>
+            <span className="text-sm text-text-secondary">{onlineUsers.length}</span>
+            <div className="flex -space-x-1">
+              {onlineUsers.slice(0, 6).map((user) => (
+                <div
+                  key={user.sessionId}
+                  className="h-3 w-3 rounded-full border border-bg-primary"
+                  style={{ backgroundColor: user.color }}
+                  title={user.displayName}
+                />
+              ))}
+            </div>
+            {onlineUsers.length > 6 && (
               <span className="text-xs text-text-muted">
-                +{onlineUsers.length - 8}
+                +{onlineUsers.length - 6}
               </span>
             )}
           </div>

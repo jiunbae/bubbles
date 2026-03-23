@@ -83,6 +83,7 @@ export function BubbleMesh({
       popStartRef.current = time;
     }
 
+    // Keep updating position even during pop animation (no freeze)
     mesh.position.set(physics.position[0], physics.position[1], physics.position[2]);
 
     const age = physics.age;

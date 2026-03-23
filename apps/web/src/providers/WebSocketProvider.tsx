@@ -28,7 +28,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
   const [connectionStatus, setConnectionStatus] =
     useState<ConnectionStatus>('disconnected');
 
-  const { addBubble, removeBubble, setBubbles, clearBubbles } =
+  const { addBubble, removeBubble, popBubble, setBubbles, clearBubbles } =
     useBubbleStore();
   const { setOnlineUsers, addOnlineUser, removeOnlineUser } = usePlaceStore();
 
@@ -55,10 +55,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           break;
         }
         case 'bubble_popped':
-          removeBubble(msg.data.bubbleId);
+          popBubble(msg.data.bubbleId); // remove + queue pop effect
           break;
         case 'bubble_expired':
-          removeBubble(msg.data.bubbleId);
+          popBubble(msg.data.bubbleId); // remove + queue pop effect
           break;
         case 'user_joined':
           addOnlineUser(msg.data);

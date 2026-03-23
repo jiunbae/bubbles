@@ -131,7 +131,8 @@ export function updateBubble(
   globalTime: number,
   config: PhysicsConfig = DEFAULT_CONFIG,
 ): void {
-  if (state.isDead) return;
+  // Don't skip dead bubbles — let them continue drifting during pop animation
+  // isDead is informational only; expiry is handled by timers
 
   const noise = getNoise();
   const radius = SIZE_RADIUS['M']; // default; caller can pass actual radius via scale

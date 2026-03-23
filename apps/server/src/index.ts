@@ -9,14 +9,17 @@ import { logs } from './routes/logs';
 import { createWSHandlers } from './ws/handler';
 import { cleanupStaleRooms } from './ws/rooms';
 import { PLACE_INACTIVE_TIMEOUT } from '@bubbles/shared';
+import { metricsMiddleware, metricsRoute } from './metrics';
 
 const app = new Hono();
 const { upgradeWebSocket, websocket } = createBunWebSocket();
 
 // Global middleware
 app.use('*', corsMiddleware);
+app.use('*', metricsMiddleware);
 
 // Routes
+app.route('/metrics', metricsRoute);
 app.route('/health', health);
 app.route('/places', places);
 app.route('', logs);

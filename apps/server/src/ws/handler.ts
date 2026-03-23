@@ -22,6 +22,7 @@ import type { BubblesUser } from '../middleware/auth';
 import type { ClientMessage, ServerMessage, BubbleSize, BubblePattern } from '@bubbles/shared';
 import { BUBBLE_LIFETIME } from '@bubbles/shared';
 import { isAllowedOrigin } from '../middleware/cors';
+import { incCounter, incGauge, decGauge } from '../metrics';
 
 const lastCursorSent = new Map<string, number>();
 const CURSOR_THROTTLE_MS = 100;
@@ -83,6 +84,8 @@ export function createWSHandlers(placeId: string, c: Context) {
       sessionStates.set(sessionId, { placeId, user, ws });
 
       console.log(`[ws] ${displayName} (${sessionId.slice(0,8)}) joined room ${placeId.slice(0,8)}`);
+      incGauge('ws_connections_active');
+      incCounter('ws_connections_total');
       joinRoom(placeId, sessionId, ws, user);
       await logAction('join', placeId, sessionId, user);
     },
@@ -171,6 +174,7 @@ export function createWSHandlers(placeId: string, c: Context) {
           };
 
           console.log(`[ws] Bubble blown by ${user.displayName}, broadcasting to others`);
+          incCounter('bubbles_blown_total', { size });
           broadcastToRoom(pid, createdMsg, sessionId);
 
           await logAction('blow', pid, sessionId, user, { bubbleId, size, color });
@@ -195,6 +199,7 @@ export function createWSHandlers(placeId: string, c: Context) {
           }
 
           removeBubble(pid, bubbleId);
+          incCounter('bubbles_popped_total');
 
           const popMsg: ServerMessage = {
             type: 'bubble_popped', ts: Date.now(),
@@ -246,6 +251,7 @@ export function createWSHandlers(placeId: string, c: Context) {
       if (!state) return;
 
       console.log(`[ws] ${state.user.displayName} left room ${state.placeId.slice(0,8)}`);
+      decGauge('ws_connections_active');
       leaveRoom(state.placeId, sessionId);
       sessionStates.delete(sessionId);
       lastCursorSent.delete(`${state.placeId}:${sessionId}`);
@@ -257,6 +263,7 @@ export function createWSHandlers(placeId: string, c: Context) {
       const state = sessionStates.get(sessionId);
       if (state) {
         console.error(`[ws] Error for ${state.user.displayName}`);
+        decGauge('ws_connections_active');
         leaveRoom(state.placeId, sessionId);
         sessionStates.delete(sessionId);
         lastCursorSent.delete(`${state.placeId}:${sessionId}`);

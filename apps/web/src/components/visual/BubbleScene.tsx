@@ -11,7 +11,7 @@ import { PopEffectRenderer, usePopEffect } from './PopEffect';
 import { SIZE_RADIUS } from '@/physics/bubblePhysics';
 
 const HOLD_INTERVAL = 250;
-const BATCH_SIZE = 2; // 2 per tick × 4 ticks/sec = ~8/sec
+const BATCH_SIZE = 1; // 1 per tick — interval handles continuous flow
 const MAX_BUBBLES = 80;
 
 // ---------------------------------------------------------------------------
@@ -176,7 +176,22 @@ const sharedBubbleMaterial = new THREE.MeshStandardMaterial({
 function BubbleRenderer() {
   const bubbles = useBubbleStore((s) => s.bubbles);
   const removeBubble = useBubbleStore((s) => s.removeBubble);
+  const pendingPops = useBubbleStore((s) => s.pendingPops);
+  const clearPendingPops = useBubbleStore((s) => s.clearPendingPops);
   const { pops, setPops, triggerPop } = usePopEffect();
+
+  // Process pending pops from other users (WebSocket)
+  useEffect(() => {
+    if (pendingPops.length === 0) return;
+    for (const pp of pendingPops) {
+      triggerPop(
+        new THREE.Vector3(pp.x, pp.y, pp.z),
+        new THREE.Color(pp.color),
+        SIZE_RADIUS[pp.size] * 0.5,
+      );
+    }
+    clearPendingPops();
+  }, [pendingPops, clearPendingPops, triggerPop]);
 
   const handlePop = useCallback(
     (bubbleId: string, position: THREE.Vector3, color: THREE.Color, size: number) => {

@@ -28,7 +28,7 @@ function spawnBatch(color: string): number {
   const store = useBubbleStore.getState();
   const remaining = 80 - store.bubbles.size;
   if (remaining <= 0) return store.bubbles.size;
-  const count = Math.min(2, remaining); // 2 per tick
+  const count = 1; // 1 per tick — interval handles continuous flow
   for (let i = 0; i < count; i++) {
     const size = randSize();
     const now = Date.now();

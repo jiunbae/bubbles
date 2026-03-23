@@ -4,6 +4,7 @@ import type { BubbleSize, BubblePattern, UserInfo, BubbleInfo, ServerMessage } f
 import { PLACE_INACTIVE_TIMEOUT, BUBBLE_LIFETIME } from '@bubbles/shared';
 import { getCollection } from '../db/mongo';
 import { ObjectId } from 'mongodb';
+import { setGauge, incCounter } from '../metrics';
 
 export interface ActiveBubble {
   id: string;
@@ -67,6 +68,7 @@ export function joinRoom(
   }
 
   room.clients.set(sessionId, { ws, user, lastPingAt: Date.now() });
+  updateRoomGauges();
 
   // Broadcast user_joined to others
   const joinMsg: ServerMessage = {
@@ -129,6 +131,7 @@ export function leaveRoom(placeId: string, sessionId: string): void {
 
   room.clients.delete(sessionId);
   room.lastActivity = Date.now();
+  updateRoomGauges();
 
   // Broadcast user_left
   const leaveMsg: ServerMessage = {
@@ -191,6 +194,7 @@ export function cleanupStaleRooms(): void {
       console.log(`[rooms] Cleaned up stale room: ${placeId}`);
     }
   }
+  updateRoomGauges();
 }
 
 export function createBubble(
@@ -207,6 +211,7 @@ export function createBubble(
 
   room.bubbles.set(bubble.id, { ...bubble, timer });
   room.lastActivity = Date.now();
+  updateRoomGauges();
 }
 
 export function removeBubble(placeId: string, bubbleId: string): ActiveBubble | undefined {
@@ -218,6 +223,7 @@ export function removeBubble(placeId: string, bubbleId: string): ActiveBubble | 
 
   clearTimeout(bubble.timer);
   room.bubbles.delete(bubbleId);
+  updateRoomGauges();
   return bubble;
 }
 
@@ -229,6 +235,8 @@ function expireBubble(placeId: string, bubbleId: string): void {
   if (!bubble) return;
 
   room.bubbles.delete(bubbleId);
+  incCounter('bubbles_expired_total');
+  updateRoomGauges();
 
   const msg: ServerMessage = {
     type: 'bubble_expired',
@@ -258,6 +266,18 @@ async function updatePlaceActivity(placeId: string): Promise<void> {
   } catch (err) {
     console.error('[rooms] Failed to update place activity:', err);
   }
+}
+
+function updateRoomGauges(): void {
+  let totalUsers = 0;
+  let totalBubbles = 0;
+  for (const room of rooms.values()) {
+    totalUsers += room.clients.size;
+    totalBubbles += room.bubbles.size;
+  }
+  setGauge('rooms_active', {}, rooms.size);
+  setGauge('rooms_users_total', {}, totalUsers);
+  setGauge('rooms_bubbles_total', {}, totalBubbles);
 }
 
 async function markPlaceForDeletion(placeId: string): Promise<void> {

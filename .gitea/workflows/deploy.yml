@@ -1,0 +1,116 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/**"
+      - "apps/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "turbo.json"
+      - "tsconfig.base.json"
+      - ".gitea/workflows/**"
+  workflow_dispatch:
+
+env:
+  REGISTRY: registry.jiun.dev
+  IAC_REPO: jiunbae/IaC
+  BASE_PATH: kubernetes/base/apps/bubbles
+  DEV_PATH: kubernetes/overlays/dev/bubbles
+  PROD_PATH: kubernetes/overlays/prod/bubbles
+
+jobs:
+  build-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push server image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/server/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/bubbles-server:${{ gitea.sha }}
+            ${{ env.REGISTRY }}/bubbles-server:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/bubbles-server:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/bubbles-server:buildcache,mode=max
+
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/bubbles-web:${{ gitea.sha }}
+            ${{ env.REGISTRY }}/bubbles-web:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/bubbles-web:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/bubbles-web:buildcache,mode=max
+
+  update-manifests:
+    needs: [build-server, build-web]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone IaC repo
+        run: |
+          git clone https://x-access-token:${{ secrets.IAC_GITHUB_TOKEN }}@github.com/${{ env.IAC_REPO }}.git iac
+
+      - name: Update image tags
+        run: |
+          cd iac
+          for path in "${{ env.BASE_PATH }}" "${{ env.DEV_PATH }}" "${{ env.PROD_PATH }}"; do
+            if [ -f "${path}/kustomization.yaml" ]; then
+              sed -i "s/newTag: .*/newTag: ${{ gitea.sha }}/" "${path}/kustomization.yaml"
+              echo "=== ${path} ==="
+              cat "${path}/kustomization.yaml"
+            fi
+          done
+
+      - name: Commit and push
+        run: |
+          cd iac
+          git config user.name "CI Bot"
+          git config user.email "ci@jiun.dev"
+          git add -A
+          git diff --staged --quiet || git commit -m "chore(bubbles): update image tags to ${{ gitea.sha }}"
+          git push

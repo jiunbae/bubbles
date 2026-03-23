@@ -1,0 +1,73 @@
+@import "tailwindcss";
+@import url("https://fonts.bunny.net/css?family=jetbrains-mono:400,500,600,700");
+
+@theme {
+  --color-bubble-pink: #FFB5C2;
+  --color-bubble-blue: #87CEEB;
+  --color-bubble-mint: #98FB98;
+  --color-bubble-lavender: #DDA0DD;
+  --color-bubble-yellow: #FFD700;
+  --color-bubble-peach: #FFDAB9;
+  --color-bubble-pearl: #F5F5F5;
+  --color-bubble-rainbow: #FF69B4;
+
+  --color-bg-primary: #0f0f1a;
+  --color-bg-secondary: #1a1a2e;
+  --color-bg-card: #16213e;
+  --color-bg-card-hover: #1a2744;
+  --color-text-primary: #e0e0f0;
+  --color-text-secondary: #8888aa;
+  --color-text-muted: #555577;
+  --color-accent: #7c5cbf;
+  --color-accent-hover: #9370db;
+  --color-border: #2a2a4a;
+  --color-success: #4ade80;
+  --color-error: #f87171;
+
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+  margin: 0;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-20px) scale(1.05); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+  33% { transform: translateY(-30px) translateX(10px); opacity: 0.5; }
+  66% { transform: translateY(-15px) translateX(-8px); opacity: 0.4; }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 3px;
+}

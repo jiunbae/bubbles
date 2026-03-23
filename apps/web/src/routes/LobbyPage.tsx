@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { fetchPlaces } from '@/lib/api';
 import { usePlaceStore } from '@/stores/place-store';
 import { PlaceCard } from '@/components/lobby/PlaceCard';
 import { CreatePlaceForm } from '@/components/lobby/CreatePlaceForm';
+import { AdInfeed } from '@/components/ads/AdInfeed';
+import { AdDisplay } from '@/components/ads/AdDisplay';
 
 type SortMode = 'lively' | 'new' | 'quiet';
 
@@ -134,11 +136,22 @@ export function LobbyPage() {
         {/* Places grid */}
         {!isLoading && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {sortedPlaces.map((place) => (
-              <PlaceCard key={place.id} place={place} />
+            {sortedPlaces.map((place, i) => (
+              <React.Fragment key={place.id}>
+                <PlaceCard place={place} />
+                {/* Insert infeed ad after 3rd place card */}
+                {i === 2 && (
+                  <div className="col-span-full">
+                    <AdInfeed />
+                  </div>
+                )}
+              </React.Fragment>
             ))}
             <CreatePlaceForm />
           </div>
+
+          {/* Display ad at bottom of lobby */}
+          <AdDisplay />
         )}
       </div>
     </div>

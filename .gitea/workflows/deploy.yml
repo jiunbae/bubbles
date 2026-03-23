@@ -5,7 +5,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-  workflow_dispatch:
 
 env:
   REGISTRY: registry.jiun.dev
@@ -44,8 +43,6 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/bubbles-server:${{ gitea.sha }}
             ${{ env.REGISTRY }}/bubbles-server:latest
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/bubbles-server:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/bubbles-server:buildcache,mode=max
 
   build-web:
     runs-on: ubuntu-latest
@@ -76,8 +73,6 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/bubbles-web:${{ gitea.sha }}
             ${{ env.REGISTRY }}/bubbles-web:latest
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/bubbles-web:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/bubbles-web:buildcache,mode=max
 
   update-manifests:
     needs: [build-server, build-web]
@@ -93,8 +88,6 @@ jobs:
           for path in "${{ env.BASE_PATH }}" "${{ env.DEV_PATH }}" "${{ env.PROD_PATH }}"; do
             if [ -f "${path}/kustomization.yaml" ]; then
               sed -i "s/newTag: .*/newTag: ${{ gitea.sha }}/" "${path}/kustomization.yaml"
-              echo "=== ${path} ==="
-              cat "${path}/kustomization.yaml"
             fi
           done
 

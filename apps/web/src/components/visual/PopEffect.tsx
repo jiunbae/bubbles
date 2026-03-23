@@ -8,6 +8,7 @@ interface PopParticle {
   color: THREE.Color;
   life: number;
   maxLife: number;
+  size: number; // each droplet has slightly different size
 }
 
 interface PopEvent {
@@ -16,14 +17,15 @@ interface PopEvent {
   startTime: number;
 }
 
-const POP_DURATION = 0.6; // longer for visibility
-const PARTICLE_COUNT_MIN = 10;
-const PARTICLE_COUNT_MAX = 16;
-const GRAVITY = -3.0; // slower fall
+const POP_DURATION = 0.4;
+const PARTICLE_COUNT_MIN = 6;
+const PARTICLE_COUNT_MAX = 10;
+const GRAVITY = -5.0; // real gravity feel — droplets fall quickly
 
-// Shader for point particles
+// Shader: small transparent water droplets, not glowing neon
 const particleVertexShader = `
   attribute float a_life;
+  attribute float a_size;
   attribute vec3 a_color;
   varying float vLife;
   varying vec3 vColor;
@@ -32,8 +34,7 @@ const particleVertexShader = `
     vLife = a_life;
     vColor = a_color;
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    // Size decreases as particle fades
-    gl_PointSize = (14.0 * a_life) * (300.0 / -mvPosition.z);
+    gl_PointSize = a_size * a_life * (200.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -43,20 +44,25 @@ const particleFragmentShader = `
   varying vec3 vColor;
 
   void main() {
-    // Circular particle shape
     vec2 center = gl_PointCoord - vec2(0.5);
     float dist = length(center);
     if (dist > 0.5) discard;
 
-    // Soft edge
-    float alpha = smoothstep(0.5, 0.1, dist) * vLife * 1.5;
-    // Brighter center glow
-    float glow = smoothstep(0.3, 0.0, dist) * vLife * 0.5;
-    gl_FragColor = vec4(vColor + glow, min(1.0, alpha));
+    // Water droplet look: transparent edge, slight refraction highlight
+    float edge = smoothstep(0.5, 0.35, dist);
+    float highlight = smoothstep(0.25, 0.1, length(center - vec2(-0.15, -0.15))) * 0.4;
+
+    // Fade with life — droplets become transparent as they fall
+    float alpha = edge * vLife * 0.6;
+
+    // Subtle tinted water color (mostly white/clear with hint of bubble color)
+    vec3 dropletColor = mix(vec3(0.9, 0.95, 1.0), vColor, 0.3) + highlight;
+
+    gl_FragColor = vec4(dropletColor, alpha);
   }
 `;
 
-const MAX_PARTICLES = PARTICLE_COUNT_MAX * 8; // support up to 8 simultaneous pops
+const MAX_PARTICLES = PARTICLE_COUNT_MAX * 8;
 
 export function usePopEffect() {
   const [pops, setPops] = useState<PopEvent[]>([]);
@@ -66,37 +72,34 @@ export function usePopEffect() {
     (position: THREE.Vector3, color: THREE.Color, size: number) => {
       const count =
         PARTICLE_COUNT_MIN +
-        Math.floor(
-          Math.random() * (PARTICLE_COUNT_MAX - PARTICLE_COUNT_MIN + 1),
-        );
+        Math.floor(Math.random() * (PARTICLE_COUNT_MAX - PARTICLE_COUNT_MIN + 1));
 
       const particles: PopParticle[] = [];
       for (let i = 0; i < count; i++) {
-        // Random outward direction on sphere
+        // Droplets spread outward in a ring (like real bubble pop)
         const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
-        const speed = 2.0 + Math.random() * 3.0;
+        // Mostly horizontal spread, slight vertical
+        const elevation = (Math.random() - 0.3) * 0.6;
+        const speed = 0.8 + Math.random() * 1.5; // gentle, not explosive
 
         const dir = new THREE.Vector3(
-          Math.sin(phi) * Math.cos(theta),
-          Math.sin(phi) * Math.sin(theta),
-          Math.cos(phi),
+          Math.cos(theta) * Math.cos(elevation),
+          Math.sin(elevation) + 0.2, // slight upward then gravity takes over
+          Math.sin(theta) * Math.cos(elevation),
         );
 
-        // Vary color slightly per particle
-        const particleColor = color.clone();
-        particleColor.offsetHSL(
-          (Math.random() - 0.5) * 0.1,
-          0,
-          (Math.random() - 0.5) * 0.2,
-        );
+        // Droplet color: mostly clear/white with a tint from bubble
+        const dropletColor = color.clone();
+        dropletColor.lerp(new THREE.Color(0.9, 0.95, 1.0), 0.6); // wash out to water color
+        dropletColor.offsetHSL(0, -0.3, (Math.random() - 0.5) * 0.1);
 
         particles.push({
-          position: position.clone().add(dir.clone().multiplyScalar(size * 0.5)),
+          position: position.clone().add(dir.clone().multiplyScalar(size * 0.3)),
           velocity: dir.multiplyScalar(speed),
-          color: particleColor,
+          color: dropletColor,
           life: 1.0,
-          maxLife: POP_DURATION * (0.7 + Math.random() * 0.3),
+          maxLife: POP_DURATION * (0.5 + Math.random() * 0.5),
+          size: 3 + Math.random() * 5, // small droplets
         });
       }
 
@@ -117,11 +120,12 @@ interface PopEffectRendererProps {
 export function PopEffectRenderer({ pops, setPops }: PopEffectRendererProps) {
   const pointsRef = useRef<THREE.Points>(null);
 
-  const { positions, colors, lives } = useMemo(() => {
+  const { positions, colors, lives, sizes } = useMemo(() => {
     return {
       positions: new Float32Array(MAX_PARTICLES * 3),
       colors: new Float32Array(MAX_PARTICLES * 3),
       lives: new Float32Array(MAX_PARTICLES),
+      sizes: new Float32Array(MAX_PARTICLES),
     };
   }, []);
 
@@ -130,8 +134,9 @@ export function PopEffectRenderer({ pops, setPops }: PopEffectRendererProps) {
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setAttribute('a_color', new THREE.BufferAttribute(colors, 3));
     geo.setAttribute('a_life', new THREE.BufferAttribute(lives, 1));
+    geo.setAttribute('a_size', new THREE.BufferAttribute(sizes, 1));
     return geo;
-  }, [positions, colors, lives]);
+  }, [positions, colors, lives, sizes]);
 
   const material = useMemo(() => {
     return new THREE.ShaderMaterial({
@@ -139,7 +144,7 @@ export function PopEffectRenderer({ pops, setPops }: PopEffectRendererProps) {
       fragmentShader: particleFragmentShader,
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.NormalBlending, // NOT additive — natural transparency
     });
   }, []);
 
@@ -153,9 +158,10 @@ export function PopEffectRenderer({ pops, setPops }: PopEffectRendererProps) {
       let allDead = true;
 
       for (const p of pop.particles) {
-        // Update physics
         p.velocity.y += GRAVITY * delta;
-        p.position.add(p.velocity.clone().multiplyScalar(delta));
+        // Air resistance — droplets slow down
+        p.velocity.multiplyScalar(1 - 2.0 * delta);
+        p.position.addScaledVector(p.velocity, delta);
         p.life -= delta / p.maxLife;
 
         if (p.life > 0) {
@@ -168,6 +174,7 @@ export function PopEffectRenderer({ pops, setPops }: PopEffectRendererProps) {
             colors[particleIdx * 3 + 1] = p.color.g;
             colors[particleIdx * 3 + 2] = p.color.b;
             lives[particleIdx] = Math.max(0, p.life);
+            sizes[particleIdx] = p.size;
             particleIdx++;
           }
         }
@@ -178,7 +185,6 @@ export function PopEffectRenderer({ pops, setPops }: PopEffectRendererProps) {
       }
     }
 
-    // Zero out remaining
     for (let i = particleIdx; i < MAX_PARTICLES; i++) {
       lives[i] = 0;
     }
@@ -186,6 +192,7 @@ export function PopEffectRenderer({ pops, setPops }: PopEffectRendererProps) {
     geometry.attributes.position.needsUpdate = true;
     (geometry.attributes.a_color as THREE.BufferAttribute).needsUpdate = true;
     (geometry.attributes.a_life as THREE.BufferAttribute).needsUpdate = true;
+    (geometry.attributes.a_size as THREE.BufferAttribute).needsUpdate = true;
     geometry.setDrawRange(0, particleIdx);
 
     if (toRemove.length > 0) {

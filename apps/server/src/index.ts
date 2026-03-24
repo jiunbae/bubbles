@@ -5,6 +5,7 @@ import { connectMongo, ensureIndexes, disconnectMongo } from './db/mongo';
 import { connectRedis, disconnectRedis } from './db/redis';
 import { corsMiddleware, isAllowedOrigin } from './middleware/cors';
 import { health, setShuttingDown } from './routes/health';
+import { auth } from './routes/auth';
 import { places } from './routes/places';
 import { logs } from './routes/logs';
 import { createWSHandlers, getAllSessions } from './ws/handler';
@@ -23,6 +24,7 @@ app.use('*', metricsMiddleware);
 // Routes
 app.route('/metrics', metricsRoute);
 app.route('/health', health);
+app.route('/auth', auth);
 app.route('/places', places);
 app.route('', logs);
 

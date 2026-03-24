@@ -45,13 +45,31 @@ export class WsClient {
     return this.ws?.readyState === WebSocket.OPEN;
   }
 
-  private doConnect(): void {
+  private async doConnect(): Promise<void> {
     this.cleanup();
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const url = `${protocol}//${window.location.host}/ws/place/${this.placeId!}${this.token ? `?token=${this.token}` : ''}`;
-
     this.onConnectionChange?.('connecting');
+
+    // Exchange JWT for a short-lived one-time ticket (avoids token in URL logs)
+    let ticketParam = '';
+    if (this.token) {
+      try {
+        const res = await fetch('/api/auth/ws-ticket', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${this.token}` },
+        });
+        if (res.ok) {
+          const { ticket } = await res.json();
+          ticketParam = `?ticket=${ticket}`;
+        }
+      } catch {
+        // Fall through — connect anonymously
+      }
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const url = `${protocol}//${window.location.host}/ws/place/${this.placeId!}${ticketParam}`;
+
     const ws = new WebSocket(url);
 
     ws.onopen = () => {

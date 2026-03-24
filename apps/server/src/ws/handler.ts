@@ -1,7 +1,7 @@
 import type { Context } from 'hono';
 import type { WSContext } from 'hono/ws';
-import * as jose from 'jose';
 import { config } from '../config';
+import { consumeTicket } from '../routes/auth';
 import {
   generateSessionId,
   generateDisplayName,
@@ -53,24 +53,22 @@ export function createWSHandlers(placeId: string, c: Context) {
       }
 
       const url = new URL(c.req.url);
-      const token = url.searchParams.get('token');
+      const ticket = url.searchParams.get('ticket');
 
       let userId: string | undefined;
       let displayName: string | undefined;
       let isAuthenticated = false;
 
       let authError: string | undefined;
-      if (token) {
-        try {
-          const secret = new TextEncoder().encode(config.JWT_SECRET);
-          const { payload } = await jose.jwtVerify(token, secret);
-          userId = payload.sub;
-          displayName = (payload.name as string) || (payload.username as string);
+      if (ticket) {
+        const ticketData = consumeTicket(ticket);
+        if (ticketData) {
+          userId = ticketData.userId;
+          displayName = ticketData.displayName;
           isAuthenticated = true;
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : 'unknown';
-          console.warn(`[ws] JWT verification failed: ${msg}`);
-          authError = 'TOKEN_INVALID';
+        } else {
+          console.warn(`[ws] Invalid or expired WS ticket`);
+          authError = 'TICKET_INVALID';
         }
       }
 

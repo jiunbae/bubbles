@@ -96,15 +96,34 @@ function BubbleSpawner() {
   // In pop mode, don't render the spawner plane so clicks pass through to bubbles
   if (interactionMode !== 'blow') return null;
 
+  // On mobile, single-finger drag = camera rotation (OrbitControls).
+  // Only spawn bubbles on quick taps (not drags) or via the blow button.
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
+  const TAP_THRESHOLD = 8; // pixels — below this = tap, above = drag
+
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, -1, 0]}
       onPointerDown={(e) => {
-        // Only left click spawns bubbles (button 0)
         if (e.button !== 0) return;
-        e.stopPropagation();
-        setHolding(true);
+        pointerDownPos.current = { x: e.clientX, y: e.clientY };
+        // On desktop, start holding immediately for continuous spawn
+        if (!('ontouchstart' in window)) {
+          e.stopPropagation();
+          setHolding(true);
+        }
+      }}
+      onPointerUp={(e) => {
+        // On mobile (touch), only spawn on tap (not drag)
+        if ('ontouchstart' in window && pointerDownPos.current) {
+          const dx = e.clientX - pointerDownPos.current.x;
+          const dy = e.clientY - pointerDownPos.current.y;
+          if (Math.sqrt(dx * dx + dy * dy) < TAP_THRESHOLD) {
+            spawnBatch();
+          }
+        }
+        pointerDownPos.current = null;
       }}
     >
       {/* Large enough to always catch clicks regardless of zoom */}

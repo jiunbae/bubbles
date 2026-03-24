@@ -1,7 +1,7 @@
 import { Suspense, useState, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { MOUSE } from 'three';
+import { MOUSE, TOUCH } from 'three';
 import { useTranslation } from 'react-i18next';
 import { SkyEnvironment } from './SkyEnvironment';
 import { BubbleScene } from './BubbleScene';
@@ -69,7 +69,11 @@ function OnboardingOverlay() {
         <div>{'\u{1FAE7}'} {t('visual.blowBubbles')}</div>
         <div>{'\u{1F5B1}\uFE0F'} {t('visual.lookAround')}</div>
         <div>{'\u{1F4A5}'} {t('visual.popBubble')}</div>
-        <div>{'\u2328\uFE0F'} {t('visual.spaceBlowBubbles')}</div>
+        {'ontouchstart' in window ? (
+          <div>{'\u{1F44B}'} {t('visual.touchControls', 'Tap to blow, drag to look around')}</div>
+        ) : (
+          <div>{'\u2328\uFE0F'} {t('visual.spaceBlowBubbles')}</div>
+        )}
       </div>
     </div>
   );
@@ -84,12 +88,18 @@ export function VisualMode() {
       width: '100%', height: '100%', position: 'relative',
       background: '#0a0a14',
       cursor: interactionMode === 'pop' ? 'crosshair' : 'none',
+      touchAction: 'none',       // prevent browser zoom/scroll on touch
+      overscrollBehavior: 'none', // prevent pull-to-refresh
     }}>
       <Canvas
         dpr={[1, 1.5]}
         camera={{ fov: 50, near: 0.1, far: 100, position: [0, 2, 8] }}
         gl={{ antialias: true, alpha: false }}
-        style={{ width: '100%', height: '100%', cursor: interactionMode === 'pop' ? 'crosshair' : 'none' }}
+        style={{
+          width: '100%', height: '100%',
+          cursor: interactionMode === 'pop' ? 'crosshair' : 'none',
+          touchAction: 'none',
+        }}
       >
         <Suspense fallback={null}>
           <SkyEnvironment theme={currentPlace?.theme} />
@@ -109,6 +119,10 @@ export function VisualMode() {
               LEFT: -1 as any,          // disable left click orbit
               MIDDLE: MOUSE.DOLLY,       // middle = zoom
               RIGHT: MOUSE.ROTATE,       // right click drag = orbit
+            }}
+            touches={{
+              ONE: TOUCH.ROTATE,          // single finger = rotate camera
+              TWO: TOUCH.DOLLY_ROTATE,    // two fingers = zoom + rotate
             }}
           />
         </Suspense>

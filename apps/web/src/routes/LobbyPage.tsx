@@ -10,15 +10,12 @@ import { AdDisplay } from '@/components/ads/AdDisplay';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { redirectToOAuth } from '@/lib/auth';
 
-type SortMode = 'lively' | 'new' | 'quiet';
-
 const BACKGROUND_BUBBLE_COUNT = 12;
 
 export function LobbyPage() {
   const { t } = useTranslation();
   const { user, isAuthenticated, logout } = useAuth();
   const { places, setPlaces } = usePlaceStore();
-  const [sortMode, setSortMode] = useState<SortMode>('lively');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,24 +40,10 @@ export function LobbyPage() {
     };
   }, [setPlaces]);
 
-  const sortedPlaces = useMemo(() => {
-    const sorted = [...places];
-    switch (sortMode) {
-      case 'lively':
-        sorted.sort((a, b) => b.userCount - a.userCount);
-        break;
-      case 'new':
-        sorted.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        );
-        break;
-      case 'quiet':
-        sorted.sort((a, b) => a.userCount - b.userCount);
-        break;
-    }
-    return sorted;
-  }, [places, sortMode]);
+  const sortedPlaces = useMemo(
+    () => [...places].sort((a, b) => b.userCount - a.userCount),
+    [places],
+  );
 
   const backgroundBubbles = useMemo(
     () =>
@@ -75,12 +58,6 @@ export function LobbyPage() {
       })),
     [],
   );
-
-  const sortModes: { key: SortMode; label: string }[] = [
-    { key: 'lively', label: t('lobby.sortLively') },
-    { key: 'new', label: t('lobby.sortNew') },
-    { key: 'quiet', label: t('lobby.sortQuiet') },
-  ];
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -153,23 +130,6 @@ export function LobbyPage() {
             {t('lobby.subtitle')}
           </p>
         </header>
-
-        {/* Sort controls */}
-        <div className="mb-6 flex justify-center gap-2 overflow-x-auto flex-nowrap">
-          {sortModes.map((mode) => (
-            <button
-              key={mode.key}
-              onClick={() => setSortMode(mode.key)}
-              className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                sortMode === mode.key
-                  ? 'bg-accent text-white'
-                  : 'bg-bg-secondary text-text-secondary hover:bg-bg-card-hover hover:text-text-primary'
-              }`}
-            >
-              {mode.label}
-            </button>
-          ))}
-        </div>
 
         {/* Error state */}
         {error && (

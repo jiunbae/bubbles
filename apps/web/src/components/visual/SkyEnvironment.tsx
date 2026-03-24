@@ -76,10 +76,10 @@ function NeonSign({ position }: { position: [number, number, number] }) {
 function RooftopEnvironment() {
   return (
     <>
-      <color attach="background" args={['#0f0f1e']} />
-      <ambientLight color="#2a3050" intensity={0.35} />
-      <directionalLight color="#ffa54f" intensity={2.0} position={[8, 6, 3]} />
-      <directionalLight color="#6688bb" intensity={0.5} position={[-5, 4, -5]} />
+      <color attach="background" args={['#1a1a30']} />
+      <ambientLight color="#6680aa" intensity={0.8} />
+      <directionalLight color="#ffa54f" intensity={2.5} position={[8, 6, 3]} />
+      <directionalLight color="#6688bb" intensity={0.8} position={[-5, 4, -5]} />
       <GroundPlane color="#3a3a4a" />
 
       {/* Modern railing */}
@@ -218,8 +218,8 @@ function Fireflies({ count = 12, area = 8 }: { count?: number; area?: number }) 
 function ParkEnvironment() {
   return (
     <>
-      <color attach="background" args={['#081208']} />
-      <ambientLight color="#1a2a1a" intensity={0.25} />
+      <color attach="background" args={['#101e10']} />
+      <ambientLight color="#446644" intensity={0.7} />
       <directionalLight color="#eeeedd" intensity={1.2} position={[5, 10, 5]} />
       <directionalLight color="#8899bb" intensity={0.3} position={[-4, 6, -3]} />
       {/* Moonlight */}
@@ -346,9 +346,9 @@ function WallBracketLamp({ position, side = 'left' }: { position: [number, numbe
 function AlleyEnvironment() {
   return (
     <>
-      <color attach="background" args={['#080605']} />
-      <ambientLight color="#1a1208" intensity={0.2} />
-      <directionalLight color="#445566" intensity={0.3} position={[0, 8, 2]} />
+      <color attach="background" args={['#141010']} />
+      <ambientLight color="#554433" intensity={0.7} />
+      <directionalLight color="#667788" intensity={0.6} position={[0, 8, 2]} />
       <GroundPlane color="#2a2018" />
 
       {/* Brick walls */}

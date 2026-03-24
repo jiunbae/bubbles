@@ -3,16 +3,13 @@ import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { useUIStore } from '@/stores/ui-store';
-import { globalWsClient } from '@/lib/ws-client';
 import { isButtonBlowing } from './BubbleControls';
-import { BUBBLE_LIFETIME } from '@bubbles/shared';
-import type { BubbleInfo, BubbleSize } from '@bubbles/shared';
+import { spawnBubble } from '@/lib/bubble-factory';
 import { BubbleInstances } from './BubbleInstances';
 import { PopEffectRenderer, usePopEffect } from './PopEffect';
 import { SIZE_RADIUS } from '@/physics/bubblePhysics';
 
 const HOLD_INTERVAL = 250;
-const BATCH_SIZE = 1; // 1 per tick — interval handles continuous flow
 const MAX_BUBBLES = 80;
 
 // ---------------------------------------------------------------------------
@@ -40,39 +37,6 @@ function cancelExpiry(bubbleId: string) {
 }
 
 export { scheduleExpiry, cancelExpiry, expiryTimers };
-
-let _c = 0;
-function makeId() { return `s${Date.now()}_${++_c}`; }
-function randSize(): BubbleSize {
-  const r = Math.random();
-  return r < 0.35 ? 'S' : r < 0.8 ? 'M' : 'L';
-}
-function tint(hex: string): string {
-  try {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    const v = (n: number) => Math.max(0, Math.min(255, n + Math.round((Math.random() - 0.5) * 60)));
-    return `#${v(r).toString(16).padStart(2, '0')}${v(g).toString(16).padStart(2, '0')}${v(b).toString(16).padStart(2, '0')}`;
-  } catch { return hex; }
-}
-
-function createBubbleAt(x: number, y: number, z: number, color: string): BubbleInfo {
-  const size = randSize();
-  const now = Date.now();
-  const range = BUBBLE_LIFETIME[size];
-  const lifetime = range.min + Math.random() * (range.max - range.min);
-  const id = makeId();
-  const c = tint(color);
-  return {
-    bubbleId: id,
-    blownBy: { sessionId: 'local', displayName: 'You', isAuthenticated: false, color: c },
-    x, y, z,
-    size, color: c, pattern: 'plain',
-    seed: Math.random() * 10000,
-    createdAt: now, expiresAt: now + lifetime,
-  };
-}
 
 /**
  * BubbleSpawner: pointer-hold spawning.
@@ -104,27 +68,14 @@ function BubbleSpawner() {
     const spawnDist = camDist * 0.5;
     const center = _raycaster.ray.origin.clone().addScaledVector(dir, spawnDist);
 
-    const count = BATCH_SIZE;
-    for (let i = 0; i < count; i++) {
-      const spread = 0.15;
-      const bubble = createBubbleAt(
-        center.x + (Math.random() - 0.5) * spread,
-        center.y + (Math.random() - 0.5) * spread * 0.5,
-        center.z + (Math.random() - 0.5) * spread,
-        colorRef.current,
-      );
-      useBubbleStore.getState().addBubble(bubble);
-      const lt = bubble.expiresAt - bubble.createdAt;
-      scheduleExpiry(bubble.bubbleId, lt);
-
-      // Send to server for other users
-      if (globalWsClient.isConnected()) {
-        globalWsClient.send({
-          type: 'blow',
-          data: { size: bubble.size, color: bubble.color, pattern: 'plain', x: bubble.x, y: bubble.y, z: bubble.z, seed: bubble.seed, expiresAt: bubble.expiresAt },
-        });
-      }
-    }
+    const spread = 0.15;
+    spawnBubble(
+      center.x + (Math.random() - 0.5) * spread,
+      center.y + (Math.random() - 0.5) * spread * 0.5,
+      center.z + (Math.random() - 0.5) * spread,
+      colorRef.current,
+      scheduleExpiry,
+    );
   }, []);
 
   useEffect(() => {

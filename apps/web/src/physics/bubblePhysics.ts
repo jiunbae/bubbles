@@ -55,6 +55,7 @@ export interface BubblePhysicsState {
   age: number;          // seconds since creation
   lifetime: number;     // total lifetime in seconds
   seed: number;         // per-bubble random seed
+  size: BubbleSize;     // bubble size category
   isDead: boolean;
 }
 
@@ -117,6 +118,7 @@ export function createBubbleState(
     age: 0,
     lifetime,
     seed,
+    size,
     isDead: false,
   };
 }
@@ -135,7 +137,7 @@ export function updateBubble(
   // isDead is informational only; expiry is handled by timers
 
   const noise = getNoise();
-  const radius = SIZE_RADIUS['M']; // default; caller can pass actual radius via scale
+  const radius = SIZE_RADIUS[state.size];
   const effectiveRadius = radius * state.scale;
 
   const px = state.position[0];
@@ -296,6 +298,7 @@ export function updateBubbleLegacy(
     age: state.age,
     lifetime: state.lifetime,
     seed: 0,
+    size: 'M',
     isDead: false,
   };
   updateBubble(full, dt, globalTime);

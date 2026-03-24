@@ -14,23 +14,17 @@ export function connectRedis(): void {
     return;
   }
 
-  redis = new Redis(config.REDIS_URL, {
+  const sharedOptions = {
     maxRetriesPerRequest: 3,
     lazyConnect: false,
-    retryStrategy(times) {
+    retryStrategy(times: number) {
       if (times > 10) return null;
       return Math.min(times * 200, 2000);
     },
-  });
+  };
 
-  sub = new Redis(config.REDIS_URL, {
-    maxRetriesPerRequest: 3,
-    lazyConnect: false,
-    retryStrategy(times) {
-      if (times > 10) return null;
-      return Math.min(times * 200, 2000);
-    },
-  });
+  redis = new Redis(config.REDIS_URL, sharedOptions);
+  sub = new Redis(config.REDIS_URL, sharedOptions);
 
   redis.on('error', (err) => console.error('[redis] Command connection error:', err.message));
   sub.on('error', (err) => console.error('[redis] Sub connection error:', err.message));

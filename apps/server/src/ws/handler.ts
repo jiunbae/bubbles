@@ -12,6 +12,7 @@ import {
   joinRoom,
   leaveRoom,
   broadcastToRoom,
+  broadcastToLocalClients,
   sendToClient,
   getRoom,
   createBubble,
@@ -37,6 +38,17 @@ const sessionStates = new Map<string, {
 /** Get all active sessions — used by graceful shutdown to close WS connections. */
 export function getAllSessions() {
   return sessionStates;
+}
+
+/** Remove orphaned lastCursorSent entries for sessions that no longer exist. */
+export function cleanupStaleCursors(): void {
+  for (const key of lastCursorSent.keys()) {
+    // Key format is "placeId:sessionId"
+    const sessionId = key.substring(key.lastIndexOf(':') + 1);
+    if (!sessionStates.has(sessionId)) {
+      lastCursorSent.delete(key);
+    }
+  }
 }
 
 export function createWSHandlers(placeId: string, c: Context) {
@@ -117,10 +129,19 @@ export function createWSHandlers(placeId: string, c: Context) {
       // Update ws reference (may be a new WSContext instance)
       state.ws = ws;
 
+      // Reject oversized messages (4KB limit) before parsing
+      const rawData = typeof event.data === 'string' ? event.data : event.data.toString();
+      if (rawData.length > 4096) {
+        sendToClient(ws, {
+          type: 'error', ts: Date.now(),
+          data: { code: 'MESSAGE_TOO_LARGE', message: 'Message exceeds 4KB limit' },
+        });
+        return;
+      }
+
       let msg: ClientMessage;
       try {
-        const raw = typeof event.data === 'string' ? event.data : event.data.toString();
-        msg = JSON.parse(raw);
+        msg = JSON.parse(rawData);
       } catch {
         sendToClient(ws, {
           type: 'error', ts: Date.now(),
@@ -302,7 +323,7 @@ export function createWSHandlers(placeId: string, c: Context) {
             type: 'cursor_moved', ts: now,
             data: { sessionId, x: msg.data.x, y: msg.data.y },
           };
-          broadcastToRoom(pid, cursorMsg, sessionId);
+          broadcastToLocalClients(pid, cursorMsg, sessionId);
           break;
         }
 
@@ -331,14 +352,11 @@ export function createWSHandlers(placeId: string, c: Context) {
       await logAction('leave', state.placeId, sessionId, state.user);
     },
 
-    onError(_event: Event, ws: WSContext) {
+    onError(_event: Event, _ws: WSContext) {
+      // Only log — onClose always fires after onError, so all cleanup happens there.
       const state = sessionStates.get(sessionId);
       if (state) {
         console.error(`[ws] Error for ${state.user.displayName}`);
-        decGauge('ws_connections_active');
-        leaveRoom(state.placeId, sessionId);
-        sessionStates.delete(sessionId);
-        lastCursorSent.delete(`${state.placeId}:${sessionId}`);
       }
     },
   };

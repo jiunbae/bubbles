@@ -1,63 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { useBubbleStore } from '@/stores/bubble-store';
-import { globalWsClient } from '@/lib/ws-client';
-import { analytics } from '@/lib/analytics';
-import { BUBBLE_COLORS, BUBBLE_LIFETIME } from '@bubbles/shared';
-import type { BubbleInfo, BubbleSize } from '@bubbles/shared';
+import { BUBBLE_COLORS } from '@bubbles/shared';
+import { spawnBubble } from '@/lib/bubble-factory';
 import { scheduleExpiry } from './BubbleScene';
 
 const BLOW_INTERVAL = 250; // ~4 bubbles/sec, feels natural
-
-let _counter = 0;
-function makeId() { return `b${Date.now()}_${++_counter}`; }
-function randSize(): BubbleSize {
-  const r = Math.random();
-  return r < 0.35 ? 'S' : r < 0.8 ? 'M' : 'L';
-}
-function tint(hex: string): string {
-  try {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    const v = (n: number) => Math.max(0, Math.min(255, n + Math.round((Math.random() - 0.5) * 60)));
-    return `#${v(r).toString(16).padStart(2, '0')}${v(g).toString(16).padStart(2, '0')}${v(b).toString(16).padStart(2, '0')}`;
-  } catch { return hex; }
-}
+const MAX_BUBBLES = 80;
 
 function spawnBatch(color: string): number {
   const store = useBubbleStore.getState();
-  const remaining = 80 - store.bubbles.size;
-  if (remaining <= 0) return store.bubbles.size;
-  const count = 1; // 1 per tick — interval handles continuous flow
-  for (let i = 0; i < count; i++) {
-    const size = randSize();
-    const now = Date.now();
-    const range = BUBBLE_LIFETIME[size];
-    const lifetime = range.min + Math.random() * (range.max - range.min);
-    const id = makeId();
-    const c = tint(color);
-    const bubble: BubbleInfo = {
-      bubbleId: id,
-      blownBy: { sessionId: 'local', displayName: 'You', isAuthenticated: false, color: c },
-      x: (Math.random() - 0.5) * 0.3,  // tight spawn near center
-      y: 0.5 + Math.random() * 0.3,
-      z: (Math.random() - 0.5) * 0.3,
-      size, color: c, pattern: 'plain',
-      seed: Math.random() * 10000,
-      createdAt: now, expiresAt: now + lifetime,
-    };
-    useBubbleStore.getState().addBubble(bubble);
-    scheduleExpiry(id, lifetime);
-    analytics.bubbleBlow(size);
+  if (store.bubbles.size >= MAX_BUBBLES) return store.bubbles.size;
 
-    // Send to server for other users
-    if (globalWsClient.isConnected()) {
-      globalWsClient.send({
-        type: 'blow',
-        data: { size, color: c, pattern: 'plain', x: bubble.x, y: bubble.y, z: bubble.z, seed: bubble.seed, expiresAt: bubble.expiresAt },
-      });
-    }
-  }
+  spawnBubble(
+    (Math.random() - 0.5) * 0.3,  // tight spawn near center
+    0.5 + Math.random() * 0.3,
+    (Math.random() - 0.5) * 0.3,
+    color,
+    scheduleExpiry,
+  );
+
   return useBubbleStore.getState().bubbles.size;
 }
 
@@ -69,6 +30,14 @@ export function BubbleControls() {
   const intervalRef = useRef<number | null>(null);
   const [bubbleCount, setBubbleCount] = useState(0);
   const [isBlowing, setIsBlowing] = useState(false);
+
+  // Reactive mobile breakpoint (fix #20)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   // Subscribe to bubble count for display
   useEffect(() => {
@@ -131,7 +100,7 @@ export function BubbleControls() {
 
       <div style={{
         display: 'flex', alignItems: 'center', gap: 16,
-        padding: window.innerWidth < 640 ? '8px 16px' : '12px 24px', borderRadius: 24,
+        padding: isMobile ? '8px 16px' : '12px 24px', borderRadius: 24,
         background: 'rgba(20, 20, 30, 0.8)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         border: '1px solid rgba(255,255,255,0.15)',
@@ -151,10 +120,10 @@ export function BubbleControls() {
           onPointerLeave={stopBlowing}
           onContextMenu={(e) => e.preventDefault()}
           style={{
-            padding: window.innerWidth < 640 ? '10px 28px' : '14px 40px', borderRadius: 24,
+            padding: isMobile ? '10px 28px' : '14px 40px', borderRadius: 24,
             border: isBlowing ? '2px solid rgba(255,255,255,0.7)' : '1px solid rgba(255,255,255,0.3)',
             background: isBlowing ? 'rgba(100, 180, 255, 0.4)' : 'rgba(255,255,255,0.15)',
-            color: '#fff', fontSize: window.innerWidth < 640 ? 15 : 18, fontWeight: 700,
+            color: '#fff', fontSize: isMobile ? 15 : 18, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'system-ui, sans-serif',
             userSelect: 'none', WebkitUserSelect: 'none',
             touchAction: 'none',

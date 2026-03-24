@@ -8,7 +8,8 @@ import { health, setShuttingDown } from './routes/health';
 import { auth } from './routes/auth';
 import { places } from './routes/places';
 import { logs } from './routes/logs';
-import { createWSHandlers, getAllSessions } from './ws/handler';
+import { createWSHandlers, getAllSessions, cleanupStaleCursors } from './ws/handler';
+import { leaveRoom } from './ws/rooms';
 import { cleanupStaleRooms, cleanupRedisStaleEntries } from './ws/rooms';
 import { initPubSub } from './ws/pubsub';
 import { PLACE_INACTIVE_TIMEOUT } from '@bubbles/shared';
@@ -21,6 +22,26 @@ const { upgradeWebSocket, websocket } = createBunWebSocket();
 app.use('*', corsMiddleware);
 app.use('*', metricsMiddleware);
 
+// Metrics route — guard against public access
+// Block requests with X-Forwarded-For (coming through public ingress)
+app.use('/metrics/*', async (c, next) => {
+  const metricsToken = process.env.METRICS_TOKEN;
+  const forwarded = c.req.header('X-Forwarded-For');
+
+  // If request came through a proxy (public ingress), require token auth
+  if (forwarded) {
+    if (!metricsToken) {
+      return c.text('Forbidden', 403);
+    }
+    const auth = c.req.header('Authorization');
+    if (auth !== `Bearer ${metricsToken}`) {
+      return c.text('Forbidden', 403);
+    }
+  }
+
+  return next();
+});
+
 // Routes
 app.route('/metrics', metricsRoute);
 app.route('/health', health);
@@ -28,7 +49,7 @@ app.route('/auth', auth);
 app.route('/places', places);
 app.route('', logs);
 
-// WebSocket endpoint with Origin validation
+// WebSocket endpoint with Origin + placeId validation
 app.get(
   '/ws/place/:placeId',
   (c, next) => {
@@ -36,6 +57,13 @@ app.get(
     if (origin && !isAllowedOrigin(origin)) {
       return c.text('Forbidden', 403);
     }
+
+    // Validate placeId is a 24-char hex string (MongoDB ObjectId format)
+    const placeId = c.req.param('placeId') ?? '';
+    if (!/^[0-9a-fA-F]{24}$/.test(placeId)) {
+      return c.text('Bad Request: invalid placeId', 400);
+    }
+
     return next();
   },
   upgradeWebSocket((c) => {
@@ -58,8 +86,11 @@ async function start() {
   connectRedis();
   initPubSub();
 
-  // Periodic cleanup of stale rooms
-  const cleanupInterval = setInterval(cleanupStaleRooms, PLACE_INACTIVE_TIMEOUT / 2);
+  // Periodic cleanup of stale rooms and orphaned cursor entries
+  const cleanupInterval = setInterval(() => {
+    cleanupStaleRooms();
+    cleanupStaleCursors();
+  }, PLACE_INACTIVE_TIMEOUT / 2);
 
   // Periodic Redis stale entry cleanup (every 5 minutes)
   const redisCleanupInterval = setInterval(cleanupRedisStaleEntries, 5 * 60 * 1000);
@@ -73,10 +104,15 @@ async function start() {
     console.log('\n[shutdown] Shutting down gracefully...');
     setShuttingDown(); // readiness probe returns 503
 
-    // Close all WebSocket connections with code 1012 (Service Restart)
+    // Clean up all sessions: leave rooms (removes from Redis) then close WS
     const sessions = getAllSessions();
-    console.log(`[shutdown] Closing ${sessions.size} WebSocket connections...`);
-    for (const [, session] of sessions) {
+    console.log(`[shutdown] Cleaning up ${sessions.size} WebSocket sessions...`);
+    for (const [sessionId, session] of sessions) {
+      try {
+        leaveRoom(session.placeId, sessionId);
+      } catch {
+        // best-effort cleanup
+      }
       try {
         session.ws.close(1012, 'Server restarting');
       } catch {

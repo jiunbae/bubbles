@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@/stores/ui-store';
 
@@ -6,9 +6,9 @@ export function ModeSwitch() {
   const { t } = useTranslation();
   const { mode, setMode } = useUIStore();
 
-  const toggle = () => {
+  const toggle = useCallback(() => {
     setMode(mode === 'visual' ? 'stealth' : 'visual');
-  };
+  }, [mode, setMode]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -19,7 +19,7 @@ export function ModeSwitch() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  });
+  }, [toggle]);
 
   const label =
     mode === 'visual'

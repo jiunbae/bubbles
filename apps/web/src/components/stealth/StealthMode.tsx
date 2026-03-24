@@ -206,16 +206,12 @@ export function StealthMode() {
           handlePopBubble(bubbles[bubbles.length - 1].bubbleId);
         }
       }
-      // Ctrl+Shift+M = switch to visual mode
-      if (e.ctrlKey && e.shiftKey && e.key === 'M') {
-        e.preventDefault();
-        handleSwitchToVisual();
-      }
+      // Ctrl+Shift+M is handled globally by ModeSwitch
     }
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleBlowBubble, handlePopBubble, handleSwitchToVisual, bubbles]);
+  }, [handleBlowBubble, handlePopBubble, bubbles]);
 
   return (
     <div className="flex flex-col h-screen bg-white font-[system-ui] text-[#333]">

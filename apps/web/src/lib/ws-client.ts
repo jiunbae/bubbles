@@ -109,9 +109,10 @@ export class WsClient {
     // Server restart (rolling deploy) — reconnect immediately, no retry count
     if (closeCode === CLOSE_CODE_SERVICE_RESTART) {
       console.log('[WsClient] Server restarting, reconnecting immediately...');
+      const jitter = 200 + Math.random() * 1300; // 200-1500ms to avoid thundering herd
       this.reconnectTimer = setTimeout(() => {
         this.doConnect();
-      }, 500); // brief delay for K8s endpoint update
+      }, jitter);
       return;
     }
 

@@ -1,0 +1,10 @@
+8bb6f97 fix: address R05 code review findings (security, quality, perf)
+0878ee5 feat: comprehensive mobile responsiveness overhaul
+2ac7d00 docs: update README with Redis, observability, deployment, and i18n
+c1acaf2 fix: more transparent bubbles, ambient lighting, streetlamps
+78cbb77 feat: add VITE_JIUN_API_URL build arg to web Dockerfile
+a4b05fc fix: sync bubble physics across clients using server timestamps
+f8c2351 feat: i18n, user rename, activity log, WS reconnect improvements
+8a14b58 feat: Redis-backed state, rolling deploy support, graceful shutdown
+2fe43be fix: sync bubble seed/expiresAt across clients
+ac56c65 fix: smaller transparent bubbles, user dropdown, reduced jitter

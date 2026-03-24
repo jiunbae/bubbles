@@ -1,0 +1,3 @@
+d947c4c perf: replace per-bubble meshes with single InstancedMesh
+75015c2 security: replace JWT-in-URL with one-time ticket exchange
+8bb6f97 fix: address R05 code review findings (security, quality, perf)

@@ -62,12 +62,29 @@ export function decGauge(name: string, labels: Record<string, string> = {}, valu
   incGauge(name, labels, -value);
 }
 
+// --- Metric descriptions for # HELP lines ---
+
+const descriptions = new Map<string, string>([
+  ['http_requests_total', 'Total number of HTTP requests.'],
+  ['http_request_duration_seconds', 'HTTP request duration in seconds.'],
+  ['ws_connections_active', 'Number of active WebSocket connections.'],
+  ['ws_connections_total', 'Total number of WebSocket connections opened.'],
+  ['bubbles_blown_total', 'Total number of bubbles blown.'],
+  ['bubbles_popped_total', 'Total number of bubbles popped by users.'],
+  ['bubbles_expired_total', 'Total number of bubbles that expired naturally.'],
+  ['rooms_active', 'Number of active rooms.'],
+  ['rooms_users_total', 'Total users across all active rooms.'],
+  ['rooms_bubbles_total', 'Total bubbles across all active rooms.'],
+]);
+
 // --- Serialize to Prometheus text format ---
 
 function serialize(): string {
   const lines: string[] = [];
 
   for (const [name, map] of counters) {
+    const help = descriptions.get(name);
+    if (help) lines.push(`# HELP ${name} ${help}`);
     lines.push(`# TYPE ${name} counter`);
     for (const [key, val] of map) {
       lines.push(key ? `${name}{${key}} ${val}` : `${name} ${val}`);
@@ -75,6 +92,8 @@ function serialize(): string {
   }
 
   for (const [name, map] of gauges) {
+    const help = descriptions.get(name);
+    if (help) lines.push(`# HELP ${name} ${help}`);
     lines.push(`# TYPE ${name} gauge`);
     for (const [key, val] of map) {
       lines.push(key ? `${name}{${key}} ${val}` : `${name} ${val}`);
@@ -82,6 +101,8 @@ function serialize(): string {
   }
 
   for (const [name, map] of histograms) {
+    const help = descriptions.get(name);
+    if (help) lines.push(`# HELP ${name} ${help}`);
     lines.push(`# TYPE ${name} histogram`);
     for (const [key, entry] of map) {
       const labelPrefix = key ? `${key},` : '';
@@ -106,7 +127,7 @@ export const metricsMiddleware: MiddlewareHandler = async (c, next) => {
   const duration = (performance.now() - start) / 1000; // seconds
 
   const method = c.req.method;
-  const path = c.req.routePath || c.req.path;
+  const path = c.req.routePath || 'unknown';
   const status = String(c.res.status);
 
   incCounter('http_requests_total', { method, path, status });

@@ -1,16 +1,45 @@
 /**
  * Redis Pub/Sub for cross-pod WebSocket message relay.
  * When Redis is not available, all functions are no-ops.
+ *
+ * Uses a callback registration pattern to avoid circular imports with rooms.ts.
  */
 import { getRedis, getSub, isRedisEnabled } from '../db/redis';
 import { config } from '../config';
 import type { ServerMessage } from '@bubbles/shared';
-import { broadcastToLocalClients, getRoom } from './rooms';
 
 interface PubSubMessage {
   originPodId: string;
   originSessionId?: string;
-  message: ServerMessage;
+  /** Pre-serialized ServerMessage JSON string (avoids double-stringify). */
+  serialized: string;
+}
+
+/** Handler type for relaying pub/sub messages to local clients. */
+type PubSubRelayHandler = (placeId: string, message: ServerMessage, excludeSessionId?: string) => void;
+
+/** Handler for remote bubble tracking. */
+type RemoteBubbleHandler = {
+  addRemoteBubble: (placeId: string, data: unknown) => void;
+  removeRemoteBubble: (placeId: string, bubbleId: string) => void;
+};
+
+let relayHandler: PubSubRelayHandler | null = null;
+let remoteBubbleHandler: RemoteBubbleHandler | null = null;
+
+/**
+ * Register the handler that relays incoming pub/sub messages to local WS clients.
+ * Called by rooms.ts at startup to break the circular dependency.
+ */
+export function setPubSubHandler(handler: PubSubRelayHandler): void {
+  relayHandler = handler;
+}
+
+/**
+ * Register handlers for remote bubble management (cross-pod expiry).
+ */
+export function setRemoteBubbleHandler(handler: RemoteBubbleHandler): void {
+  remoteBubbleHandler = handler;
 }
 
 const subscribedRooms = new Set<string>();
@@ -34,11 +63,20 @@ export function initPubSub(): void {
       if (parsed.originPodId === config.POD_ID) return;
 
       const placeId = channel.replace('room:', '');
-      const room = getRoom(placeId);
-      if (!room) return;
+      const message: ServerMessage = JSON.parse(parsed.serialized);
 
-      // Broadcast to local clients, excluding the origin session
-      broadcastToLocalClients(placeId, parsed.message, parsed.originSessionId);
+      // Handle remote bubble tracking (#3)
+      if (remoteBubbleHandler) {
+        if (message.type === 'bubble_created') {
+          remoteBubbleHandler.addRemoteBubble(placeId, message.data);
+        } else if (message.type === 'bubble_expired' || message.type === 'bubble_popped') {
+          remoteBubbleHandler.removeRemoteBubble(placeId, message.data.bubbleId);
+        }
+      }
+
+      if (relayHandler) {
+        relayHandler(placeId, message, parsed.originSessionId);
+      }
     } catch (err) {
       console.error('[pubsub] Failed to handle message:', err);
     }
@@ -74,19 +112,22 @@ export async function unsubscribeRoom(placeId: string): Promise<void> {
 
 /**
  * Publish a server message to other pods via Redis.
+ * Accepts an optional pre-serialized string to avoid double JSON.stringify.
  */
 export async function publishToRoom(
   placeId: string,
   message: ServerMessage,
   originSessionId?: string,
+  preSerialized?: string,
 ): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
 
+  const serialized = preSerialized ?? JSON.stringify(message);
   const payload: PubSubMessage = {
     originPodId: config.POD_ID,
     originSessionId,
-    message,
+    serialized,
   };
 
   await redis.publish(channelName(placeId), JSON.stringify(payload)).catch((err) => {

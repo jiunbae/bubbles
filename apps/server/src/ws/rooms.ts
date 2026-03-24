@@ -7,7 +7,12 @@ import { ObjectId } from 'mongodb';
 import { setGauge, incCounter } from '../metrics';
 import { getRedis, isRedisEnabled } from '../db/redis';
 import { config } from '../config';
-import { publishToRoom, subscribeRoom, unsubscribeRoom } from './pubsub';
+import { publishToRoom, subscribeRoom, unsubscribeRoom, setPubSubHandler, setRemoteBubbleHandler } from './pubsub';
+
+/** Validate placeId is a 24-character hex string (MongoDB ObjectId format). */
+export function isValidPlaceId(id: string): boolean {
+  return /^[0-9a-fA-F]{24}$/.test(id);
+}
 
 export interface ActiveBubble {
   id: string;
@@ -33,13 +38,27 @@ export interface PlaceRoom {
 
 const rooms = new Map<string, PlaceRoom>();
 
+// Register the pub/sub relay handler to break the circular dependency.
+// broadcastToLocalClients is defined below; the handler is only invoked after init.
+setPubSubHandler((placeId, message, excludeSessionId) => {
+  broadcastToLocalClients(placeId, message, excludeSessionId);
+});
+
+// Register remote bubble handlers for cross-pod bubble expiry (#3).
+setRemoteBubbleHandler({
+  addRemoteBubble: (placeId, data) => addRemoteBubble(placeId, data as any),
+  removeRemoteBubble: (placeId, bubbleId) => removeRemoteBubble(placeId, bubbleId),
+});
+
 // --- Redis key helpers ---
 
 function memberKey(placeId: string): string {
+  if (!isValidPlaceId(placeId)) throw new Error(`Invalid placeId for Redis key: ${placeId}`);
   return `room:${placeId}:members`;
 }
 
 function bubbleKey(placeId: string): string {
+  if (!isValidPlaceId(placeId)) throw new Error(`Invalid placeId for Redis key: ${placeId}`);
   return `room:${placeId}:bubbles`;
 }
 
@@ -209,10 +228,11 @@ export async function joinRoom(
   }
 
   room.clients.set(sessionId, { ws, user, lastPingAt: Date.now() });
-  updateRoomGauges();
+  incTotalUsers(1);
 
   // Redis: register member + subscribe to pub/sub
-  redisAddMember(placeId, sessionId, user);
+  // Await Redis write before fetching room state to avoid race condition
+  await redisAddMember(placeId, sessionId, user);
   if (wasEmpty) {
     subscribeRoom(placeId);
   }
@@ -255,7 +275,7 @@ export function leaveRoom(placeId: string, sessionId: string): void {
 
   room.clients.delete(sessionId);
   room.lastActivity = Date.now();
-  updateRoomGauges();
+  incTotalUsers(-1);
 
   // Redis: remove member
   redisRemoveMember(placeId, sessionId);
@@ -276,34 +296,43 @@ export function leaveRoom(placeId: string, sessionId: string): void {
   }
 }
 
-/** Broadcast to local WS clients only (this pod). Used by both direct calls and pub/sub relay. */
-export function broadcastToLocalClients(
+/** Broadcast pre-serialized data to local WS clients only. */
+export function broadcastSerializedToLocal(
   placeId: string,
-  message: ServerMessage,
+  serialized: string,
   excludeSessionId?: string
 ): void {
   const room = rooms.get(placeId);
   if (!room) return;
 
-  const data = JSON.stringify(message);
   for (const [sid, client] of room.clients) {
     if (sid === excludeSessionId) continue;
     try {
-      client.ws.send(data);
+      client.ws.send(serialized);
     } catch {
       // Client disconnected, will be cleaned up
     }
   }
 }
 
-/** Broadcast to all pods (local + Redis pub/sub). */
+/** Broadcast to local WS clients only (this pod). Used by both direct calls and pub/sub relay. */
+export function broadcastToLocalClients(
+  placeId: string,
+  message: ServerMessage,
+  excludeSessionId?: string
+): void {
+  broadcastSerializedToLocal(placeId, JSON.stringify(message), excludeSessionId);
+}
+
+/** Broadcast to all pods (local + Redis pub/sub). Pre-serializes once to avoid double JSON.stringify. */
 export function broadcastToRoom(
   placeId: string,
   message: ServerMessage,
   excludeSessionId?: string
 ): void {
-  broadcastToLocalClients(placeId, message, excludeSessionId);
-  publishToRoom(placeId, message, excludeSessionId);
+  const serialized = JSON.stringify(message);
+  broadcastSerializedToLocal(placeId, serialized, excludeSessionId);
+  publishToRoom(placeId, message, excludeSessionId, serialized);
 }
 
 export function sendToClient(ws: WSContext, message: ServerMessage): void {
@@ -323,20 +352,22 @@ export function cleanupStaleRooms(): void {
   const now = Date.now();
   for (const [placeId, room] of rooms) {
     if (room.clients.size === 0 && now - room.lastActivity > PLACE_INACTIVE_TIMEOUT) {
+      const bubbleCount = room.bubbles.size;
       for (const [, bubble] of room.bubbles) {
         clearTimeout(bubble.timer);
       }
       rooms.delete(placeId);
+      incTotalBubbles(-bubbleCount);
       console.log(`[rooms] Cleaned up stale room: ${placeId}`);
     }
   }
-  updateRoomGauges();
+  syncRoomGauges();
 }
 
-export function createBubble(
+export async function createBubble(
   placeId: string,
   bubble: Omit<ActiveBubble, 'timer'>
-): void {
+): Promise<void> {
   const room = rooms.get(placeId);
   if (!room) return;
 
@@ -347,10 +378,10 @@ export function createBubble(
 
   room.bubbles.set(bubble.id, { ...bubble, timer });
   room.lastActivity = Date.now();
-  updateRoomGauges();
+  incTotalBubbles(1);
 
-  // Redis: store bubble
-  redisAddBubble(placeId, bubble);
+  // Redis: store bubble (await to ensure consistency)
+  await redisAddBubble(placeId, bubble);
 }
 
 export function removeBubble(placeId: string, bubbleId: string): ActiveBubble | undefined {
@@ -362,7 +393,7 @@ export function removeBubble(placeId: string, bubbleId: string): ActiveBubble | 
 
   clearTimeout(bubble.timer);
   room.bubbles.delete(bubbleId);
-  updateRoomGauges();
+  incTotalBubbles(-1);
 
   // Redis: remove bubble
   redisRemoveBubble(placeId, bubbleId);
@@ -379,7 +410,7 @@ function expireBubble(placeId: string, bubbleId: string): void {
 
   room.bubbles.delete(bubbleId);
   incCounter('bubbles_expired_total');
-  updateRoomGauges();
+  incTotalBubbles(-1);
 
   // Redis: remove expired bubble
   redisRemoveBubble(placeId, bubbleId);
@@ -404,12 +435,15 @@ async function redisScanKeys(redis: ReturnType<typeof getRedis> & object, patter
   return keys;
 }
 
-/** Clean up stale entries from Redis (e.g. from crashed pods). */
+/** Clean up stale entries from Redis using pipelined HDEL (e.g. from crashed pods). */
 export async function cleanupRedisStaleEntries(): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
 
   try {
+    const pipeline = redis.pipeline();
+    let pipelineOps = 0;
+
     // Find all room member keys using SCAN (non-blocking)
     const memberKeys = await redisScanKeys(redis, 'room:*:members');
     for (const key of memberKeys) {
@@ -417,10 +451,12 @@ export async function cleanupRedisStaleEntries(): Promise<void> {
       for (const [sessionId, data] of Object.entries(members)) {
         const parsed = JSON.parse(data);
         if (parsed.podId === config.POD_ID) {
-          const placeId = key.replace('room:', '').replace(':members', '');
+          const placeId = key.match(/^room:(.+):members$/)?.[1];
+          if (!placeId) continue;
           const room = rooms.get(placeId);
           if (!room || !room.clients.has(sessionId)) {
-            await redis.hdel(key, sessionId);
+            pipeline.hdel(key, sessionId);
+            pipelineOps++;
           }
         }
       }
@@ -434,9 +470,15 @@ export async function cleanupRedisStaleEntries(): Promise<void> {
       for (const [bubbleId, data] of Object.entries(bubbles)) {
         const parsed = JSON.parse(data);
         if (parsed.expiresAt <= now) {
-          await redis.hdel(key, bubbleId);
+          pipeline.hdel(key, bubbleId);
+          pipelineOps++;
         }
       }
+    }
+
+    if (pipelineOps > 0) {
+      await pipeline.exec();
+      console.log(`[rooms/redis] Cleanup pipeline executed ${pipelineOps} HDEL ops`);
     }
   } catch (err) {
     console.error('[rooms/redis] Cleanup failed:', err);
@@ -467,16 +509,96 @@ async function updatePlaceActivity(placeId: string): Promise<void> {
   }
 }
 
-function updateRoomGauges(): void {
-  let totalUsers = 0;
-  let totalBubbles = 0;
+// --- Incremental gauge tracking (#12) ---
+let _totalUsers = 0;
+let _totalBubbles = 0;
+
+function incTotalUsers(delta: number): void {
+  _totalUsers += delta;
+  setGauge('rooms_active', {}, rooms.size);
+  setGauge('rooms_users_total', {}, _totalUsers);
+}
+
+function incTotalBubbles(delta: number): void {
+  _totalBubbles += delta;
+  setGauge('rooms_bubbles_total', {}, _totalBubbles);
+}
+
+/** Full resync of gauges — used only during periodic cleanup as a safety net. */
+function syncRoomGauges(): void {
+  _totalUsers = 0;
+  _totalBubbles = 0;
   for (const room of rooms.values()) {
-    totalUsers += room.clients.size;
-    totalBubbles += room.bubbles.size;
+    _totalUsers += room.clients.size;
+    _totalBubbles += room.bubbles.size;
   }
   setGauge('rooms_active', {}, rooms.size);
-  setGauge('rooms_users_total', {}, totalUsers);
-  setGauge('rooms_bubbles_total', {}, totalBubbles);
+  setGauge('rooms_users_total', {}, _totalUsers);
+  setGauge('rooms_bubbles_total', {}, _totalBubbles);
+}
+
+// --- Remote bubble management (#3: cross-pod bubble expiry) ---
+
+/**
+ * Add a bubble received from another pod via pub/sub.
+ * No Redis write, no pub/sub publish — just local tracking + expiry timer.
+ */
+export function addRemoteBubble(placeId: string, bubbleData: {
+  bubbleId: string;
+  blownBy: UserInfo;
+  x: number; y: number; z: number;
+  size: BubbleSize;
+  color: string;
+  pattern: BubblePattern;
+  seed: number;
+  createdAt: number;
+  expiresAt: number;
+}): void {
+  const room = rooms.get(placeId);
+  if (!room) return;
+
+  // Don't overwrite if we already have this bubble
+  if (room.bubbles.has(bubbleData.bubbleId)) return;
+
+  const timeToLive = bubbleData.expiresAt - Date.now();
+  if (timeToLive <= 0) return; // Already expired
+
+  const timer = setTimeout(() => {
+    // Silently remove locally — don't re-broadcast (originating pod handles that)
+    removeRemoteBubble(placeId, bubbleData.bubbleId);
+  }, timeToLive);
+
+  room.bubbles.set(bubbleData.bubbleId, {
+    id: bubbleData.bubbleId,
+    blownBy: bubbleData.blownBy,
+    x: bubbleData.x,
+    y: bubbleData.y,
+    z: bubbleData.z,
+    size: bubbleData.size,
+    color: bubbleData.color,
+    pattern: bubbleData.pattern,
+    seed: bubbleData.seed,
+    createdAt: bubbleData.createdAt,
+    expiresAt: bubbleData.expiresAt,
+    timer,
+  });
+  incTotalBubbles(1);
+}
+
+/**
+ * Remove a bubble received from another pod (expired/popped remotely).
+ * No Redis write, no pub/sub publish — just local cleanup.
+ */
+export function removeRemoteBubble(placeId: string, bubbleId: string): void {
+  const room = rooms.get(placeId);
+  if (!room) return;
+
+  const bubble = room.bubbles.get(bubbleId);
+  if (!bubble) return;
+
+  clearTimeout(bubble.timer);
+  room.bubbles.delete(bubbleId);
+  incTotalBubbles(-1);
 }
 
 async function markPlaceForDeletion(placeId: string): Promise<void> {

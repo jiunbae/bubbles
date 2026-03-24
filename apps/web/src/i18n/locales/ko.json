@@ -40,7 +40,9 @@
     "failedToLoad": "장소 로드 실패: {{error}}",
     "editName": "클릭하여 이름 변경",
     "totalVisitors": "{{count}}명 방문",
-    "totalBubbles": "{{count}}개 생성"
+    "totalBubbles": "{{count}}개 생성",
+    "share": "공유",
+    "linkCopied": "링크 복사됨!"
   },
   "auth": {
     "login": "로그인",

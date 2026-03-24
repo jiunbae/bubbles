@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#1e2040"/>
+      <stop offset="100%" style="stop-color:#0a0a14"/>
+    </radialGradient>
+    <radialGradient id="b1" cx="30%" cy="30%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.15)"/>
+      <stop offset="100%" style="stop-color:rgba(135,206,235,0.05)"/>
+    </radialGradient>
+    <radialGradient id="b2" cx="30%" cy="30%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.12)"/>
+      <stop offset="100%" style="stop-color:rgba(255,181,194,0.05)"/>
+    </radialGradient>
+    <radialGradient id="b3" cx="30%" cy="30%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.1)"/>
+      <stop offset="100%" style="stop-color:rgba(152,251,152,0.05)"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Bubbles -->
+  <circle cx="200" cy="250" r="80" fill="url(#b1)" stroke="rgba(135,206,235,0.3)" stroke-width="2"/>
+  <circle cx="400" cy="180" r="55" fill="url(#b2)" stroke="rgba(255,181,194,0.3)" stroke-width="1.5"/>
+  <circle cx="850" cy="300" r="95" fill="url(#b1)" stroke="rgba(135,206,235,0.25)" stroke-width="2"/>
+  <circle cx="1000" cy="200" r="45" fill="url(#b3)" stroke="rgba(152,251,152,0.3)" stroke-width="1.5"/>
+  <circle cx="650" cy="420" r="65" fill="url(#b2)" stroke="rgba(255,181,194,0.25)" stroke-width="1.5"/>
+  <circle cx="150" cy="450" r="40" fill="url(#b3)" stroke="rgba(152,251,152,0.2)" stroke-width="1"/>
+  <circle cx="950" cy="480" r="50" fill="url(#b1)" stroke="rgba(135,206,235,0.2)" stroke-width="1.5"/>
+  <!-- Title -->
+  <text x="600" y="290" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="72" font-weight="700" fill="white">Bubbles</text>
+  <text x="600" y="350" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="28" fill="rgba(255,255,255,0.6)">Blow bubbles with anyone, anywhere.</text>
+  <!-- URL -->
+  <text x="600" y="580" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="18" fill="rgba(255,255,255,0.3)">bubbles.jiun.dev</text>
+</svg>

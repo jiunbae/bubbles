@@ -40,7 +40,9 @@
     "failedToLoad": "Failed to load place: {{error}}",
     "editName": "Click to change name",
     "totalVisitors": "{{count}} visited",
-    "totalBubbles": "{{count}} blown"
+    "totalBubbles": "{{count}} blown",
+    "share": "Share",
+    "linkCopied": "Link copied!"
   },
   "auth": {
     "login": "Login",

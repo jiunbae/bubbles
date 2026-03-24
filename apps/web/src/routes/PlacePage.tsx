@@ -74,8 +74,12 @@ export function PlacePage() {
         showToast(t('place.linkCopied', 'Link copied!'), 'success');
       }
     } catch {
-      await navigator.clipboard.writeText(url);
-      showToast(t('place.linkCopied', 'Link copied!'), 'success');
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast(t('place.linkCopied', 'Link copied!'), 'success');
+      } catch {
+        // Clipboard also failed — silently ignore
+      }
     }
   }, [currentPlace, t]);
 

@@ -22,7 +22,12 @@
     "bubbleCount": "비눗방울 {{count}}개",
     "totalVisitors": "{{count}}명 방문",
     "totalBubbles": "{{count}}개 생성",
-    "yourRooms": "내 방"
+    "globalStats": "비눗방울 {{bubbles}}개 \u00B7 방문자 {{visitors}}명",
+    "createPlaceButton": "새 장소 만들기",
+    "createPlacePrompt": "나만의 방울 공간을 만들어보세요",
+    "yourRooms": "내 방",
+    "bubblesBlown": "비눗방울 생성됨",
+    "visitorsTotal": "방문자"
   },
   "themes": {
     "rooftop": "옥상",
@@ -47,7 +52,14 @@
     "milestone": "🎉 이 방에서 비눗방울 {{count}}개를 달성했어요!",
     "inviteBanner": "🫧 함께하면 더 즐거워요 — 친구를 초대해보세요",
     "copyLink": "링크 복사",
-    "inviteDismiss": "닫기"
+    "inviteDismiss": "닫기",
+    "changeColor": "방울 색상 변경",
+    "switchToPop": "터뜨리기 모드로 전환",
+    "switchToBlow": "불기 모드로 전환",
+    "blowMode": "불기",
+    "popMode": "터뜨리기",
+    "muteSound": "음소거",
+    "unmuteSound": "음소거 해제"
   },
   "auth": {
     "login": "로그인",

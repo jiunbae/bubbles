@@ -22,7 +22,13 @@
     "user_other": "{{count}} users",
     "bubbleCount": "{{count}} bubbles",
     "totalVisitors": "{{count}} visited",
-    "totalBubbles": "{{count}} blown"
+    "totalBubbles": "{{count}} blown",
+    "globalStats": "{{bubbles}} bubbles blown \u00B7 {{visitors}} visitors",
+    "createPlaceButton": "Create a new place",
+    "createPlacePrompt": "Start your own bubble room",
+    "yourRooms": "Your Rooms",
+    "bubblesBlown": "bubbles blown",
+    "visitorsTotal": "visitors"
   },
   "themes": {
     "rooftop": "Rooftop",
@@ -47,7 +53,14 @@
     "milestone": "\ud83c\udf89 This room hit {{count}} bubbles!",
     "inviteBanner": "\ud83e\udee7 Bubbles are better together \u2014 invite a friend",
     "copyLink": "Copy Link",
-    "inviteDismiss": "Dismiss"
+    "inviteDismiss": "Dismiss",
+    "changeColor": "Change bubble color",
+    "switchToPop": "Switch to Pop mode",
+    "switchToBlow": "Switch to Blow mode",
+    "blowMode": "Blow",
+    "popMode": "Pop",
+    "muteSound": "Mute",
+    "unmuteSound": "Unmute"
   },
   "auth": {
     "login": "Login",

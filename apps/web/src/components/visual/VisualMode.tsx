@@ -121,7 +121,7 @@ function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss
       style={{
         position: 'absolute',
         inset: 0,
-        zIndex: 50,
+        zIndex: 20000,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

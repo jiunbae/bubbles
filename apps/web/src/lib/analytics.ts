@@ -14,7 +14,7 @@ export function trackEvent(eventName: string, params?: Record<string, unknown>) 
 
 export function trackPageView(path: string) {
   if (window.gtag) {
-    window.gtag('config', 'G-337630333', { page_path: path });
+    window.gtag('config', 'G-8JQSR962RQ', { page_path: path });
   }
 }
 

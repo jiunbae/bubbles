@@ -57,6 +57,9 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
   // This is a ref so useFrame has zero-cost access (no re-renders).
   const stateMapRef = useRef(new Map<string, BubbleInstanceState>());
 
+  // Reverse lookup: slotIndex -> bubbleId (O(1) click/hover resolution)
+  const slotToIdRef = useRef(new Map<number, string>());
+
   // Slot allocator: recycled indices for the InstancedMesh
   const freeSlotsRef = useRef<number[]>(
     Array.from({ length: MAX_BUBBLES }, (_, i) => MAX_BUBBLES - 1 - i),
@@ -137,19 +140,20 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
   useEffect(() => {
     const unsub = useBubbleStore.subscribe((state) => {
       const stateMap = stateMapRef.current;
+      const slotToId = slotToIdRef.current;
       const freeSlots = freeSlotsRef.current;
       const storeBubbles = state.bubbles;
+      const mesh = meshRef.current;
+      let colorDirty = false;
 
       // Remove entries that are no longer in the store
       for (const [id, entry] of stateMap) {
         if (!storeBubbles.has(id)) {
-          // Return slot
           freeSlots.push(entry.slotIndex);
+          slotToId.delete(entry.slotIndex);
           stateMap.delete(id);
           activeCountRef.current--;
 
-          // Hide instance immediately
-          const mesh = meshRef.current;
           if (mesh) {
             _dummy.scale.setScalar(0);
             _dummy.updateMatrix();
@@ -162,7 +166,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
       // Add new entries
       for (const [id, bubble] of storeBubbles) {
         if (!stateMap.has(id)) {
-          if (freeSlots.length === 0) continue; // at capacity
+          if (freeSlots.length === 0) continue;
           const slot = freeSlots.pop()!;
           const radius =
             SIZE_RADIUS[bubble.size] * (0.8 + (bubble.seed % 100) * 0.004);
@@ -184,8 +188,19 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
             popStart: 0,
             slotIndex: slot,
           });
+          slotToId.set(slot, id);
           activeCountRef.current++;
+
+          // Set color once at creation (not every frame)
+          if (mesh) {
+            mesh.setColorAt(slot, color);
+            colorDirty = true;
+          }
         }
+      }
+
+      if (colorDirty && mesh?.instanceColor) {
+        mesh.instanceColor.needsUpdate = true;
       }
     });
 
@@ -274,9 +289,6 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
       _dummy.updateMatrix();
       mesh.setMatrixAt(entry.slotIndex, _dummy.matrix);
 
-      // Color (set once is fine, but re-set every frame is cheap)
-      mesh.setColorAt(entry.slotIndex, entry.color);
-
       // Per-instance opacity
       opacityArray[entry.slotIndex] = Math.max(0, Math.min(1, opacity));
 
@@ -285,7 +297,6 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
 
     if (matrixDirty) {
       mesh.instanceMatrix.needsUpdate = true;
-      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
       const opacityAttr = mesh.geometry.getAttribute('instanceOpacity');
       if (opacityAttr) (opacityAttr as THREE.BufferAttribute).needsUpdate = true;
     }
@@ -296,46 +307,40 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
     }
   });
 
-  // --- Click handler ---
+  // --- Click handler (O(1) via reverse map) ---
   const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     const instanceId = e.instanceId;
     if (instanceId === undefined) return;
 
-    const stateMap = stateMapRef.current;
-    // Find entry by slot index
-    for (const [id, entry] of stateMap) {
-      if (entry.slotIndex === instanceId && !entry.popping) {
-        _pos.set(
-          entry.physics.position[0],
-          entry.physics.position[1],
-          entry.physics.position[2],
-        );
-        onPopRef.current(id, _pos.clone(), entry.color, entry.radius);
+    const id = slotToIdRef.current.get(instanceId);
+    if (!id) return;
+    const entry = stateMapRef.current.get(id);
+    if (!entry || entry.popping) return;
 
-        if (globalWsClient.isConnected()) {
-          globalWsClient.send({ type: 'pop', data: { bubbleId: id } });
-        }
-        break;
-      }
+    _pos.set(
+      entry.physics.position[0],
+      entry.physics.position[1],
+      entry.physics.position[2],
+    );
+    onPopRef.current(id, _pos.clone(), entry.color, entry.radius);
+
+    if (globalWsClient.isConnected()) {
+      globalWsClient.send({ type: 'pop', data: { bubbleId: id } });
     }
   }, []);
 
-  // --- Hover handler ---
+  // --- Hover handler (O(1) via reverse map, guarded to avoid re-renders) ---
+  const hoveredIdRef = useRef<string | null>(null);
   const handlePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
     const instanceId = e.instanceId;
-    if (instanceId === undefined) {
-      setHoveredId(null);
-      return;
+    const newId = instanceId !== undefined
+      ? (slotToIdRef.current.get(instanceId) ?? null)
+      : null;
+    if (newId !== hoveredIdRef.current) {
+      hoveredIdRef.current = newId;
+      setHoveredId(newId);
     }
-    const stateMap = stateMapRef.current;
-    for (const [id, entry] of stateMap) {
-      if (entry.slotIndex === instanceId) {
-        setHoveredId(id);
-        return;
-      }
-    }
-    setHoveredId(null);
   }, []);
 
   const handlePointerLeave = useCallback(() => {

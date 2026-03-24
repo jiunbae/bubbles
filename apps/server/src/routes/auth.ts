@@ -1,42 +1,56 @@
 import { Hono } from 'hono';
 import * as jose from 'jose';
 import { config } from '../config';
+import { getRedis } from '../db/redis';
 
-// In-memory ticket store: ticket -> { userId, displayName, expiresAt }
+const TICKET_TTL_SEC = 30;
+const TICKET_PREFIX = 'ws-ticket:';
+
 interface TicketData {
   userId: string | undefined;
   displayName: string;
-  expiresAt: number;
 }
 
-const tickets = new Map<string, TicketData>();
-const TICKET_TTL_MS = 30_000; // 30 seconds
-
-// Periodic cleanup of expired tickets
-setInterval(() => {
-  const now = Date.now();
-  for (const [ticket, data] of tickets) {
-    if (data.expiresAt <= now) tickets.delete(ticket);
-  }
-}, 60_000);
-
-export function createTicket(userId: string | undefined, displayName: string): string {
+export async function createTicket(userId: string | undefined, displayName: string): Promise<string> {
   const ticket = crypto.randomUUID();
-  tickets.set(ticket, {
-    userId,
-    displayName,
-    expiresAt: Date.now() + TICKET_TTL_MS,
-  });
+  const data = JSON.stringify({ userId, displayName });
+
+  const redis = getRedis();
+  if (redis) {
+    await redis.set(`${TICKET_PREFIX}${ticket}`, data, 'EX', TICKET_TTL_SEC);
+  } else {
+    // Fallback: in-memory (single-instance only)
+    fallbackTickets.set(ticket, { data, expiresAt: Date.now() + TICKET_TTL_SEC * 1000 });
+  }
+
   return ticket;
 }
 
-export function consumeTicket(ticket: string): TicketData | null {
-  const data = tickets.get(ticket);
-  if (!data) return null;
-  tickets.delete(ticket); // one-time use
-  if (data.expiresAt <= Date.now()) return null;
-  return data;
+export async function consumeTicket(ticket: string): Promise<TicketData | null> {
+  const redis = getRedis();
+  if (redis) {
+    // Atomic get-and-delete
+    const raw = await redis.getdel(`${TICKET_PREFIX}${ticket}`);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  }
+
+  // Fallback: in-memory
+  const entry = fallbackTickets.get(ticket);
+  if (!entry) return null;
+  fallbackTickets.delete(ticket);
+  if (entry.expiresAt <= Date.now()) return null;
+  return JSON.parse(entry.data);
 }
+
+// In-memory fallback for when Redis is not available (dev/single-instance)
+const fallbackTickets = new Map<string, { data: string; expiresAt: number }>();
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of fallbackTickets) {
+    if (v.expiresAt <= now) fallbackTickets.delete(k);
+  }
+}, 60_000);
 
 export const auth = new Hono();
 
@@ -54,7 +68,7 @@ auth.post('/ws-ticket', async (c) => {
     const userId = payload.sub;
     const displayName = (payload.name as string) || (payload.username as string) || 'User';
 
-    const ticket = createTicket(userId, displayName);
+    const ticket = await createTicket(userId, displayName);
     return c.json({ ticket });
   } catch {
     return c.json({ error: 'Invalid token' }, 401);

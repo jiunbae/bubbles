@@ -73,7 +73,7 @@ export function createWSHandlers(placeId: string, c: Context) {
 
       let authError: string | undefined;
       if (ticket) {
-        const ticketData = consumeTicket(ticket);
+        const ticketData = await consumeTicket(ticket);
         if (ticketData) {
           userId = ticketData.userId;
           displayName = ticketData.displayName;

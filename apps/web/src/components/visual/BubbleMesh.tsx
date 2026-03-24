@@ -68,11 +68,15 @@ export function BubbleMesh({
     }
   };
 
-  useFrame((state, delta) => {
+  // Use server-synced time so all clients see identical physics.
+  // globalTime = seconds since bubble creation, derived from wall clock.
+  const createdAtSec = bubble.createdAt / 1000;
+
+  useFrame((_state, delta) => {
     const mesh = meshRef.current;
     if (!mesh) return;
 
-    const time = state.clock.elapsedTime;
+    const time = Date.now() / 1000 - createdAtSec;
     const dt = Math.min(delta, 0.05);
 
     updateBubble(physicsRef.current, dt, time);

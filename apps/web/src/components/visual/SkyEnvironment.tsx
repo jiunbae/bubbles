@@ -24,29 +24,25 @@ function GroundPlane({ color = '#3a3a4a' }: { color?: string }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ROOFTOP 🏙️ — Modern city streetlamps + neon accents + water tower
+// ROOFTOP — Modern city streetlamps + neon accents + water tower
 // ═══════════════════════════════════════════════════════════════════
 
 function ModernStreetlamp({ position, height = 3.5 }: { position: [number, number, number]; height?: number }) {
   return (
     <group position={position}>
-      {/* Tapered steel pole */}
       <mesh position={[0, height / 2, 0]}>
         <cylinderGeometry args={[0.025, 0.05, height, 8]} />
         <meshStandardMaterial color="#888" metalness={0.9} roughness={0.2} />
       </mesh>
-      {/* Curved arm */}
       <mesh position={[0.4, height - 0.1, 0]} rotation={[0, 0, -0.6]}>
         <cylinderGeometry args={[0.015, 0.015, 0.9, 6]} />
         <meshStandardMaterial color="#888" metalness={0.9} roughness={0.2} />
       </mesh>
-      {/* LED panel (rectangular) */}
       <mesh position={[0.7, height + 0.05, 0]} rotation={[0.2, 0, 0]}>
         <boxGeometry args={[0.3, 0.03, 0.15]} />
         <meshStandardMaterial color="#e0e8ff" emissive="#c0d8ff" emissiveIntensity={5} />
       </mesh>
-      {/* Cool white LED light */}
-      <pointLight color="#ddeeff" intensity={4} position={[0.7, height - 0.1, 0]} distance={10} decay={2} />
+      <pointLight color="#ddeeff" intensity={8} position={[0.7, height - 0.1, 0]} distance={20} decay={1} />
     </group>
   );
 }
@@ -55,7 +51,7 @@ function NeonSign({ position }: { position: [number, number, number] }) {
   const ref = useRef<THREE.PointLight>(null);
   useFrame((state) => {
     if (ref.current) {
-      ref.current.intensity = 2 + Math.sin(state.clock.elapsedTime * 8) * 0.3;
+      ref.current.intensity = 4 + Math.sin(state.clock.elapsedTime * 8) * 0.5;
     }
   });
   return (
@@ -68,7 +64,7 @@ function NeonSign({ position }: { position: [number, number, number] }) {
         <boxGeometry args={[0.6, 0.2, 0.02]} />
         <meshStandardMaterial color="#ff4488" emissive="#ff2266" emissiveIntensity={4} transparent opacity={0.9} />
       </mesh>
-      <pointLight ref={ref} color="#ff4488" intensity={2} position={[0, 0, 0.3]} distance={6} decay={2} />
+      <pointLight ref={ref} color="#ff4488" intensity={4} position={[0, 0, 0.3]} distance={12} decay={1} />
     </group>
   );
 }
@@ -76,11 +72,11 @@ function NeonSign({ position }: { position: [number, number, number] }) {
 function RooftopEnvironment() {
   return (
     <>
-      <color attach="background" args={['#1a1a30']} />
-      <ambientLight color="#6680aa" intensity={0.8} />
-      <directionalLight color="#ffa54f" intensity={2.5} position={[8, 6, 3]} />
-      <directionalLight color="#6688bb" intensity={0.8} position={[-5, 4, -5]} />
-      <GroundPlane color="#3a3a4a" />
+      <color attach="background" args={['#1e2040']} />
+      <ambientLight color="#8899bb" intensity={1.2} />
+      <directionalLight color="#ffa54f" intensity={3.0} position={[8, 6, 3]} />
+      <directionalLight color="#6688bb" intensity={1.2} position={[-5, 4, -5]} />
+      <GroundPlane color="#4a4a5a" />
 
       {/* Modern railing */}
       {[-6, -3, 0, 3, 6].map((x) => (
@@ -98,7 +94,7 @@ function RooftopEnvironment() {
         <meshStandardMaterial color="#556" metalness={0.8} roughness={0.2} />
       </mesh>
 
-      {/* AC unit with vent */}
+      {/* AC unit */}
       <mesh position={[5, -0.5, -4]}>
         <boxGeometry args={[1, 0.7, 0.7]} />
         <meshStandardMaterial color="#555" roughness={0.7} metalness={0.3} />
@@ -133,28 +129,24 @@ function RooftopEnvironment() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// PARK 🌳 — Victorian garden lamps + fireflies + moonlight
+// PARK — Victorian garden lamps + fireflies + moonlight
 // ═══════════════════════════════════════════════════════════════════
 
 function ParkLamp({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
-      {/* Ornamental base */}
       <mesh position={[0, 0.1, 0]}>
         <cylinderGeometry args={[0.12, 0.15, 0.2, 8]} />
         <meshStandardMaterial color="#2a2a20" metalness={0.7} roughness={0.4} />
       </mesh>
-      {/* Tapered pole */}
       <mesh position={[0, 1.4, 0]}>
         <cylinderGeometry args={[0.03, 0.06, 2.6, 8]} />
         <meshStandardMaterial color="#3a3a30" metalness={0.6} roughness={0.4} />
       </mesh>
-      {/* Decorative collar */}
       <mesh position={[0, 2.5, 0]}>
         <cylinderGeometry args={[0.08, 0.04, 0.15, 8]} />
         <meshStandardMaterial color="#3a3a30" metalness={0.7} roughness={0.3} />
       </mesh>
-      {/* Glass globe lantern */}
       <mesh position={[0, 2.85, 0]}>
         <sphereGeometry args={[0.12, 12, 12]} />
         <meshStandardMaterial
@@ -165,13 +157,11 @@ function ParkLamp({ position }: { position: [number, number, number] }) {
           opacity={0.85}
         />
       </mesh>
-      {/* Cap */}
       <mesh position={[0, 3.02, 0]}>
         <coneGeometry args={[0.1, 0.12, 6]} />
         <meshStandardMaterial color="#3a3a30" metalness={0.7} roughness={0.3} />
       </mesh>
-      {/* Warm light */}
-      <pointLight color="#ffdd88" intensity={3} position={[0, 2.85, 0]} distance={8} decay={2} />
+      <pointLight color="#ffdd88" intensity={6} position={[0, 2.85, 0]} distance={18} decay={1} />
     </group>
   );
 }
@@ -218,15 +208,15 @@ function Fireflies({ count = 12, area = 8 }: { count?: number; area?: number }) 
 function ParkEnvironment() {
   return (
     <>
-      <color attach="background" args={['#101e10']} />
-      <ambientLight color="#446644" intensity={0.7} />
-      <directionalLight color="#eeeedd" intensity={1.2} position={[5, 10, 5]} />
-      <directionalLight color="#8899bb" intensity={0.3} position={[-4, 6, -3]} />
+      <color attach="background" args={['#142814']} />
+      <ambientLight color="#669966" intensity={1.0} />
+      <directionalLight color="#eeeedd" intensity={2.0} position={[5, 10, 5]} />
+      <directionalLight color="#8899bb" intensity={0.6} position={[-4, 6, -3]} />
       {/* Moonlight */}
-      <directionalLight color="#aabbdd" intensity={0.4} position={[-2, 8, -1]} />
-      <GroundPlane color="#1a3a1a" />
+      <directionalLight color="#aabbdd" intensity={0.8} position={[-2, 8, -1]} />
+      <GroundPlane color="#2a4a2a" />
 
-      {/* Trees — varied heights */}
+      {/* Trees */}
       {[
         { pos: [-5, -1, -4] as [number, number, number], h: 2.2, r: 1.1, color: '#1a5a1a' },
         { pos: [6, -1, -5] as [number, number, number], h: 2.8, r: 1.3, color: '#2a6a2a' },
@@ -246,7 +236,7 @@ function ParkEnvironment() {
         </group>
       ))}
 
-      {/* Bench with metal legs */}
+      {/* Bench */}
       <group position={[3, -1, -3]} rotation={[0, -0.3, 0]}>
         <mesh position={[0, 0.35, 0]}>
           <boxGeometry args={[1.2, 0.05, 0.35]} />
@@ -276,36 +266,33 @@ function ParkEnvironment() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// ALLEY 🏮 — Paper lanterns + wall bracket lamps + neon sign
+// ALLEY — Paper lanterns + wall bracket lamps + neon sign
 // ═══════════════════════════════════════════════════════════════════
 
 function PaperLantern({ position, color = '#ff4422' }: { position: [number, number, number]; color?: string }) {
   const lightRef = useRef<THREE.PointLight>(null);
   useFrame((state) => {
     if (lightRef.current) {
-      lightRef.current.intensity = 2.5 + Math.sin(state.clock.elapsedTime * 1.5 + position[0]) * 0.5;
+      lightRef.current.intensity = 5 + Math.sin(state.clock.elapsedTime * 1.5 + position[0]) * 1;
     }
   });
   return (
     <group position={position}>
-      {/* Wire */}
       <mesh position={[0, 0.2, 0]}>
         <cylinderGeometry args={[0.005, 0.005, 0.4, 4]} />
         <meshStandardMaterial color="#444" />
       </mesh>
-      {/* Lantern body */}
       <mesh>
         <sphereGeometry args={[0.15, 8, 8]} />
         <meshStandardMaterial
           color={color}
           emissive={color}
-          emissiveIntensity={2}
+          emissiveIntensity={3}
           transparent
           opacity={0.8}
           side={THREE.DoubleSide}
         />
       </mesh>
-      {/* Top/bottom rings */}
       <mesh position={[0, 0.12, 0]}>
         <cylinderGeometry args={[0.05, 0.05, 0.02, 8]} />
         <meshStandardMaterial color="#aa8844" metalness={0.6} roughness={0.3} />
@@ -314,7 +301,7 @@ function PaperLantern({ position, color = '#ff4422' }: { position: [number, numb
         <cylinderGeometry args={[0.04, 0.04, 0.02, 8]} />
         <meshStandardMaterial color="#aa8844" metalness={0.6} roughness={0.3} />
       </mesh>
-      <pointLight ref={lightRef} color={color} intensity={2.5} position={[0, 0, 0]} distance={6} decay={2} />
+      <pointLight ref={lightRef} color={color} intensity={5} position={[0, 0, 0]} distance={14} decay={1} />
     </group>
   );
 }
@@ -323,22 +310,19 @@ function WallBracketLamp({ position, side = 'left' }: { position: [number, numbe
   const dir = side === 'left' ? 1 : -1;
   return (
     <group position={position}>
-      {/* Wall bracket */}
       <mesh position={[dir * 0.15, 0, 0]} rotation={[0, 0, dir * 0.3]}>
         <boxGeometry args={[0.3, 0.04, 0.04]} />
         <meshStandardMaterial color="#5a4a30" metalness={0.6} roughness={0.4} />
       </mesh>
-      {/* Lamp cage */}
       <mesh position={[dir * 0.3, -0.05, 0]}>
         <cylinderGeometry args={[0.06, 0.08, 0.15, 6]} />
         <meshStandardMaterial color="#6a5a40" metalness={0.5} roughness={0.5} transparent opacity={0.6} />
       </mesh>
-      {/* Flame/bulb */}
       <mesh position={[dir * 0.3, -0.02, 0]}>
         <sphereGeometry args={[0.035, 6, 6]} />
         <meshStandardMaterial color="#ffeecc" emissive="#ffaa44" emissiveIntensity={5} />
       </mesh>
-      <pointLight color="#ffaa44" intensity={2} position={[dir * 0.3, -0.02, 0]} distance={5} decay={2} />
+      <pointLight color="#ffaa44" intensity={5} position={[dir * 0.3, -0.02, 0]} distance={12} decay={1} />
     </group>
   );
 }
@@ -346,10 +330,10 @@ function WallBracketLamp({ position, side = 'left' }: { position: [number, numbe
 function AlleyEnvironment() {
   return (
     <>
-      <color attach="background" args={['#141010']} />
-      <ambientLight color="#554433" intensity={0.7} />
-      <directionalLight color="#667788" intensity={0.6} position={[0, 8, 2]} />
-      <GroundPlane color="#2a2018" />
+      <color attach="background" args={['#1a1410']} />
+      <ambientLight color="#887766" intensity={1.0} />
+      <directionalLight color="#889aaa" intensity={1.0} position={[0, 8, 2]} />
+      <GroundPlane color="#3a3020" />
 
       {/* Brick walls */}
       <mesh position={[-5, 1, 0]}>
@@ -370,7 +354,7 @@ function AlleyEnvironment() {
         <meshStandardMaterial color="#5a3818" roughness={0.9} />
       </mesh>
 
-      {/* String of paper lanterns */}
+      {/* Paper lanterns */}
       {[
         { pos: [-1.5, 3.2, -3] as [number, number, number], color: '#ff4422' },
         { pos: [0, 3.0, -1.5] as [number, number, number], color: '#ff6622' },
@@ -380,7 +364,6 @@ function AlleyEnvironment() {
       ].map(({ pos, color }, i) => (
         <PaperLantern key={i} position={pos} color={color} />
       ))}
-      {/* Wire connecting lanterns */}
       <mesh position={[0, 3.4, 0]} rotation={[0, 0.3, 0]}>
         <cylinderGeometry args={[0.003, 0.003, 10, 4]} />
         <meshStandardMaterial color="#333" />
@@ -417,7 +400,7 @@ function AlleyEnvironment() {
           <boxGeometry args={[0.35, 0.12, 0.01]} />
           <meshStandardMaterial color="#44aaff" emissive="#2288ff" emissiveIntensity={3} transparent opacity={0.9} />
         </mesh>
-        <pointLight color="#4488ff" intensity={1.5} position={[0, 0, 0.2]} distance={4} decay={2} />
+        <pointLight color="#4488ff" intensity={4} position={[0, 0, 0.2]} distance={10} decay={1} />
       </group>
     </>
   );

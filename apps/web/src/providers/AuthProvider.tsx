@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const authUser: AuthUser = {
       id: (payload.sub as string) ?? '',
-      name: (payload.name as string) ?? 'User',
+      name: (payload.name as string) || (payload.username as string) || 'User',
       avatarUrl: payload.avatarUrl as string | undefined,
     };
 

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBubbles, blowBubbleRandom } from '@/hooks/useBubbles';
 import { globalWsClient } from '@/lib/ws-client';
 import { useUIStore } from '@/stores/ui-store';
@@ -19,6 +20,7 @@ import {
 } from './stealth-utils';
 
 export function StealthMode() {
+  const { t } = useTranslation();
   const { bubbles, popBubble } = useBubbles();
   const bubblesMap = useBubbleStore((s) => s.bubbles);
   const onlineUsers = usePlaceStore((s) => s.onlineUsers);
@@ -224,10 +226,10 @@ export function StealthMode() {
             <rect x="1" y="1" width="14" height="14" rx="2" fill="#217346" stroke="white" strokeWidth="1" />
             <text x="4" y="12" fontSize="10" fill="white" fontWeight="bold">X</text>
           </svg>
-          <span className="text-white text-[13px] font-medium">Task Tracker — Q1 Operations.xlsx</span>
+          <span className="text-white text-[13px] font-medium">{t('stealth.titleBar')}</span>
         </div>
         <div className="flex items-center gap-2 text-white text-[12px]">
-          <span className="opacity-70">AutoSave: On</span>
+          <span className="opacity-70">{t('stealth.autoSave')}</span>
         </div>
       </div>
 

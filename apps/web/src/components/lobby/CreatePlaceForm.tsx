@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { createPlace } from '@/lib/api';
 import { MAX_PLACE_NAME_LENGTH, PLACE_THEMES, type PlaceTheme } from '@bubbles/shared';
 import { showToast } from '@/components/shared/Toast';
 
 export function CreatePlaceForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');
@@ -27,7 +29,7 @@ export function CreatePlaceForm() {
       showToast(`Created "${place.name}"`, 'success');
       navigate(`/place/${place.id}`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to create place';
+      const msg = err instanceof Error ? err.message : t('errors.failedToCreatePlace');
       setError(msg);
       showToast(msg, 'error');
     } finally {
@@ -54,10 +56,16 @@ export function CreatePlaceForm() {
             d="M12 4.5v15m7.5-7.5h-15"
           />
         </svg>
-        <span className="text-sm font-medium">New Place</span>
+        <span className="text-sm font-medium">{t('lobby.newPlace')}</span>
       </button>
     );
   }
+
+  const themeLabels: Record<string, { label: string; description: string }> = {
+    rooftop: { label: t('themes.rooftop'), description: t('themes.rooftopDesc') },
+    park: { label: t('themes.park'), description: t('themes.parkDesc') },
+    alley: { label: t('themes.alley'), description: t('themes.alleyDesc') },
+  };
 
   return (
     <form
@@ -71,7 +79,7 @@ export function CreatePlaceForm() {
           setName(e.target.value);
           setError(null);
         }}
-        placeholder="Place name..."
+        placeholder={t('lobby.placeNamePlaceholder')}
         maxLength={MAX_PLACE_NAME_LENGTH}
         autoFocus
         className="rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
@@ -79,20 +87,20 @@ export function CreatePlaceForm() {
 
       {/* Theme selection */}
       <div className="flex gap-2">
-        {PLACE_THEMES.map((t) => (
+        {PLACE_THEMES.map((thm) => (
           <button
-            key={t.value}
+            key={thm.value}
             type="button"
-            onClick={() => setTheme(t.value)}
+            onClick={() => setTheme(thm.value)}
             className={`flex-1 flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-xs transition-all ${
-              theme === t.value
+              theme === thm.value
                 ? 'border-accent bg-accent/10 text-text-primary'
                 : 'border-border bg-bg-primary text-text-muted hover:border-accent/30'
             }`}
           >
-            <span className="text-lg">{t.emoji}</span>
-            <span className="font-medium">{t.label}</span>
-            <span className="text-[10px] opacity-70">{t.description}</span>
+            <span className="text-lg">{thm.emoji}</span>
+            <span className="font-medium">{themeLabels[thm.value]?.label ?? thm.label}</span>
+            <span className="text-[10px] opacity-70">{themeLabels[thm.value]?.description ?? thm.description}</span>
           </button>
         ))}
       </div>
@@ -105,7 +113,7 @@ export function CreatePlaceForm() {
           disabled={!isValid || isSubmitting}
           className="flex-1 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isSubmitting ? 'Creating...' : 'Create'}
+          {isSubmitting ? t('common.creating') : t('common.create')}
         </button>
         <button
           type="button"
@@ -117,7 +125,7 @@ export function CreatePlaceForm() {
           }}
           className="rounded-lg px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-bg-secondary"
         >
-          Cancel
+          {t('common.cancel')}
         </button>
       </div>
     </form>

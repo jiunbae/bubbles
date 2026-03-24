@@ -2,6 +2,7 @@ import { Suspense, useState, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { MOUSE } from 'three';
+import { useTranslation } from 'react-i18next';
 import { SkyEnvironment } from './SkyEnvironment';
 import { BubbleScene } from './BubbleScene';
 import { BubbleControls } from './BubbleControls';
@@ -9,6 +10,7 @@ import { BubbleWandCursor } from './BubbleWandCursor';
 import { usePlaceStore } from '@/stores/place-store';
 
 function OnboardingOverlay() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(() => {
     try {
       return localStorage.getItem('bubbles_onboarded') !== '1';
@@ -63,10 +65,10 @@ function OnboardingOverlay() {
           pointerEvents: 'none',
         }}
       >
-        <div>{'\u{1FAE7}'} Left click &amp; hold — Blow bubbles</div>
-        <div>{'\u{1F5B1}\uFE0F'} Right click &amp; drag — Look around</div>
-        <div>{'\u{1F4A5}'} Click a bubble — Pop it</div>
-        <div>{'\u2328\uFE0F'} Space — Blow bubbles</div>
+        <div>{'\u{1FAE7}'} {t('visual.blowBubbles')}</div>
+        <div>{'\u{1F5B1}\uFE0F'} {t('visual.lookAround')}</div>
+        <div>{'\u{1F4A5}'} {t('visual.popBubble')}</div>
+        <div>{'\u2328\uFE0F'} {t('visual.spaceBlowBubbles')}</div>
       </div>
     </div>
   );

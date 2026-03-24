@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { PLACE_THEMES, type Place } from '@bubbles/shared';
 
 interface PlaceCardProps {
@@ -6,6 +7,7 @@ interface PlaceCardProps {
 }
 
 export function PlaceCard({ place }: PlaceCardProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -41,14 +43,14 @@ export function PlaceCard({ place }: PlaceCardProps) {
             ))}
           </div>
           <span>
-            {place.userCount} {place.userCount === 1 ? 'user' : 'users'}
+            {t('lobby.user', { count: place.userCount })}
           </span>
         </div>
 
         {/* Bubble count */}
         <div className="flex items-center gap-1">
           <span className="opacity-60">o</span>
-          <span>{place.bubbleCount} bubbles</span>
+          <span>{t('lobby.bubbleCount', { count: place.bubbleCount })}</span>
         </div>
       </div>
     </button>

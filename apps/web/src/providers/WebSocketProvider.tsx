@@ -30,7 +30,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
   const { addBubble, removeBubble, popBubble, setBubbles, clearBubbles } =
     useBubbleStore();
-  const { setOnlineUsers, addOnlineUser, removeOnlineUser } = usePlaceStore();
+  const { setMySessionId, setOnlineUsers, addOnlineUser, removeOnlineUser, renameOnlineUser } = usePlaceStore();
 
   useEffect(() => {
     const client = wsClientRef.current;
@@ -42,6 +42,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     client.onMessage = (msg: ServerMessage) => {
       switch (msg.type) {
         case 'room_state':
+          setMySessionId(msg.data.mySessionId);
           setOnlineUsers(msg.data.users);
           setBubbles(msg.data.bubbles);
           break;
@@ -63,6 +64,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         case 'user_joined':
           addOnlineUser(msg.data);
           break;
+        case 'user_renamed':
+          renameOnlineUser(msg.data.sessionId, msg.data.displayName);
+          break;
         case 'user_left':
           removeOnlineUser(msg.data.sessionId);
           break;
@@ -83,9 +87,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     removeBubble,
     setBubbles,
     clearBubbles,
+    setMySessionId,
     setOnlineUsers,
     addOnlineUser,
     removeOnlineUser,
+    renameOnlineUser,
   ]);
 
   const send = useCallback((msg: ClientMessage) => {

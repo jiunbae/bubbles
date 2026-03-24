@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@/stores/ui-store';
 
 export function ModeSwitch() {
+  const { t } = useTranslation();
   const { mode, setMode } = useUIStore();
 
   const toggle = () => {
@@ -21,8 +23,8 @@ export function ModeSwitch() {
 
   const label =
     mode === 'visual'
-      ? 'Switch to stealth mode'
-      : 'Switch to visual mode';
+      ? t('mode.switchToStealth')
+      : t('mode.switchToVisual');
 
   return (
     <button

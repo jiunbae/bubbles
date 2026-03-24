@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getPlace } from '@/lib/api';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,6 +9,9 @@ import { usePlaceStore } from '@/stores/place-store';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { ModeSwitch } from '@/components/shared/ModeSwitch';
 import { ActivityLog } from '@/components/shared/ActivityLog';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+
+const JIUN_API_URL = import.meta.env.VITE_JIUN_API_URL || 'https://api.jiun.dev';
 
 const VisualMode = lazy(() =>
   import('@/components/visual/VisualMode').then((m) => ({
@@ -21,16 +25,41 @@ const StealthMode = lazy(() =>
 );
 
 export function PlacePage() {
+  const { t } = useTranslation();
   const { placeId } = useParams<{ placeId: string }>();
   const navigate = useNavigate();
-  const { connect, disconnect, connectionStatus } = useWebSocket();
-  const { token } = useAuth();
+  const { connect, disconnect, connectionStatus, send } = useWebSocket();
+  const { token, isAuthenticated: isLoggedIn, logout } = useAuth();
   const mode = useUIStore((s) => s.mode);
-  const { currentPlace, setCurrentPlace, onlineUsers } = usePlaceStore();
+  const { currentPlace, setCurrentPlace, onlineUsers, mySessionId } = usePlaceStore();
   const bubbleCount = useBubbleStore((s) => s.bubbles.size);
   const [isLogOpen, setIsLogOpen] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  const myUser = onlineUsers.find((u) => u.sessionId === mySessionId);
+
+  const handleNameEdit = () => {
+    setNameInput(myUser?.displayName ?? '');
+    setIsEditingName(true);
+    setTimeout(() => nameInputRef.current?.focus(), 0);
+  };
+
+  const handleNameSubmit = () => {
+    const trimmed = nameInput.trim();
+    if (trimmed && trimmed !== myUser?.displayName) {
+      send({ type: 'set_name', data: { displayName: trimmed } });
+    }
+    setIsEditingName(false);
+  };
+
+  const handleLogin = (provider: string) => {
+    const redirectUri = `${window.location.origin}/auth/callback`;
+    window.location.href = `${JIUN_API_URL}/auth/${provider}?redirect_uri=${encodeURIComponent(redirectUri)}`;
+  };
 
   // Load place data
   useEffect(() => {
@@ -61,12 +90,12 @@ export function PlacePage() {
   if (loadError) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-error">Failed to load place: {loadError}</p>
+        <p className="text-error">{t('place.failedToLoad', { error: loadError })}</p>
         <button
           onClick={() => navigate('/')}
           className="rounded-lg bg-accent px-4 py-2 text-white transition-colors hover:bg-accent-hover"
         >
-          Back to Lobby
+          {t('common.backToLobby')}
         </button>
       </div>
     );
@@ -80,7 +109,7 @@ export function PlacePage() {
           <button
             onClick={() => navigate('/')}
             className="text-text-secondary transition-colors hover:text-text-primary"
-            title="Back to lobby"
+            title={t('place.backToLobby')}
           >
             <svg
               className="h-5 w-5"
@@ -97,7 +126,7 @@ export function PlacePage() {
             </svg>
           </button>
           <h1 className="text-lg font-semibold text-text-primary">
-            {currentPlace?.name ?? 'Loading...'}
+            {currentPlace?.name ?? t('common.loading')}
           </h1>
           <span
             className={`inline-block h-2 w-2 rounded-full ${
@@ -112,14 +141,67 @@ export function PlacePage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* My name (editable) */}
+          {myUser && (
+            <div className="flex items-center gap-1.5">
+              <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: myUser.color }} />
+              {isEditingName ? (
+                <input
+                  ref={nameInputRef}
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  onBlur={handleNameSubmit}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleNameSubmit();
+                    if (e.key === 'Escape') setIsEditingName(false);
+                  }}
+                  maxLength={30}
+                  className="w-28 rounded border border-border bg-bg-secondary px-1.5 py-0.5 text-sm text-text-primary outline-none focus:border-accent"
+                />
+              ) : (
+                <button
+                  onClick={handleNameEdit}
+                  className="text-sm text-text-primary hover:text-accent transition-colors"
+                  title={t('place.editName', 'Click to change name')}
+                >
+                  {myUser.displayName}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Login / Logout */}
+          {!isLoggedIn ? (
+            <button
+              onClick={() => handleLogin('github')}
+              className="flex items-center gap-1 rounded-md bg-bg-secondary px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-bg-card-hover hover:text-text-primary"
+              title="Sign in with GitHub"
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+              </svg>
+              Login
+            </button>
+          ) : (
+            <button
+              onClick={logout}
+              className="text-xs text-text-muted hover:text-text-primary transition-colors"
+              title="Sign out"
+            >
+              Logout
+            </button>
+          )}
+
+          <div className="h-4 w-px bg-border" />
+
           {/* Bubble count */}
-          <span className="text-sm text-text-secondary" title={`${bubbleCount} bubbles`}>
+          <span className="text-sm text-text-secondary" title={t('place.bubbles', { count: bubbleCount })}>
             {bubbleCount} {'\u{1FAE7}'}
           </span>
 
           {/* Online users with count + dropdown */}
           <div className="relative">
-            <button onClick={() => setShowUsers(!showUsers)} className="flex items-center gap-1.5" title="Online users">
+            <button onClick={() => setShowUsers(!showUsers)} className="flex items-center gap-1.5" title={t('place.onlineUsers')}>
               <span className="text-sm text-text-secondary">{onlineUsers.length}</span>
               <div className="flex -space-x-1">
                 {onlineUsers.slice(0, 6).map((user) => (
@@ -138,7 +220,7 @@ export function PlacePage() {
             </button>
             {showUsers && (
               <div className="absolute right-0 top-full mt-2 z-50 bg-bg-card border border-border rounded-lg shadow-lg p-3 min-w-[180px]">
-                <div className="text-xs text-text-muted mb-2">{onlineUsers.length} online</div>
+                <div className="text-xs text-text-muted mb-2">{t('place.online', { count: onlineUsers.length })}</div>
                 {onlineUsers.map((user) => (
                   <div key={user.sessionId} className="flex items-center gap-2 py-1">
                     <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: user.color }} />
@@ -152,7 +234,7 @@ export function PlacePage() {
           <button
             onClick={() => setIsLogOpen((v) => !v)}
             className="rounded-md p-1.5 text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary"
-            title="Activity log"
+            title={t('place.activityLog')}
           >
             <svg
               className="h-5 w-5"
@@ -169,6 +251,7 @@ export function PlacePage() {
             </svg>
           </button>
 
+          <LanguageSwitcher />
           <ModeSwitch />
         </div>
       </header>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BUBBLE_COLORS, type BubbleSize, type BubblePattern } from '@bubbles/shared';
 import { SIZE_FONT_MAP, PATTERN_BORDER_MAP } from './stealth-utils';
 
@@ -89,6 +90,7 @@ export function StealthToolbar({
   onPopBubble,
   poppableBubbles,
 }: StealthToolbarProps) {
+  const { t } = useTranslation();
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showSizeDropdown, setShowSizeDropdown] = useState(false);
   const [showBorderDropdown, setShowBorderDropdown] = useState(false);
@@ -104,19 +106,19 @@ export function StealthToolbar({
   return (
     <div className="flex items-center h-[36px] bg-[#f9fafb] border-b border-[#d1d5db] px-2 gap-[2px] select-none">
       {/* Clipboard group (decorative) */}
-      <ToolbarButton title="Paste (Ctrl+V)">
+      <ToolbarButton title={t('stealthToolbar.paste')}>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#555" strokeWidth="1.5">
           <rect x="4" y="4" width="10" height="11" rx="1" />
           <rect x="2" y="1" width="10" height="11" rx="1" fill="white" stroke="#555" />
         </svg>
       </ToolbarButton>
-      <ToolbarButton title="Cut (Ctrl+X)">
+      <ToolbarButton title={t('stealthToolbar.cut')}>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#555" strokeWidth="1.5">
           <circle cx="5" cy="12" r="2.5" /><circle cx="11" cy="12" r="2.5" />
           <line x1="5" y1="9.5" x2="11" y2="2" /><line x1="11" y1="9.5" x2="5" y2="2" />
         </svg>
       </ToolbarButton>
-      <ToolbarButton title="Copy (Ctrl+C)">
+      <ToolbarButton title={t('stealthToolbar.copy')}>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#555" strokeWidth="1.5">
           <rect x="5" y="5" width="9" height="10" rx="1" /><rect x="2" y="2" width="9" height="10" rx="1" fill="white" stroke="#555" />
         </svg>
@@ -125,9 +127,9 @@ export function StealthToolbar({
       <ToolbarSeparator />
 
       {/* Bold / Italic / Underline (decorative) */}
-      <ToolbarButton title="Bold (Ctrl+B)"><span className="font-bold">B</span></ToolbarButton>
-      <ToolbarButton title="Italic (Ctrl+I)"><span className="italic">I</span></ToolbarButton>
-      <ToolbarButton title="Underline (Ctrl+U)"><span className="underline">U</span></ToolbarButton>
+      <ToolbarButton title={t('stealthToolbar.bold')}><span className="font-bold">B</span></ToolbarButton>
+      <ToolbarButton title={t('stealthToolbar.italic')}><span className="italic">I</span></ToolbarButton>
+      <ToolbarButton title={t('stealthToolbar.underline')}><span className="underline">U</span></ToolbarButton>
 
       <ToolbarSeparator />
 
@@ -136,7 +138,7 @@ export function StealthToolbar({
         <button
           ref={sizeRef}
           className="flex items-center h-[26px] px-2 border border-[#d1d5db] rounded-sm bg-white hover:bg-[#f3f4f6] text-[13px] text-[#333] gap-1 min-w-[48px]"
-          title="Font Size (Bubble Size)"
+          title={t('stealthToolbar.fontSize')}
           onClick={() => setShowSizeDropdown(!showSizeDropdown)}
         >
           <span>{currentSizeLabel}</span>
@@ -171,7 +173,7 @@ export function StealthToolbar({
         <button
           ref={colorRef}
           className="flex items-center justify-center w-[28px] h-[26px] rounded-sm hover:bg-[#e8eaed] border border-transparent"
-          title="Fill Color (Bubble Color)"
+          title={t('stealthToolbar.fillColor')}
           onClick={() => setShowColorPicker(!showColorPicker)}
         >
           <div className="flex flex-col items-center">
@@ -185,7 +187,7 @@ export function StealthToolbar({
         {showColorPicker && (
           <Dropdown anchorRef={colorRef} onClose={() => setShowColorPicker(false)}>
             <div className="p-2">
-              <div className="text-[11px] text-[#666] mb-1 px-1">Theme Colors</div>
+              <div className="text-[11px] text-[#666] mb-1 px-1">{t('stealth.themeColors')}</div>
               <div className="grid grid-cols-4 gap-1">
                 {BUBBLE_COLORS.map((color) => (
                   <button
@@ -212,7 +214,7 @@ export function StealthToolbar({
         <button
           ref={borderRef}
           className="flex items-center justify-center w-[28px] h-[26px] rounded-sm hover:bg-[#e8eaed] border border-transparent text-[14px]"
-          title="Borders (Bubble Pattern)"
+          title={t('stealthToolbar.borders')}
           onClick={() => setShowBorderDropdown(!showBorderDropdown)}
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#555" strokeWidth="1.5">
@@ -249,11 +251,11 @@ export function StealthToolbar({
       {/* BLOW BUBBLE */}
       <button
         className="flex items-center h-[26px] px-2 rounded-sm hover:bg-[#dbeafe] border border-[#93c5fd] text-[13px] text-[#1e40af] gap-1 bg-[#eff6ff]"
-        title="Blow Bubble — Ctrl+Enter"
+        title={t('stealthToolbar.blowBubble')}
         onClick={onBlowBubble}
       >
         <span>🫧</span>
-        <span className="hidden sm:inline">Blow Bubble</span>
+        <span className="hidden sm:inline">{t('stealth.blowBubble')}</span>
       </button>
 
       {/* POP BUBBLE */}
@@ -261,18 +263,18 @@ export function StealthToolbar({
         <button
           ref={deleteRef}
           className="flex items-center h-[26px] px-2 rounded-sm hover:bg-[#fee2e2] border border-[#fca5a5] text-[13px] text-[#991b1b] gap-1 bg-[#fef2f2]"
-          title="Pop Bubble — Delete"
+          title={t('stealthToolbar.popBubble')}
           onClick={() => setShowDeleteDropdown(!showDeleteDropdown)}
         >
           <span>💥</span>
-          <span className="hidden sm:inline">Pop Bubble</span>
+          <span className="hidden sm:inline">{t('stealth.popBubble')}</span>
           <svg width="8" height="6" viewBox="0 0 8 6" fill="#555"><path d="M0 0l4 6 4-6z" /></svg>
         </button>
         {showDeleteDropdown && (
           <Dropdown anchorRef={deleteRef} onClose={() => setShowDeleteDropdown(false)}>
             <div className="py-1 min-w-[160px]">
               {poppableBubbles.length === 0 ? (
-                <div className="px-3 py-2 text-[12px] text-[#999]">No rows to delete</div>
+                <div className="px-3 py-2 text-[12px] text-[#999]">{t('stealth.noRowsToDelete')}</div>
               ) : (
                 poppableBubbles.map((b) => (
                   <button
@@ -295,13 +297,13 @@ export function StealthToolbar({
       <ToolbarSeparator />
 
       {/* Alignment (decorative) */}
-      <ToolbarButton title="Align Left">
+      <ToolbarButton title={t('stealthToolbar.alignLeft')}>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#555" strokeWidth="1.5">
           <line x1="2" y1="3" x2="14" y2="3" /><line x1="2" y1="6.5" x2="10" y2="6.5" />
           <line x1="2" y1="10" x2="12" y2="10" /><line x1="2" y1="13.5" x2="8" y2="13.5" />
         </svg>
       </ToolbarButton>
-      <ToolbarButton title="Align Center">
+      <ToolbarButton title={t('stealthToolbar.alignCenter')}>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#555" strokeWidth="1.5">
           <line x1="2" y1="3" x2="14" y2="3" /><line x1="4" y1="6.5" x2="12" y2="6.5" />
           <line x1="3" y1="10" x2="13" y2="10" /><line x1="5" y1="13.5" x2="11" y2="13.5" />
@@ -311,7 +313,7 @@ export function StealthToolbar({
       <ToolbarSeparator />
 
       {/* Merge & Center (decorative) */}
-      <ToolbarButton title="Merge & Center">
+      <ToolbarButton title={t('stealthToolbar.mergeCenter')}>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#555" strokeWidth="1.3">
           <rect x="1" y="4" width="14" height="8" rx="1" />
           <line x1="8" y1="4" x2="8" y2="12" strokeDasharray="2 2" />

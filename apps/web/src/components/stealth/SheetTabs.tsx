@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { UserInfo, Place } from '@bubbles/shared';
 
 interface SheetTabsProps {
@@ -16,6 +17,7 @@ export function SheetTabs({
   places,
   onSwitchPlace,
 }: SheetTabsProps) {
+  const { t } = useTranslation();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tab: number } | null>(null);
   const ctxRef = useRef<HTMLDivElement>(null);
 
@@ -30,9 +32,9 @@ export function SheetTabs({
   }, []);
 
   const tabs = [
-    { label: 'Sheet1', tooltip: 'Task Tracker' },
-    { label: 'Sheet2', tooltip: 'Team Summary' },
-    { label: 'Sheet3', tooltip: 'Projects' },
+    { label: t('stealth.sheet1'), tooltip: t('stealth.taskTracker') },
+    { label: 'Sheet2', tooltip: t('stealth.teamSummary') },
+    { label: 'Sheet3', tooltip: t('stealth.projects') },
   ];
 
   return (
@@ -87,20 +89,20 @@ export function SheetTabs({
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
           <button className="w-full text-left px-4 py-1 hover:bg-[#e8f0fe] text-[#999] cursor-default" disabled>
-            Insert Sheet
+            {t('stealthSheets.insertSheet')}
           </button>
           <button className="w-full text-left px-4 py-1 hover:bg-[#e8f0fe] text-[#999] cursor-default" disabled>
-            Delete Sheet
+            {t('stealthSheets.deleteSheet')}
           </button>
           <button className="w-full text-left px-4 py-1 hover:bg-[#e8f0fe] text-[#999] cursor-default" disabled>
-            Rename
+            {t('stealthSheets.rename')}
           </button>
           <div className="border-t border-[#e0e0e0] my-1" />
           <button className="w-full text-left px-4 py-1 hover:bg-[#e8f0fe] text-[#999] cursor-default" disabled>
-            Move or Copy...
+            {t('stealthSheets.moveOrCopy')}
           </button>
           <button className="w-full text-left px-4 py-1 hover:bg-[#e8f0fe] text-[#999] cursor-default" disabled>
-            Tab Color
+            {t('stealthSheets.tabColor')}
           </button>
         </div>
       )}
@@ -113,7 +115,8 @@ export function SheetTabs({
 // ---------------------------------------------------------------------------
 
 export function UsersSheetView({ users }: { users: UserInfo[] }) {
-  const headers = ['#', 'Name', 'Session ID', 'Status', 'Role'];
+  const { t } = useTranslation();
+  const headers = ['#', t('stealthSheets.name'), t('stealthSheets.sessionId'), t('stealthSheets.status'), t('stealthSheets.role')];
   return (
     <div className="flex-1 overflow-auto bg-white">
       <table className="w-full border-collapse text-[13px] font-[system-ui]">
@@ -137,15 +140,15 @@ export function UsersSheetView({ users }: { users: UserInfo[] }) {
               <td className="border border-[#d1d5db] px-3 py-1 font-mono text-[11px] text-[#666]">{u.sessionId.slice(0, 8)}...</td>
               <td className="border border-[#d1d5db] px-3 py-1">
                 <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2" />
-                Online
+                {t('stealthSheets.online')}
               </td>
-              <td className="border border-[#d1d5db] px-3 py-1">{u.isAuthenticated ? 'Member' : 'Guest'}</td>
+              <td className="border border-[#d1d5db] px-3 py-1">{u.isAuthenticated ? t('stealthSheets.member') : t('stealthSheets.guest')}</td>
             </tr>
           ))}
           {users.length === 0 && (
             <tr>
               <td colSpan={5} className="border border-[#d1d5db] px-3 py-4 text-center text-[#999]">
-                No team members online
+                {t('stealthSheets.noTeamMembers')}
               </td>
             </tr>
           )}
@@ -162,7 +165,8 @@ export function PlacesSheetView({
   places: Place[];
   onSwitch?: (placeId: string) => void;
 }) {
-  const headers = ['#', 'Project Name', 'Members', 'Items', 'Created', 'Last Activity'];
+  const { t } = useTranslation();
+  const headers = ['#', t('stealthSheets.projectName'), t('stealthSheets.members'), t('stealthSheets.items'), t('stealthSheets.created'), t('stealthSheets.lastActivity')];
   return (
     <div className="flex-1 overflow-auto bg-white">
       <table className="w-full border-collapse text-[13px] font-[system-ui]">
@@ -196,7 +200,7 @@ export function PlacesSheetView({
           {places.length === 0 && (
             <tr>
               <td colSpan={6} className="border border-[#d1d5db] px-3 py-4 text-center text-[#999]">
-                No projects available
+                {t('stealthSheets.noProjects')}
               </td>
             </tr>
           )}

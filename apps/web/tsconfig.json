@@ -11,7 +11,7 @@
       "@bubbles/shared/*": ["../../packages/shared/src/*"]
     }
   },
-  "include": ["src", "vite-env.d.ts"],
+  "include": ["src", "src/**/*.json", "vite-env.d.ts"],
   "references": [
     { "path": "../../packages/shared" }
   ]

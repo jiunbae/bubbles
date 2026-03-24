@@ -7,7 +7,7 @@ import { globalWsClient } from '@/lib/ws-client';
 import { isButtonBlowing } from './BubbleControls';
 import { BUBBLE_LIFETIME } from '@bubbles/shared';
 import type { BubbleInfo, BubbleSize } from '@bubbles/shared';
-import { BubbleMesh } from './BubbleMesh';
+import { BubbleInstances } from './BubbleInstances';
 import { PopEffectRenderer, usePopEffect } from './PopEffect';
 import { SIZE_RADIUS } from '@/physics/bubblePhysics';
 
@@ -40,8 +40,6 @@ function cancelExpiry(bubbleId: string) {
 }
 
 export { scheduleExpiry, cancelExpiry, expiryTimers };
-
-const sharedGeo = new THREE.IcosahedronGeometry(1, 3);
 
 let _c = 0;
 function makeId() { return `s${Date.now()}_${++_c}`; }
@@ -162,22 +160,9 @@ function BubbleSpawner() {
 }
 
 /**
- * BubbleRenderer: subscribes to bubbles and renders them.
+ * BubbleRenderer: single InstancedMesh for all bubbles + pop effects.
  */
-// ONE shared MeshStandardMaterial — compiled once, cloned per bubble (same shader program)
-const sharedBubbleMaterial = new THREE.MeshStandardMaterial({
-  metalness: 0.15,
-  roughness: 0.05,
-  transparent: true,
-  opacity: 0.15,
-  side: THREE.DoubleSide,
-  depthWrite: false,
-  emissive: new THREE.Color('#4488cc'),
-  emissiveIntensity: 0.08,
-});
-
 function BubbleRenderer() {
-  const bubbles = useBubbleStore((s) => s.bubbles);
   const removeBubble = useBubbleStore((s) => s.removeBubble);
   const pendingPops = useBubbleStore((s) => s.pendingPops);
   const clearPendingPops = useBubbleStore((s) => s.clearPendingPops);
@@ -220,20 +205,9 @@ function BubbleRenderer() {
     [removeBubble, triggerPop],
   );
 
-  const bubbleArray = useMemo(() => Array.from(bubbles.values()), [bubbles]);
-
   return (
     <>
-      {bubbleArray.map((bubble) => (
-        <BubbleMesh
-          key={bubble.bubbleId}
-          bubble={bubble}
-          sharedGeometry={sharedGeo}
-          sharedMaterial={sharedBubbleMaterial}
-          onExpire={handleExpire}
-          onPop={handlePop}
-        />
-      ))}
+      <BubbleInstances onPop={handlePop} onExpire={handleExpire} />
       <PopEffectRenderer pops={pops} setPops={setPops} />
     </>
   );

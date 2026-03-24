@@ -42,6 +42,7 @@
     "login": "Login",
     "logout": "Logout",
     "signIn": "Sign in",
+    "signInWithGoogle": "Sign in with Google",
     "signInWithGithub": "Sign in with GitHub",
     "signOut": "Sign out"
   },

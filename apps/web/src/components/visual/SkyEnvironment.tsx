@@ -49,10 +49,10 @@ function Streetlamp({ position }: { position: [number, number, number] }) {
 function RooftopEnvironment() {
   return (
     <>
-      <color attach="background" args={['#1a1a2e']} />
-      <ambientLight color="#334466" intensity={0.4} />
-      <directionalLight color="#ffa54f" intensity={2.5} position={[8, 6, 3]} />
-      <directionalLight color="#87ceeb" intensity={0.6} position={[-5, 4, -5]} />
+      <color attach="background" args={['#1e2040']} />
+      <ambientLight color="#6688aa" intensity={0.8} />
+      <directionalLight color="#ffa54f" intensity={3.0} position={[8, 6, 3]} />
+      <directionalLight color="#87ceeb" intensity={1.0} position={[-5, 4, -5]} />
       <GroundPlane color="#4a4a5a" />
       {/* Railing */}
       {[-6, -3, 0, 3, 6].map((x) => (
@@ -80,10 +80,10 @@ function RooftopEnvironment() {
 function ParkEnvironment() {
   return (
     <>
-      <color attach="background" args={['#0e1a0e']} />
-      <ambientLight color="#223322" intensity={0.3} />
-      <directionalLight color="#fffbe6" intensity={2.0} position={[5, 10, 5]} />
-      <directionalLight color="#b3d9ff" intensity={0.5} position={[-4, 6, -3]} />
+      <color attach="background" args={['#142814']} />
+      <ambientLight color="#445544" intensity={0.7} />
+      <directionalLight color="#fffbe6" intensity={2.5} position={[5, 10, 5]} />
+      <directionalLight color="#b3d9ff" intensity={0.8} position={[-4, 6, -3]} />
       <GroundPlane color="#2a4a2a" />
       {/* Trees */}
       {[[-5, -4], [6, -5], [-7, 2], [7, 1]].map(([x, z], i) => (
@@ -120,11 +120,11 @@ function ParkEnvironment() {
 function AlleyEnvironment() {
   return (
     <>
-      <color attach="background" args={['#0a0808']} />
-      <ambientLight color="#221a10" intensity={0.3} />
-      <pointLight color="#ffaa44" intensity={6} position={[-3, 3, -3]} distance={12} decay={2} />
-      <pointLight color="#ff8833" intensity={4} position={[3, 2.5, -2]} distance={10} decay={2} />
-      <pointLight color="#ffcc66" intensity={3} position={[0, 4, 1]} distance={15} decay={2} />
+      <color attach="background" args={['#120e0e']} />
+      <ambientLight color="#443322" intensity={0.6} />
+      <pointLight color="#ffaa44" intensity={8} position={[-3, 3, -3]} distance={14} decay={2} />
+      <pointLight color="#ff8833" intensity={6} position={[3, 2.5, -2]} distance={12} decay={2} />
+      <pointLight color="#ffcc66" intensity={4} position={[0, 4, 1]} distance={18} decay={2} />
       <GroundPlane color="#3a3020" />
       <mesh position={[-5, 1, 0]}>
         <boxGeometry args={[0.2, 5, 12]} />

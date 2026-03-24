@@ -126,14 +126,18 @@ export function createWSHandlers(placeId: string, c: Context) {
             return;
           }
 
-          const { size, color, pattern, x, y, z } = msg.data as any;
+          const { size, color, pattern, x, y, z, seed: clientSeed, expiresAt: clientExpiresAt } = msg.data as any;
           if (!['S', 'M', 'L'].includes(size)) return;
 
           const bubbleId = crypto.randomUUID();
           const now = Date.now();
+
+          // Use client-provided seed/expiresAt for sync, with fallback
+          const seed = typeof clientSeed === 'number' ? clientSeed : Math.floor(Math.random() * 1000000);
           const lifetime = BUBBLE_LIFETIME[size as BubbleSize];
-          const duration = lifetime.min + Math.random() * (lifetime.max - lifetime.min);
-          const seed = Math.floor(Math.random() * 1000000);
+          const duration = typeof clientExpiresAt === 'number'
+            ? Math.min(Math.max(clientExpiresAt - now, 3000), 60000) // clamp 3s-60s
+            : lifetime.min + Math.random() * (lifetime.max - lifetime.min);
 
           const bx = typeof x === 'number' ? x : (Math.random() - 0.5) * 2;
           const by = typeof y === 'number' ? y : 0.5 + Math.random();
@@ -153,7 +157,7 @@ export function createWSHandlers(placeId: string, c: Context) {
             pattern: (pattern || 'plain') as BubblePattern,
             seed,
             createdAt: now,
-            expiresAt: now + duration,
+            expiresAt: typeof clientExpiresAt === 'number' ? clientExpiresAt : now + duration,
           };
 
           createBubble(pid, bubble);

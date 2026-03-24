@@ -122,7 +122,7 @@ function BubbleSpawner() {
       if (globalWsClient.isConnected()) {
         globalWsClient.send({
           type: 'blow',
-          data: { size: bubble.size, color: bubble.color, pattern: 'plain', x: bubble.x, y: bubble.y, z: bubble.z },
+          data: { size: bubble.size, color: bubble.color, pattern: 'plain', x: bubble.x, y: bubble.y, z: bubble.z, seed: bubble.seed, expiresAt: bubble.expiresAt },
         });
       }
     }

@@ -54,7 +54,7 @@ function spawnBatch(color: string): number {
     if (globalWsClient.isConnected()) {
       globalWsClient.send({
         type: 'blow',
-        data: { size, color: c, pattern: 'plain', x: bubble.x, y: bubble.y, z: bubble.z },
+        data: { size, color: c, pattern: 'plain', x: bubble.x, y: bubble.y, z: bubble.z, seed: bubble.seed, expiresAt: bubble.expiresAt },
       });
     }
   }

@@ -17,6 +17,7 @@ import {
   getRoom,
   createBubble,
   removeBubble,
+  incPlaceStats,
 } from './rooms';
 import { logAction } from './actions';
 import type { BubblesUser } from '../middleware/auth';
@@ -107,6 +108,7 @@ export function createWSHandlers(placeId: string, c: Context) {
       incGauge('ws_connections_active');
       incCounter('ws_connections_total');
       await joinRoom(placeId, sessionId, ws, user);
+      incPlaceStats(placeId, 'totalVisitors');
 
       // Notify client if token was provided but failed verification
       if (authError) {
@@ -207,6 +209,7 @@ export function createWSHandlers(placeId: string, c: Context) {
           };
 
           createBubble(pid, bubble);
+          incPlaceStats(pid, 'totalBubbles');
 
           const createdMsg: ServerMessage = {
             type: 'bubble_created', ts: now,

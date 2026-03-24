@@ -19,7 +19,9 @@
     "placeNamePlaceholder": "장소 이름...",
     "user_one": "{{count}}명",
     "user_other": "{{count}}명",
-    "bubbleCount": "비눗방울 {{count}}개"
+    "bubbleCount": "비눗방울 {{count}}개",
+    "totalVisitors": "{{count}}명 방문",
+    "totalBubbles": "{{count}}개 생성"
   },
   "themes": {
     "rooftop": "옥상",
@@ -36,7 +38,9 @@
     "online": "{{count}}명 접속 중",
     "bubbles": "비눗방울 {{count}}개",
     "failedToLoad": "장소 로드 실패: {{error}}",
-    "editName": "클릭하여 이름 변경"
+    "editName": "클릭하여 이름 변경",
+    "totalVisitors": "{{count}}명 방문",
+    "totalBubbles": "{{count}}개 생성"
   },
   "auth": {
     "login": "로그인",

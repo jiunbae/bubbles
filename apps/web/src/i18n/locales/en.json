@@ -19,7 +19,9 @@
     "placeNamePlaceholder": "Place name...",
     "user_one": "{{count}} user",
     "user_other": "{{count}} users",
-    "bubbleCount": "{{count}} bubbles"
+    "bubbleCount": "{{count}} bubbles",
+    "totalVisitors": "{{count}} visited",
+    "totalBubbles": "{{count}} blown"
   },
   "themes": {
     "rooftop": "Rooftop",
@@ -36,7 +38,9 @@
     "online": "{{count}} online",
     "bubbles": "{{count}} bubbles",
     "failedToLoad": "Failed to load place: {{error}}",
-    "editName": "Click to change name"
+    "editName": "Click to change name",
+    "totalVisitors": "{{count}} visited",
+    "totalBubbles": "{{count}} blown"
   },
   "auth": {
     "login": "Login",

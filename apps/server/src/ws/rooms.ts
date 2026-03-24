@@ -497,6 +497,19 @@ async function getPlaceName(placeId: string): Promise<string> {
   }
 }
 
+/** Increment cumulative place stats (fire-and-forget). */
+export async function incPlaceStats(placeId: string, field: 'totalVisitors' | 'totalBubbles', amount = 1): Promise<void> {
+  try {
+    const col = getCollection('places');
+    await col.updateOne(
+      { _id: new ObjectId(placeId) },
+      { $inc: { [field]: amount } }
+    );
+  } catch (err) {
+    console.error('[rooms] Failed to inc place stats:', err);
+  }
+}
+
 async function updatePlaceActivity(placeId: string): Promise<void> {
   try {
     const col = getCollection('places');

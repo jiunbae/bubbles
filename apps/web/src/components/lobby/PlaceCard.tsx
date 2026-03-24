@@ -47,11 +47,12 @@ export function PlaceCard({ place }: PlaceCardProps) {
           </span>
         </div>
 
-        {/* Bubble count */}
-        <div className="flex items-center gap-1">
-          <span className="opacity-60">o</span>
-          <span>{t('lobby.bubbleCount', { count: place.bubbleCount })}</span>
-        </div>
+      </div>
+
+      {/* Cumulative stats */}
+      <div className="flex items-center gap-3 text-xs text-text-muted">
+        <span>{t('lobby.totalVisitors', { count: place.totalVisitors })}</span>
+        <span>{t('lobby.totalBubbles', { count: place.totalBubbles })}</span>
       </div>
     </button>
   );

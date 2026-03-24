@@ -36,6 +36,8 @@ export interface Place {
   createdBy: string;
   userCount: number;
   bubbleCount: number;
+  totalVisitors: number;
+  totalBubbles: number;
   createdAt: string;
   lastActivityAt: string;
 }

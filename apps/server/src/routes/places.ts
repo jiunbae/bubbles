@@ -12,6 +12,8 @@ interface PlaceDoc {
   name: string;
   theme: string;
   createdBy: string;
+  totalVisitors: number;
+  totalBubbles: number;
   createdAt: Date;
   lastActivityAt: Date;
   deleteAfter?: Date;
@@ -37,6 +39,8 @@ places.get('/', async (c) => {
     createdBy: doc.createdBy,
     userCount: getRoomUserCount(doc._id.toHexString()),
     bubbleCount: 0,
+    totalVisitors: doc.totalVisitors || 0,
+    totalBubbles: doc.totalBubbles || 0,
     createdAt: doc.createdAt.toISOString(),
     lastActivityAt: doc.lastActivityAt.toISOString(),
   }));
@@ -77,6 +81,8 @@ places.post('/', rateLimiterMiddleware('createPlace'), async (c) => {
     name,
     theme,
     createdBy: user.displayName,
+    totalVisitors: 0,
+    totalBubbles: 0,
     createdAt: now,
     lastActivityAt: now,
   });
@@ -93,6 +99,8 @@ places.post('/', rateLimiterMiddleware('createPlace'), async (c) => {
       createdBy: user.displayName,
       userCount: 0,
       bubbleCount: 0,
+      totalVisitors: 0,
+      totalBubbles: 0,
       createdAt: now.toISOString(),
       lastActivityAt: now.toISOString(),
     },
@@ -124,6 +132,8 @@ places.get('/:placeId', async (c) => {
     createdBy: doc.createdBy,
     userCount: getRoomUserCount(placeId),
     bubbleCount: 0,
+    totalVisitors: doc.totalVisitors || 0,
+    totalBubbles: doc.totalBubbles || 0,
     createdAt: doc.createdAt.toISOString(),
     lastActivityAt: doc.lastActivityAt.toISOString(),
   });

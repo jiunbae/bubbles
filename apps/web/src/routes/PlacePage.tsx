@@ -272,6 +272,13 @@ export function PlacePage() {
             {bubbleCount} {'\u{1FAE7}'}
           </span>
 
+          {/* Cumulative stats */}
+          {currentPlace && (
+            <span className="hidden text-xs text-text-muted sm:inline" title={`${t('place.totalVisitors', { count: currentPlace.totalVisitors })} / ${t('place.totalBubbles', { count: currentPlace.totalBubbles })}`}>
+              {currentPlace.totalVisitors}{'\u{1F465}'} {currentPlace.totalBubbles}{'\u{1FAE7}'}
+            </span>
+          )}
+
           {/* Online users with count + dropdown */}
           <div className="relative">
             <button onClick={() => setShowUsers(!showUsers)} className="flex items-center gap-1.5 rounded-md p-1.5" title={t('place.onlineUsers')}>

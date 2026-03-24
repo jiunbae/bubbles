@@ -35,7 +35,15 @@
     "activityLog": "Activity log",
     "online": "{{count}} online",
     "bubbles": "{{count}} bubbles",
-    "failedToLoad": "Failed to load place: {{error}}"
+    "failedToLoad": "Failed to load place: {{error}}",
+    "editName": "Click to change name"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "signIn": "Sign in",
+    "signInWithGithub": "Sign in with GitHub",
+    "signOut": "Sign out"
   },
   "mode": {
     "switchToStealth": "Switch to stealth mode",

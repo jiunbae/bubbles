@@ -101,10 +101,10 @@ function BubbleSpawner() {
 
     // Raycast from mouse into scene, place bubbles at halfway to origin
     _raycaster.setFromCamera(ptRef.current, camRef.current);
-    const dir = rc.ray.direction.clone().normalize();
-    const camDist = camRef.current.position.length(); // distance from origin
-    const spawnDist = camDist * 0.5; // halfway between camera and origin
-    const center = rc.ray.origin.clone().addScaledVector(dir, spawnDist);
+    const dir = _raycaster.ray.direction.clone().normalize();
+    const camDist = camRef.current.position.length();
+    const spawnDist = camDist * 0.5;
+    const center = _raycaster.ray.origin.clone().addScaledVector(dir, spawnDist);
 
     const count = BATCH_SIZE;
     for (let i = 0; i < count; i++) {

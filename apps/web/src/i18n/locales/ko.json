@@ -35,7 +35,15 @@
     "activityLog": "활동 기록",
     "online": "{{count}}명 접속 중",
     "bubbles": "비눗방울 {{count}}개",
-    "failedToLoad": "장소 로드 실패: {{error}}"
+    "failedToLoad": "장소 로드 실패: {{error}}",
+    "editName": "클릭하여 이름 변경"
+  },
+  "auth": {
+    "login": "로그인",
+    "logout": "로그아웃",
+    "signIn": "로그인",
+    "signInWithGithub": "GitHub으로 로그인",
+    "signOut": "로그아웃"
   },
   "mode": {
     "switchToStealth": "스텔스 모드로 전환",

@@ -3,9 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { parseJwt } from '@/lib/token';
+import { JIUN_API_URL } from '@/lib/auth';
 import type { AuthUser } from '@/stores/auth-store';
-
-const JIUN_API_URL = import.meta.env.VITE_JIUN_API_URL || 'https://api.jiun.dev';
 
 export function AuthCallback() {
   const { t } = useTranslation();

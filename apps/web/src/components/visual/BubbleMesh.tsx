@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState } from 'react';
+import { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
@@ -55,6 +55,9 @@ export function BubbleMesh({
     mat.envMapIntensity = 0; // disable environment map reflection (removes sprite artifacts)
     return mat;
   }, [sharedMaterial, bubbleColor]);
+
+  // Dispose cloned material on unmount to prevent GPU memory leak
+  useEffect(() => () => { material.dispose(); }, [material]);
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();

@@ -47,6 +47,7 @@ const _raycaster = new THREE.Raycaster();
 function BubbleSpawner() {
   const { camera, pointer } = useThree();
   const [holding, setHolding] = useState(false);
+  const interactionMode = useUIStore((s) => s.interactionMode);
 
   const colorRef = useRef(useUIStore.getState().selectedColor);
   useEffect(() => useUIStore.subscribe((s) => { colorRef.current = s.selectedColor; }), []);
@@ -91,6 +92,9 @@ function BubbleSpawner() {
     window.addEventListener('pointerup', onUp);
     return () => window.removeEventListener('pointerup', onUp);
   }, []);
+
+  // In pop mode, don't render the spawner plane so clicks pass through to bubbles
+  if (interactionMode !== 'blow') return null;
 
   return (
     <mesh

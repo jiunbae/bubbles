@@ -2,14 +2,18 @@ import { create } from 'zustand';
 import type { BubbleSize, BubblePattern } from '@bubbles/shared';
 
 type AppMode = 'visual' | 'stealth';
+type InteractionMode = 'blow' | 'pop';
 
 interface UIState {
   mode: AppMode;
+  interactionMode: InteractionMode;
   isSoundEnabled: boolean;
   selectedSize: BubbleSize;
   selectedColor: string;
   selectedPattern: BubblePattern;
   setMode: (mode: AppMode) => void;
+  setInteractionMode: (mode: InteractionMode) => void;
+  toggleInteractionMode: () => void;
   toggleSound: () => void;
   setSelectedSize: (size: BubbleSize) => void;
   setSelectedColor: (color: string) => void;
@@ -28,6 +32,7 @@ function loadMode(): AppMode {
 
 export const useUIStore = create<UIState>((set) => ({
   mode: loadMode(),
+  interactionMode: 'blow' as InteractionMode,
   isSoundEnabled: true,
   selectedSize: 'M',
   selectedColor: '#87CEEB',
@@ -37,6 +42,12 @@ export const useUIStore = create<UIState>((set) => ({
     localStorage.setItem('bubbles_mode', mode);
     set({ mode });
   },
+
+  setInteractionMode: (interactionMode: InteractionMode) => set({ interactionMode }),
+
+  toggleInteractionMode: () => set((state) => ({
+    interactionMode: state.interactionMode === 'blow' ? 'pop' : 'blow',
+  })),
 
   toggleSound: () => set((state) => ({ isSoundEnabled: !state.isSoundEnabled })),
 

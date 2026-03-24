@@ -30,6 +30,8 @@ export function PlacePage() {
   const { connect, disconnect, connectionStatus, send } = useWebSocket();
   const { token, isAuthenticated: isLoggedIn, logout } = useAuth();
   const mode = useUIStore((s) => s.mode);
+  const interactionMode = useUIStore((s) => s.interactionMode);
+  const toggleInteractionMode = useUIStore((s) => s.toggleInteractionMode);
   const { currentPlace, setCurrentPlace, onlineUsers, mySessionId } = usePlaceStore();
   const bubbleCount = useBubbleStore((s) => s.bubbles.size);
   const [isLogOpen, setIsLogOpen] = useState(false);
@@ -204,6 +206,37 @@ export function PlacePage() {
           )}
 
           <div className="hidden h-4 w-px bg-border sm:block" />
+
+          {/* Interaction mode toggle */}
+          {mode === 'visual' && (
+            <button
+              onClick={toggleInteractionMode}
+              className={`flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                interactionMode === 'blow'
+                  ? 'bg-accent/20 text-accent'
+                  : 'bg-error/20 text-error'
+              }`}
+              title={interactionMode === 'blow' ? t('place.switchToPop', 'Switch to Pop mode') : t('place.switchToBlow', 'Switch to Blow mode')}
+            >
+              {interactionMode === 'blow' ? (
+                <>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="12" cy="12" r="8" strokeDasharray="4 2" />
+                    <path d="M12 8v4m-2-2h4" strokeLinecap="round" />
+                  </svg>
+                  <span className="hidden sm:inline">{t('place.blowMode', 'Blow')}</span>
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <circle cx="12" cy="12" r="8" />
+                    <path d="M9 9l6 6m0-6l-6 6" strokeLinecap="round" />
+                  </svg>
+                  <span className="hidden sm:inline">{t('place.popMode', 'Pop')}</span>
+                </>
+              )}
+            </button>
+          )}
 
           {/* Bubble count */}
           <span className="text-xs text-text-secondary sm:text-sm" title={t('place.bubbles', { count: bubbleCount })}>

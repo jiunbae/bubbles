@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useBubbleStore } from '@/stores/bubble-store';
+import { useUIStore } from '@/stores/ui-store';
 import { BUBBLE_COLORS } from '@bubbles/shared';
 import { spawnBubble } from '@/lib/bubble-factory';
 import { scheduleExpiry } from './BubbleScene';
@@ -27,6 +28,7 @@ let buttonActive = false;
 export function isButtonBlowing() { return buttonActive; }
 
 export function BubbleControls() {
+  const interactionMode = useUIStore((s) => s.interactionMode);
   const intervalRef = useRef<number | null>(null);
   const [bubbleCount, setBubbleCount] = useState(0);
   const [isBlowing, setIsBlowing] = useState(false);
@@ -82,6 +84,9 @@ export function BubbleControls() {
       stopBlowing();
     };
   }, []);
+
+  // Hide blow controls in pop mode
+  if (interactionMode !== 'blow') return null;
 
   return (
     <div style={{

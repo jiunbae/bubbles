@@ -14,6 +14,7 @@ import { cleanupStaleRooms, cleanupRedisStaleEntries } from './ws/rooms';
 import { initPubSub } from './ws/pubsub';
 import { PLACE_INACTIVE_TIMEOUT } from '@bubbles/shared';
 import { metricsMiddleware, metricsRoute } from './metrics';
+import { og } from './routes/og';
 
 const app = new Hono();
 const { upgradeWebSocket, websocket } = createBunWebSocket();
@@ -46,6 +47,7 @@ app.use('/metrics/*', async (c, next) => {
 app.route('/metrics', metricsRoute);
 app.route('/health', health);
 app.route('/auth', auth);
+app.route('/og', og);
 app.route('/places', places);
 app.route('', logs);
 

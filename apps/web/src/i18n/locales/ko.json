@@ -61,6 +61,12 @@
     "muteSound": "음소거",
     "unmuteSound": "음소거 해제"
   },
+  "controls": {
+    "bubblesFloating": "비눗방울 {{count}}개 떠다니는 중",
+    "holdToStart": "버튼을 누르거나 스페이스바를 누르세요",
+    "blowing": "불고 있어요...",
+    "blow": "불기"
+  },
   "auth": {
     "login": "로그인",
     "logout": "로그아웃",

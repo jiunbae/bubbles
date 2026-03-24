@@ -31,7 +31,7 @@ export function tint(hex: string): string {
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     const v = (n: number) =>
-      Math.max(0, Math.min(255, n + Math.round((Math.random() - 0.5) * 60)));
+      Math.max(0, Math.min(255, n + Math.round((Math.random() - 0.5) * 20)));
     return `#${v(r).toString(16).padStart(2, '0')}${v(g).toString(16).padStart(2, '0')}${v(b).toString(16).padStart(2, '0')}`;
   } catch {
     return hex;

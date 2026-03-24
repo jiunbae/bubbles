@@ -69,8 +69,11 @@ places.post('/', rateLimiterMiddleware('createPlace'), async (c) => {
 
   const col = getCollection<PlaceDoc>('places');
 
-  // Check uniqueness (index enforces it, but give a nicer error)
-  const existing = await col.findOne({ name });
+  // If a place with this name is pending deletion, remove it first
+  await col.deleteOne({ name, deleteAfter: { $exists: true } });
+
+  // Check uniqueness among active places
+  const existing = await col.findOne({ name, deleteAfter: { $exists: false } });
   if (existing) {
     return c.json({ error: 'A place with that name already exists' }, 409);
   }

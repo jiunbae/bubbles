@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { useUIStore } from '@/stores/ui-store';
 import { spawnBubble } from '@/lib/bubble-factory';
@@ -27,6 +28,7 @@ let buttonActive = false;
 export function isButtonBlowing() { return buttonActive; }
 
 export function BubbleControls() {
+  const { t } = useTranslation();
   const interactionMode = useUIStore((s) => s.interactionMode);
   const intervalRef = useRef<number | null>(null);
   const [bubbleCount, setBubbleCount] = useState(0);
@@ -100,7 +102,7 @@ export function BubbleControls() {
         color: 'rgba(255,255,255,0.6)', fontSize: 12,
         fontFamily: 'system-ui, sans-serif',
       }}>
-        {bubbleCount > 0 ? `${bubbleCount} bubbles floating` : 'Hold button or press Space'}
+        {bubbleCount > 0 ? t('controls.bubblesFloating', { count: bubbleCount }) : t('controls.holdToStart')}
       </div>
 
       <div style={{
@@ -136,7 +138,7 @@ export function BubbleControls() {
             transition: 'all 0.1s',
           }}
         >
-          {isBlowing ? '🫧 Blowing...' : '🫧 Blow'}
+          {isBlowing ? `🫧 ${t('controls.blowing')}` : `🫧 ${t('controls.blow')}`}
         </button>
       </div>
     </div>

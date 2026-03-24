@@ -34,7 +34,7 @@ export function InviteBanner() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 animate-[slideUp_0.3s_ease-out]">
+    <div className="fixed left-1/2 top-16 z-40 -translate-x-1/2 animate-[slideUp_0.3s_ease-out]">
       <div className="flex items-center gap-3 rounded-xl border border-border bg-bg-card/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
         <span className="text-sm text-text-secondary">
           {t('place.inviteBanner')}

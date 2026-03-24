@@ -62,6 +62,12 @@
     "muteSound": "Mute",
     "unmuteSound": "Unmute"
   },
+  "controls": {
+    "bubblesFloating": "{{count}} bubbles floating",
+    "holdToStart": "Hold button or press Space",
+    "blowing": "Blowing...",
+    "blow": "Blow"
+  },
   "auth": {
     "login": "Login",
     "logout": "Logout",

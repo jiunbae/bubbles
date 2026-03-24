@@ -29,7 +29,7 @@ function SizeSelector() {
   return (
     <div style={{
       position: 'fixed',
-      bottom: 'calc(env(safe-area-inset-bottom, 16px) + 90px)',
+      bottom: 'calc(env(safe-area-inset-bottom, 16px) + 120px)',
       left: '50%',
       transform: 'translateX(-50%)',
       zIndex: 10000,

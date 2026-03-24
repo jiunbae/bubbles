@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUIStore } from '@/stores/ui-store';
 import { usePlaceStore } from '@/stores/place-store';
 import { useBubbleStore } from '@/stores/bubble-store';
+import { BUBBLE_COLORS } from '@bubbles/shared';
 import { ModeSwitch } from '@/components/shared/ModeSwitch';
 import { ActivityLog } from '@/components/shared/ActivityLog';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
@@ -38,6 +39,7 @@ export function PlacePage() {
   const [showUsers, setShowUsers] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -144,7 +146,34 @@ export function PlacePage() {
           {/* My name (editable) */}
           {myUser && (
             <div className="flex items-center gap-1.5">
-              <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: myUser.color }} />
+              {/* Color picker — click dot to change bubble color */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowColorPicker((v) => !v)}
+                  className="h-4 w-4 rounded-full border-2 border-white/30 transition-transform hover:scale-125 active:scale-95"
+                  style={{ backgroundColor: myUser.color }}
+                  title={t('place.changeColor', 'Change bubble color')}
+                />
+                {showColorPicker && (
+                  <div className="absolute left-0 top-full z-50 mt-2 rounded-lg border border-border bg-bg-card p-2 shadow-lg">
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {BUBBLE_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => {
+                            send({ type: 'set_color', data: { color } });
+                            setShowColorPicker(false);
+                          }}
+                          className={`h-6 w-6 rounded-full border-2 transition-transform hover:scale-110 ${
+                            myUser.color === color ? 'border-white scale-110' : 'border-transparent'
+                          }`}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               {isEditingName ? (
                 <input
                   ref={nameInputRef}

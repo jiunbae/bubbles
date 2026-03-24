@@ -13,6 +13,7 @@ interface PlaceState {
   addOnlineUser: (user: UserInfo) => void;
   removeOnlineUser: (sessionId: string) => void;
   renameOnlineUser: (sessionId: string, displayName: string) => void;
+  updateOnlineUserColor: (sessionId: string, color: string) => void;
 }
 
 export const usePlaceStore = create<PlaceState>((set) => ({
@@ -46,6 +47,13 @@ export const usePlaceStore = create<PlaceState>((set) => ({
     set((state) => ({
       onlineUsers: state.onlineUsers.map((u) =>
         u.sessionId === sessionId ? { ...u, displayName } : u,
+      ),
+    })),
+
+  updateOnlineUserColor: (sessionId: string, color: string) =>
+    set((state) => ({
+      onlineUsers: state.onlineUsers.map((u) =>
+        u.sessionId === sessionId ? { ...u, color } : u,
       ),
     })),
 }));

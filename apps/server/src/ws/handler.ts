@@ -312,6 +312,27 @@ export function createWSHandlers(placeId: string, c: Context) {
           break;
         }
 
+        case 'set_color': {
+          const newColor = msg.data.color;
+          if (typeof newColor !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(newColor)) return;
+
+          user.color = newColor;
+
+          // Update in room clients map
+          const colorRoom = getRoom(pid);
+          if (colorRoom) {
+            const client = colorRoom.clients.get(sessionId);
+            if (client) client.user.color = newColor;
+          }
+
+          const colorMsg: ServerMessage = {
+            type: 'user_color_changed', ts: Date.now(),
+            data: { sessionId, color: newColor },
+          };
+          broadcastToRoom(pid, colorMsg);
+          break;
+        }
+
         case 'cursor': {
           const key = `${pid}:${sessionId}`;
           const now = Date.now();

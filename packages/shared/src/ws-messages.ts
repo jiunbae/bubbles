@@ -6,6 +6,7 @@ export type ClientMessage =
   | { type: 'pop'; data: { bubbleId: string } }
   | { type: 'cursor'; data: { x: number; y: number } }
   | { type: 'set_name'; data: { displayName: string } }
+  | { type: 'set_color'; data: { color: string } }
   | { type: 'ping' };
 
 // Server -> Client
@@ -17,6 +18,7 @@ export type ServerMessage =
   | { type: 'user_joined'; ts: number; data: UserInfo }
   | { type: 'user_left'; ts: number; data: { sessionId: string } }
   | { type: 'user_renamed'; ts: number; data: { sessionId: string; displayName: string } }
+  | { type: 'user_color_changed'; ts: number; data: { sessionId: string; color: string } }
   | { type: 'cursor_moved'; ts: number; data: { sessionId: string; x: number; y: number } }
   | { type: 'error'; ts: number; data: { code: string; message: string } }
   | { type: 'pong'; ts: number };

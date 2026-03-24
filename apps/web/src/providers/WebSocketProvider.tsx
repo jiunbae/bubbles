@@ -10,6 +10,7 @@ import { WsClient, globalWsClient, type ConnectionStatus } from '@/lib/ws-client
 import type { ClientMessage, ServerMessage } from '@bubbles/shared';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { usePlaceStore } from '@/stores/place-store';
+import { useUIStore } from '@/stores/ui-store';
 
 export interface WebSocketContextValue {
   wsClient: WsClient;
@@ -30,7 +31,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
   const { addBubble, removeBubble, popBubble, setBubbles } =
     useBubbleStore();
-  const { setMySessionId, setOnlineUsers, addOnlineUser, removeOnlineUser, renameOnlineUser } = usePlaceStore();
+  const { setMySessionId, setOnlineUsers, addOnlineUser, removeOnlineUser, renameOnlineUser, updateOnlineUserColor } = usePlaceStore();
 
   useEffect(() => {
     const client = wsClientRef.current;
@@ -41,11 +42,19 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
 
     client.onMessage = (msg: ServerMessage) => {
       switch (msg.type) {
-        case 'room_state':
+        case 'room_state': {
           setMySessionId(msg.data.mySessionId);
           setOnlineUsers(msg.data.users);
           setBubbles(msg.data.bubbles);
+          // Sync selected color to my server-assigned user color
+          const myUser = msg.data.users.find(
+            (u: { sessionId: string }) => u.sessionId === msg.data.mySessionId
+          );
+          if (myUser?.color) {
+            useUIStore.getState().setSelectedColor(myUser.color);
+          }
           break;
+        }
         case 'bubble_created':
           // From another user — server handles expiry via bubble_expired event
           addBubble(msg.data);
@@ -61,6 +70,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           break;
         case 'user_renamed':
           renameOnlineUser(msg.data.sessionId, msg.data.displayName);
+          break;
+        case 'user_color_changed':
+          updateOnlineUserColor(msg.data.sessionId, msg.data.color);
+          // If it's my color change confirmed by server, sync local selection
+          if (msg.data.sessionId === usePlaceStore.getState().mySessionId) {
+            useUIStore.getState().setSelectedColor(msg.data.color);
+          }
           break;
         case 'user_left':
           removeOnlineUser(msg.data.sessionId);
@@ -87,6 +103,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     addOnlineUser,
     removeOnlineUser,
     renameOnlineUser,
+    updateOnlineUserColor,
   ]);
 
   const send = useCallback((msg: ClientMessage) => {

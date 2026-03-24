@@ -2,12 +2,14 @@ import { Hono } from 'hono';
 import { createBunWebSocket } from 'hono/bun';
 import { config } from './config';
 import { connectMongo, ensureIndexes, disconnectMongo } from './db/mongo';
+import { connectRedis, disconnectRedis } from './db/redis';
 import { corsMiddleware, isAllowedOrigin } from './middleware/cors';
-import { health } from './routes/health';
+import { health, setShuttingDown } from './routes/health';
 import { places } from './routes/places';
 import { logs } from './routes/logs';
-import { createWSHandlers } from './ws/handler';
-import { cleanupStaleRooms } from './ws/rooms';
+import { createWSHandlers, getAllSessions } from './ws/handler';
+import { cleanupStaleRooms, cleanupRedisStaleEntries } from './ws/rooms';
+import { initPubSub } from './ws/pubsub';
 import { PLACE_INACTIVE_TIMEOUT } from '@bubbles/shared';
 import { metricsMiddleware, metricsRoute } from './metrics';
 
@@ -50,13 +52,42 @@ async function start() {
     process.exit(1);
   }
 
+  // Connect Redis (optional — runs without it)
+  connectRedis();
+  initPubSub();
+
   // Periodic cleanup of stale rooms
   const cleanupInterval = setInterval(cleanupStaleRooms, PLACE_INACTIVE_TIMEOUT / 2);
 
+  // Periodic Redis stale entry cleanup (every 5 minutes)
+  const redisCleanupInterval = setInterval(cleanupRedisStaleEntries, 5 * 60 * 1000);
+
   // Graceful shutdown
+  let isShuttingDown = false;
   const shutdown = async () => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+
     console.log('\n[shutdown] Shutting down gracefully...');
+    setShuttingDown(); // readiness probe returns 503
+
+    // Close all WebSocket connections with code 1012 (Service Restart)
+    const sessions = getAllSessions();
+    console.log(`[shutdown] Closing ${sessions.size} WebSocket connections...`);
+    for (const [, session] of sessions) {
+      try {
+        session.ws.close(1012, 'Server restarting');
+      } catch {
+        // already closed
+      }
+    }
+
+    // Wait for close frames to flush
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     clearInterval(cleanupInterval);
+    clearInterval(redisCleanupInterval);
+    await disconnectRedis();
     await disconnectMongo();
     process.exit(0);
   };
@@ -64,7 +95,7 @@ async function start() {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
-  console.log(`[server] Bubbles server running on port ${config.PORT}`);
+  console.log(`[server] Bubbles server running on port ${config.PORT} (pod: ${config.POD_ID})`);
 }
 
 start();

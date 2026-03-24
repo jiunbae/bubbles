@@ -1,6 +1,9 @@
 import type { ClientMessage, ServerMessage } from '@bubbles/shared';
 
-export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected';
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
+
+/** WebSocket close code sent by server during graceful shutdown / rolling deploy. */
+const CLOSE_CODE_SERVICE_RESTART = 1012;
 
 export class WsClient {
   private ws: WebSocket | null = null;
@@ -8,7 +11,7 @@ export class WsClient {
   private pingTimer: ReturnType<typeof setInterval> | null = null;
   private reconnectDelay = 1000;
   private maxReconnectDelay = 30000;
-  private maxRetries = 3;
+  private maxRetries = 5;
   private retryCount = 0;
   private placeId: string | null = null;
   private token: string | undefined;
@@ -67,11 +70,11 @@ export class WsClient {
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       this.stopPingInterval();
       if (!this.intentionalClose) {
-        this.onConnectionChange?.('disconnected');
-        this.handleReconnect();
+        this.onConnectionChange?.('reconnecting');
+        this.handleReconnect(event.code);
       }
     };
 
@@ -82,10 +85,21 @@ export class WsClient {
     this.ws = ws;
   }
 
-  private handleReconnect(): void {
+  private handleReconnect(closeCode?: number): void {
     if (this.intentionalClose) return;
+
+    // Server restart (rolling deploy) — reconnect immediately, no retry count
+    if (closeCode === CLOSE_CODE_SERVICE_RESTART) {
+      console.log('[WsClient] Server restarting, reconnecting immediately...');
+      this.reconnectTimer = setTimeout(() => {
+        this.doConnect();
+      }, 500); // brief delay for K8s endpoint update
+      return;
+    }
+
     if (this.retryCount >= this.maxRetries) {
       console.warn('[WsClient] Max retries reached, giving up');
+      this.onConnectionChange?.('disconnected');
       return;
     }
     this.retryCount++;

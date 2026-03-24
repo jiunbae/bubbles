@@ -34,6 +34,11 @@ const sessionStates = new Map<string, {
   ws: WSContext;
 }>();
 
+/** Get all active sessions — used by graceful shutdown to close WS connections. */
+export function getAllSessions() {
+  return sessionStates;
+}
+
 export function createWSHandlers(placeId: string, c: Context) {
   // Generate session ID at handler creation time (before WS events)
   let sessionId = generateSessionId();
@@ -86,7 +91,7 @@ export function createWSHandlers(placeId: string, c: Context) {
       console.log(`[ws] ${displayName} (${sessionId.slice(0,8)}) joined room ${placeId.slice(0,8)}`);
       incGauge('ws_connections_active');
       incCounter('ws_connections_total');
-      joinRoom(placeId, sessionId, ws, user);
+      await joinRoom(placeId, sessionId, ws, user);
       await logAction('join', placeId, sessionId, user);
     },
 
@@ -220,6 +225,39 @@ export function createWSHandlers(placeId: string, c: Context) {
           broadcastToRoom(pid, popMsg, sessionId);
 
           await logAction('pop', pid, sessionId, user, { bubbleId });
+          break;
+        }
+
+        case 'set_name': {
+          const { displayName: newName } = msg.data as { displayName?: string };
+          if (typeof newName !== 'string') return;
+
+          const trimmed = newName.trim().slice(0, 30);
+          if (trimmed.length < 1) {
+            sendToClient(ws, {
+              type: 'error', ts: Date.now(),
+              data: { code: 'INVALID_NAME', message: 'Name must be at least 1 character' },
+            });
+            return;
+          }
+
+          const oldName = user.displayName;
+          user.displayName = trimmed;
+
+          // Update in room clients map
+          const room = getRoom(pid);
+          if (room) {
+            const client = room.clients.get(sessionId);
+            if (client) client.user.displayName = trimmed;
+          }
+
+          console.log(`[ws] ${oldName} renamed to ${trimmed}`);
+
+          const renameMsg: ServerMessage = {
+            type: 'user_renamed', ts: Date.now(),
+            data: { sessionId, displayName: trimmed },
+          };
+          broadcastToRoom(pid, renameMsg);
           break;
         }
 

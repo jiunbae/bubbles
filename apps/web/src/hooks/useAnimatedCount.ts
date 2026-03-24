@@ -1,28 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Animates a number from 0 to `target` over `duration` ms using easeOutCubic.
- * Returns the current animated value (integer).
+ * Animates a number from its previous value to `target` over `duration` ms.
+ * Uses easeOutCubic. Returns the current animated value (integer).
  */
 export function useAnimatedCount(target: number, duration = 800): number {
-  const [value, setValue] = useState<number>(0);
-  const rafRef = useRef<number>(0);
+  const [value, setValue] = useState(target);
+  const prevRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (target === 0) {
-      setValue(0);
+    const from = prevRef.current;
+    prevRef.current = target;
+
+    if (from === target) {
+      setValue(target);
       return;
     }
 
     const start = performance.now();
 
     function tick(now: number) {
-      const elapsed = now - start;
-      const progress = Math.min(elapsed / duration, 1);
-      // easeOutCubic
+      const progress = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(eased * target));
-
+      setValue(Math.round(from + (target - from) * eased));
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(tick);
       }
@@ -30,7 +31,7 @@ export function useAnimatedCount(target: number, duration = 800): number {
 
     rafRef.current = requestAnimationFrame(tick);
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
   }, [target, duration]);
 

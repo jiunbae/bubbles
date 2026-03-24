@@ -39,9 +39,22 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     useBubbleStore();
   const { setMySessionId, setOnlineUsers, addOnlineUser, removeOnlineUser, renameOnlineUser, updateOnlineUserColor } = usePlaceStore();
 
-  // Milestone tracking
+  // Milestone tracking — subscribe to bubble store size for both local + remote
   const totalBubbleCountRef = useRef(0);
   const shownMilestonesRef = useRef(new Set<number>());
+
+  const checkMilestones = useCallback(() => {
+    const count = totalBubbleCountRef.current;
+    for (const threshold of MILESTONE_THRESHOLDS) {
+      if (count >= threshold && !shownMilestonesRef.current.has(threshold)) {
+        shownMilestonesRef.current.add(threshold);
+        showToast(
+          i18n.t('place.milestone', { count: threshold.toLocaleString() }),
+          'success',
+        );
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const client = wsClientRef.current;
@@ -68,23 +81,11 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           }
           break;
         }
-        case 'bubble_created': {
-          // From another user — server handles expiry via bubble_expired event
+        case 'bubble_created':
           addBubble(msg.data);
-          // Milestone check
           totalBubbleCountRef.current += 1;
-          const count = totalBubbleCountRef.current;
-          for (const threshold of MILESTONE_THRESHOLDS) {
-            if (count >= threshold && !shownMilestonesRef.current.has(threshold)) {
-              shownMilestonesRef.current.add(threshold);
-              showToast(
-                i18n.t('place.milestone', { count: threshold.toLocaleString() }),
-                'success',
-              );
-            }
-          }
+          checkMilestones();
           break;
-        }
         case 'bubble_popped':
           popBubble(msg.data.bubbleId);
           playPop();
@@ -147,7 +148,22 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     removeOnlineUser,
     renameOnlineUser,
     updateOnlineUserColor,
+    checkMilestones,
   ]);
+
+  // Also track local bubble additions for milestones
+  useEffect(() => {
+    let prevSize = useBubbleStore.getState().bubbles.size;
+    const unsub = useBubbleStore.subscribe((state) => {
+      const newSize = state.bubbles.size;
+      if (newSize > prevSize) {
+        totalBubbleCountRef.current += (newSize - prevSize);
+        checkMilestones();
+      }
+      prevSize = newSize;
+    });
+    return unsub;
+  }, [checkMilestones]);
 
   const send = useCallback((msg: ClientMessage) => {
     wsClientRef.current.send(msg);

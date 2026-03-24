@@ -23,7 +23,6 @@ function GroundPlane({ color = '#3a3a4a' }: { color?: string }) {
 
 // ─── Rooftop: railing + AC unit ───
 function Streetlamp({ position }: { position: [number, number, number] }) {
-  const [x, y, z] = position;
   return (
     <group position={position}>
       {/* Pole */}

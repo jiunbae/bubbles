@@ -13,11 +13,11 @@ export function PlaceCard({ place }: PlaceCardProps) {
   return (
     <button
       onClick={() => navigate(`/place/${place.id}`)}
-      className="group flex flex-col gap-3 rounded-xl border border-border bg-bg-card p-5 text-left transition-all duration-200 hover:-translate-y-1 hover:border-accent/40 hover:bg-bg-card-hover hover:shadow-lg hover:shadow-accent/5"
+      className="group flex min-h-[100px] flex-col gap-3 rounded-xl border border-border bg-bg-card p-4 text-left transition-all duration-200 active:scale-[0.98] hover:-translate-y-1 hover:border-accent/40 hover:bg-bg-card-hover hover:shadow-lg hover:shadow-accent/5 sm:min-h-[120px] sm:p-5"
     >
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         <span className="text-xl">{PLACE_THEMES.find((t) => t.value === place.theme)?.emoji ?? '🏙️'}</span>
-        <h3 className="text-lg font-semibold text-text-primary group-hover:text-accent-hover">
+        <h3 className="truncate text-lg font-semibold text-text-primary group-hover:text-accent-hover">
           {place.name}
         </h3>
       </div>

@@ -32,7 +32,7 @@ function ToolbarButton({
 }) {
   return (
     <button
-      className={`flex items-center justify-center w-[28px] h-[26px] rounded-sm text-[13px] ${
+      className={`flex items-center justify-center min-w-[28px] min-h-[28px] p-1.5 rounded-sm text-[13px] ${
         active ? 'bg-[#dde3ea] border border-[#b0b6be]' : 'hover:bg-[#e8eaed] border border-transparent'
       } text-[#333]`}
       title={title}
@@ -134,7 +134,7 @@ export function StealthToolbar({
       <ToolbarSeparator />
 
       {/* Font size = SIZE selector */}
-      <div className="relative">
+      <div className="relative hidden sm:block">
         <button
           ref={sizeRef}
           className="flex items-center h-[26px] px-2 border border-[#d1d5db] rounded-sm bg-white hover:bg-[#f3f4f6] text-[13px] text-[#333] gap-1 min-w-[48px]"
@@ -210,7 +210,7 @@ export function StealthToolbar({
       </div>
 
       {/* Borders = PATTERN selector */}
-      <div className="relative">
+      <div className="relative hidden sm:block">
         <button
           ref={borderRef}
           className="flex items-center justify-center w-[28px] h-[26px] rounded-sm hover:bg-[#e8eaed] border border-transparent text-[14px]"
@@ -313,12 +313,12 @@ export function StealthToolbar({
       <ToolbarSeparator />
 
       {/* Merge & Center (decorative) */}
-      <ToolbarButton title={t('stealthToolbar.mergeCenter')}>
+      <span className="hidden sm:inline-flex"><ToolbarButton title={t('stealthToolbar.mergeCenter')}>
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#555" strokeWidth="1.3">
           <rect x="1" y="4" width="14" height="8" rx="1" />
           <line x1="8" y1="4" x2="8" y2="12" strokeDasharray="2 2" />
         </svg>
-      </ToolbarButton>
+      </ToolbarButton></span>
     </div>
   );
 }

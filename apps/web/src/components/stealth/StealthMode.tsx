@@ -264,7 +264,7 @@ export function StealthMode() {
       />
 
       {/* Main content area */}
-      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0 overflow-x-auto">
         {activeTab === 0 && (
           <SpreadsheetView
             rows={spreadsheetRows}

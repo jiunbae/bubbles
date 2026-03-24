@@ -113,7 +113,7 @@ export function ActivityLog({ placeId: _placeId, onClose }: ActivityLogProps) {
           </h2>
           <button
             onClick={onClose}
-            className="rounded p-1 text-text-muted transition-colors hover:text-text-primary"
+            className="rounded p-2 text-text-muted transition-colors hover:text-text-primary"
           >
             <svg
               className="h-4 w-4"

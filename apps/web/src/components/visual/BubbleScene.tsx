@@ -80,6 +80,8 @@ function createBubbleAt(x: number, y: number, z: number, color: string): BubbleI
  * BubbleSpawner: pointer-hold spawning.
  * Does NOT subscribe to s.bubbles.
  */
+const _raycaster = new THREE.Raycaster();
+
 function BubbleSpawner() {
   const { camera, pointer } = useThree();
   const [holding, setHolding] = useState(false);
@@ -98,8 +100,7 @@ function BubbleSpawner() {
     if (store.bubbles.size >= MAX_BUBBLES) return;
 
     // Raycast from mouse into scene, place bubbles at halfway to origin
-    const rc = new THREE.Raycaster();
-    rc.setFromCamera(ptRef.current, camRef.current);
+    _raycaster.setFromCamera(ptRef.current, camRef.current);
     const dir = rc.ray.direction.clone().normalize();
     const camDist = camRef.current.position.length(); // distance from origin
     const spawnDist = camDist * 0.5; // halfway between camera and origin

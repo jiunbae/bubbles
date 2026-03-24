@@ -36,7 +36,7 @@ function MenuDropdown({
   return (
     <div
       ref={ref}
-      className="absolute top-full left-0 mt-0 bg-white border border-[#c0c0c0] shadow-md rounded-sm min-w-[220px] py-1 z-50"
+      className="absolute top-full left-0 mt-0 bg-white border border-[#c0c0c0] shadow-md rounded-sm min-w-[220px] max-w-[calc(100vw-1rem)] max-h-[calc(100vh-4rem)] overflow-y-auto py-1 z-50"
     >
       {items.map((item, i) =>
         item.divider ? (
@@ -44,7 +44,7 @@ function MenuDropdown({
         ) : (
           <button
             key={i}
-            className={`w-full text-left px-4 py-[5px] text-[13px] flex items-center justify-between ${
+            className={`w-full text-left px-4 py-[5px] min-h-[32px] text-[13px] flex items-center justify-between ${
               item.disabled
                 ? 'text-[#999] cursor-default'
                 : 'text-[#333] hover:bg-[#e8f0fe]'

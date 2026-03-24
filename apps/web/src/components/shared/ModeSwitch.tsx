@@ -29,7 +29,7 @@ export function ModeSwitch() {
   return (
     <button
       onClick={toggle}
-      className="group relative rounded-md p-1.5 text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary"
+      className="group relative rounded-md p-2.5 text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary"
       title={label}
       aria-label={label}
     >

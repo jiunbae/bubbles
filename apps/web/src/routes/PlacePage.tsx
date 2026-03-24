@@ -104,11 +104,12 @@ export function PlacePage() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="flex items-center gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-y-2 border-b border-border px-3 py-2 sm:px-4 sm:py-3">
+        {/* Row 1: Back + place name + connection dot + mode switch */}
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => navigate('/')}
-            className="text-text-secondary transition-colors hover:text-text-primary"
+            className="rounded-md p-2 text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary"
             title={t('place.backToLobby')}
           >
             <svg
@@ -125,7 +126,7 @@ export function PlacePage() {
               />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold text-text-primary">
+          <h1 className="text-base font-semibold text-text-primary sm:text-lg">
             {currentPlace?.name ?? t('common.loading')}
           </h1>
           <span
@@ -138,9 +139,11 @@ export function PlacePage() {
             }`}
             title={connectionStatus}
           />
+          <ModeSwitch />
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Row 2: user info, bubble count, online users, actions */}
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* My name (editable) */}
           {myUser && (
             <div className="flex items-center gap-1.5">
@@ -156,7 +159,7 @@ export function PlacePage() {
                     if (e.key === 'Escape') setIsEditingName(false);
                   }}
                   maxLength={30}
-                  className="w-28 rounded border border-border bg-bg-secondary px-1.5 py-0.5 text-sm text-text-primary outline-none focus:border-accent"
+                  className="w-20 rounded border border-border bg-bg-secondary px-1.5 py-0.5 text-sm text-text-primary outline-none focus:border-accent sm:w-28"
                 />
               ) : (
                 <button
@@ -174,13 +177,13 @@ export function PlacePage() {
           {!isLoggedIn ? (
             <button
               onClick={() => handleLogin('github')}
-              className="flex items-center gap-1 rounded-md bg-bg-secondary px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-bg-card-hover hover:text-text-primary"
+              className="flex items-center gap-1 rounded-md bg-bg-secondary px-2 py-1.5 text-xs text-text-secondary transition-colors hover:bg-bg-card-hover hover:text-text-primary"
               title="Sign in with GitHub"
             >
               <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
               </svg>
-              Login
+              <span className="hidden sm:inline">Login</span>
             </button>
           ) : (
             <button
@@ -192,17 +195,17 @@ export function PlacePage() {
             </button>
           )}
 
-          <div className="h-4 w-px bg-border" />
+          <div className="hidden h-4 w-px bg-border sm:block" />
 
           {/* Bubble count */}
-          <span className="text-sm text-text-secondary" title={t('place.bubbles', { count: bubbleCount })}>
+          <span className="text-xs text-text-secondary sm:text-sm" title={t('place.bubbles', { count: bubbleCount })}>
             {bubbleCount} {'\u{1FAE7}'}
           </span>
 
           {/* Online users with count + dropdown */}
           <div className="relative">
-            <button onClick={() => setShowUsers(!showUsers)} className="flex items-center gap-1.5" title={t('place.onlineUsers')}>
-              <span className="text-sm text-text-secondary">{onlineUsers.length}</span>
+            <button onClick={() => setShowUsers(!showUsers)} className="flex items-center gap-1.5 rounded-md p-1.5" title={t('place.onlineUsers')}>
+              <span className="text-xs text-text-secondary sm:text-sm">{onlineUsers.length}</span>
               <div className="flex -space-x-1">
                 {onlineUsers.slice(0, 6).map((user) => (
                   <div
@@ -219,7 +222,7 @@ export function PlacePage() {
               )}
             </button>
             {showUsers && (
-              <div className="absolute right-0 top-full mt-2 z-50 bg-bg-card border border-border rounded-lg shadow-lg p-3 min-w-[180px]">
+              <div className="absolute right-0 top-full mt-2 z-50 bg-bg-card border border-border rounded-lg shadow-lg p-3 min-w-[180px] max-w-[calc(100vw-2rem)]">
                 <div className="text-xs text-text-muted mb-2">{t('place.online', { count: onlineUsers.length })}</div>
                 {onlineUsers.map((user) => (
                   <div key={user.sessionId} className="flex items-center gap-2 py-1">
@@ -233,7 +236,7 @@ export function PlacePage() {
 
           <button
             onClick={() => setIsLogOpen((v) => !v)}
-            className="rounded-md p-1.5 text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary"
+            className="rounded-md p-2 text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary"
             title={t('place.activityLog')}
           >
             <svg
@@ -252,7 +255,6 @@ export function PlacePage() {
           </button>
 
           <LanguageSwitcher />
-          <ModeSwitch />
         </div>
       </header>
 

@@ -75,7 +75,8 @@ export function SpreadsheetView({
 
   return (
     <div className="flex-1 overflow-auto bg-white">
-      <table className="w-full border-collapse text-[13px] font-[system-ui] table-fixed">
+      <div className="overflow-x-auto min-w-0">
+      <table className="w-full border-collapse text-[13px] font-[system-ui] table-fixed min-w-[640px]">
         {/* Column headers */}
         <thead className="sticky top-0 z-10">
           <tr>
@@ -84,7 +85,7 @@ export function SpreadsheetView({
             {COLUMNS.map((col) => (
               <th
                 key={col}
-                className={`${COL_WIDTHS[col]} bg-[#f3f4f6] border border-[#d1d5db] px-2 py-[3px] text-center font-medium text-[#666] text-[12px]`}
+                className={`${COL_WIDTHS[col]} bg-[#f3f4f6] border border-[#d1d5db] px-2 py-1 text-center font-medium text-[#666] text-[12px]`}
               >
                 {col}
               </th>
@@ -103,7 +104,7 @@ export function SpreadsheetView({
               return (
                 <td
                   key={col}
-                  className={`border px-2 py-[3px] font-semibold text-[#333] bg-[#f9fafb] cursor-default ${
+                  className={`border px-2 py-1 font-semibold text-[#333] bg-[#f9fafb] cursor-default ${
                     isSelected ? 'border-[#1a73e8] border-2 bg-[#e8f0fe]' : 'border-[#d1d5db]'
                   }`}
                   onClick={() => onCellSelect(1, col)}
@@ -133,7 +134,7 @@ export function SpreadsheetView({
                   return (
                     <td
                       key={col}
-                      className={`border px-2 py-[3px] cursor-default truncate ${extraClass} ${
+                      className={`border px-2 py-1 cursor-default truncate ${extraClass} ${
                         isSelected
                           ? 'border-[#1a73e8] border-2 bg-[#e8f0fe]'
                           : 'border-[#d1d5db]'
@@ -161,7 +162,7 @@ export function SpreadsheetView({
                   return (
                     <td
                       key={col}
-                      className={`border px-2 py-[3px] cursor-default ${
+                      className={`border px-2 py-1 cursor-default ${
                         isSelected
                           ? 'border-[#1a73e8] border-2 bg-[#e8f0fe]'
                           : 'border-[#d1d5db]'
@@ -177,6 +178,7 @@ export function SpreadsheetView({
           })}
         </tbody>
       </table>
+      </div>
       <div ref={bottomRef} />
 
       {/* Inject keyframe animation */}

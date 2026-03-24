@@ -116,9 +116,10 @@ export function BubbleControls() {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+      position: 'fixed', bottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)', left: '50%', transform: 'translateX(-50%)',
       zIndex: 10000, pointerEvents: 'auto',
       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+      maxHeight: 'calc(100vh - 80px)',
     }}>
       {/* Bubble count indicator */}
       <div style={{
@@ -130,7 +131,7 @@ export function BubbleControls() {
 
       <div style={{
         display: 'flex', alignItems: 'center', gap: 16,
-        padding: '12px 24px', borderRadius: 24,
+        padding: window.innerWidth < 640 ? '8px 16px' : '12px 24px', borderRadius: 24,
         background: 'rgba(20, 20, 30, 0.8)',
         backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
         border: '1px solid rgba(255,255,255,0.15)',
@@ -150,10 +151,10 @@ export function BubbleControls() {
           onPointerLeave={stopBlowing}
           onContextMenu={(e) => e.preventDefault()}
           style={{
-            padding: '14px 40px', borderRadius: 24,
+            padding: window.innerWidth < 640 ? '10px 28px' : '14px 40px', borderRadius: 24,
             border: isBlowing ? '2px solid rgba(255,255,255,0.7)' : '1px solid rgba(255,255,255,0.3)',
             background: isBlowing ? 'rgba(100, 180, 255, 0.4)' : 'rgba(255,255,255,0.15)',
-            color: '#fff', fontSize: 18, fontWeight: 700,
+            color: '#fff', fontSize: window.innerWidth < 640 ? 15 : 18, fontWeight: 700,
             cursor: 'pointer', fontFamily: 'system-ui, sans-serif',
             userSelect: 'none', WebkitUserSelect: 'none',
             touchAction: 'none',

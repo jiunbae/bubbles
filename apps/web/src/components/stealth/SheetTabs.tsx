@@ -53,7 +53,7 @@ export function SheetTabs({
       {tabs.map((tab, i) => (
         <button
           key={i}
-          className={`px-4 py-1 text-[12px] border-t border-x ${
+          className={`px-3 py-2 sm:px-4 text-[12px] border-t border-x ${
             activeTab === i
               ? 'bg-white border-[#d1d5db] text-[#333] font-medium -mb-[1px] z-10'
               : 'bg-[#e0e2e6] border-transparent text-[#666] hover:bg-[#d8dade]'
@@ -77,7 +77,7 @@ export function SheetTabs({
       <div className="flex-1" />
 
       {/* Scrollbar track (decorative) */}
-      <div className="w-[120px] h-[14px] bg-[#d1d5db] rounded-full mr-2 mb-1">
+      <div className="w-16 sm:w-[120px] h-[14px] bg-[#d1d5db] rounded-full mr-2 mb-1">
         <div className="w-[40px] h-full bg-[#b0b6be] rounded-full" />
       </div>
 
@@ -85,7 +85,7 @@ export function SheetTabs({
       {contextMenu && (
         <div
           ref={ctxRef}
-          className="fixed bg-white border border-[#c0c0c0] shadow-md rounded-sm py-1 min-w-[160px] z-50 text-[13px]"
+          className="fixed bg-white border border-[#c0c0c0] shadow-md rounded-sm py-1 min-w-[160px] max-w-[calc(100vw-1rem)] z-50 text-[13px]"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
           <button className="w-full text-left px-4 py-1 hover:bg-[#e8f0fe] text-[#999] cursor-default" disabled>

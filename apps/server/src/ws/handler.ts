@@ -59,6 +59,7 @@ export function createWSHandlers(placeId: string, c: Context) {
       let displayName: string | undefined;
       let isAuthenticated = false;
 
+      let authError: string | undefined;
       if (token) {
         try {
           const secret = new TextEncoder().encode(config.JWT_SECRET);
@@ -66,7 +67,11 @@ export function createWSHandlers(placeId: string, c: Context) {
           userId = payload.sub;
           displayName = (payload.name as string) || (payload.username as string);
           isAuthenticated = true;
-        } catch {}
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'unknown';
+          console.warn(`[ws] JWT verification failed: ${msg}`);
+          authError = 'TOKEN_INVALID';
+        }
       }
 
       if (!displayName) {
@@ -92,6 +97,15 @@ export function createWSHandlers(placeId: string, c: Context) {
       incGauge('ws_connections_active');
       incCounter('ws_connections_total');
       await joinRoom(placeId, sessionId, ws, user);
+
+      // Notify client if token was provided but failed verification
+      if (authError) {
+        sendToClient(ws, {
+          type: 'error', ts: Date.now(),
+          data: { code: authError, message: 'Authentication failed. Connected as anonymous.' },
+        });
+      }
+
       await logAction('join', placeId, sessionId, user);
     },
 
@@ -118,7 +132,10 @@ export function createWSHandlers(placeId: string, c: Context) {
       }
 
       const { placeId: pid, user } = state;
-      console.log(`[ws] Message from ${user.displayName}: ${msg.type}`);
+      // Only log non-noisy message types
+      if (msg.type !== 'ping' && msg.type !== 'cursor') {
+        console.log(`[ws] Message from ${user.displayName}: ${msg.type}`);
+      }
 
       switch (msg.type) {
         case 'blow': {
@@ -131,22 +148,27 @@ export function createWSHandlers(placeId: string, c: Context) {
             return;
           }
 
-          const { size, color, pattern, x, y, z, seed: clientSeed, expiresAt: clientExpiresAt } = msg.data as any;
-          if (!['S', 'M', 'L'].includes(size)) return;
+          const { size, color, pattern, x, y, z, seed: clientSeed, expiresAt: clientExpiresAt } = msg.data;
+          if (!(['S', 'M', 'L'] as string[]).includes(size)) return;
+
+          // Validate color is a valid hex
+          const validColor = typeof color === 'string' && /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#87CEEB';
 
           const bubbleId = crypto.randomUUID();
           const now = Date.now();
 
-          // Use client-provided seed/expiresAt for sync, with fallback
           const seed = typeof clientSeed === 'number' ? clientSeed : Math.floor(Math.random() * 1000000);
           const lifetime = BUBBLE_LIFETIME[size as BubbleSize];
           const duration = typeof clientExpiresAt === 'number'
-            ? Math.min(Math.max(clientExpiresAt - now, 3000), 60000) // clamp 3s-60s
+            ? Math.min(Math.max(clientExpiresAt - now, 3000), 60000)
             : lifetime.min + Math.random() * (lifetime.max - lifetime.min);
 
           const bx = typeof x === 'number' ? x : (Math.random() - 0.5) * 2;
           const by = typeof y === 'number' ? y : 0.5 + Math.random();
           const bz = typeof z === 'number' ? z : (Math.random() - 0.5) * 2;
+
+          // Always compute expiresAt server-side — never trust client value
+          const expiresAt = now + duration;
 
           const bubble = {
             id: bubbleId,
@@ -158,11 +180,11 @@ export function createWSHandlers(placeId: string, c: Context) {
             },
             x: bx, y: by, z: bz,
             size: size as BubbleSize,
-            color: typeof color === 'string' ? color : '#87CEEB',
+            color: validColor,
             pattern: (pattern || 'plain') as BubblePattern,
             seed,
             createdAt: now,
-            expiresAt: typeof clientExpiresAt === 'number' ? clientExpiresAt : now + duration,
+            expiresAt,
           };
 
           createBubble(pid, bubble);
@@ -229,10 +251,20 @@ export function createWSHandlers(placeId: string, c: Context) {
         }
 
         case 'set_name': {
-          const { displayName: newName } = msg.data as { displayName?: string };
+          const rateCheckName = checkRateLimit(sessionId, 'blow', user.isAuthenticated); // reuse blow bucket (5/min effective)
+          if (!rateCheckName.allowed) {
+            sendToClient(ws, {
+              type: 'error', ts: Date.now(),
+              data: { code: 'RATE_LIMITED', message: `Too many renames. Try again in ${rateCheckName.retryAfter}s` },
+            });
+            return;
+          }
+
+          const newName = msg.data.displayName;
           if (typeof newName !== 'string') return;
 
-          const trimmed = newName.trim().slice(0, 30);
+          // Sanitize: trim, truncate, strip HTML and control characters
+          const trimmed = newName.trim().slice(0, 30).replace(/[<>&"']/g, '').replace(/[\x00-\x1f\x7f-\x9f]/g, '');
           if (trimmed.length < 1) {
             sendToClient(ws, {
               type: 'error', ts: Date.now(),

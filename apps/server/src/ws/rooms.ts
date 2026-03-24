@@ -392,19 +392,30 @@ function expireBubble(placeId: string, bubbleId: string): void {
   broadcastToRoom(placeId, msg);
 }
 
+/** Iterate keys matching a pattern using SCAN (non-blocking). */
+async function redisScanKeys(redis: ReturnType<typeof getRedis> & object, pattern: string): Promise<string[]> {
+  const keys: string[] = [];
+  let cursor = '0';
+  do {
+    const [nextCursor, batch] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+    cursor = nextCursor;
+    keys.push(...batch);
+  } while (cursor !== '0');
+  return keys;
+}
+
 /** Clean up stale entries from Redis (e.g. from crashed pods). */
 export async function cleanupRedisStaleEntries(): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
 
   try {
-    // Find all room member keys
-    const keys = await redis.keys('room:*:members');
-    for (const key of keys) {
+    // Find all room member keys using SCAN (non-blocking)
+    const memberKeys = await redisScanKeys(redis, 'room:*:members');
+    for (const key of memberKeys) {
       const members = await redis.hgetall(key);
       for (const [sessionId, data] of Object.entries(members)) {
         const parsed = JSON.parse(data);
-        // If this member was on our pod but isn't in our local rooms, remove it
         if (parsed.podId === config.POD_ID) {
           const placeId = key.replace('room:', '').replace(':members', '');
           const room = rooms.get(placeId);
@@ -415,8 +426,8 @@ export async function cleanupRedisStaleEntries(): Promise<void> {
       }
     }
 
-    // Clean up expired bubbles
-    const bubbleKeys = await redis.keys('room:*:bubbles');
+    // Clean up expired bubbles using SCAN
+    const bubbleKeys = await redisScanKeys(redis, 'room:*:bubbles');
     const now = Date.now();
     for (const key of bubbleKeys) {
       const bubbles = await redis.hgetall(key);

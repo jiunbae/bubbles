@@ -33,6 +33,7 @@ body {
   color: var(--color-text-primary);
   min-height: 100vh;
   margin: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 @keyframes float {
@@ -70,4 +71,13 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background-color: var(--color-border);
   border-radius: 3px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

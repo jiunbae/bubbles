@@ -41,7 +41,7 @@ export function CreatePlaceForm() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="flex min-h-[120px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border text-text-muted transition-all duration-200 hover:border-accent/50 hover:text-text-secondary"
+        className="flex min-h-[100px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border text-text-muted transition-all duration-200 hover:border-accent/50 hover:text-text-secondary sm:min-h-[120px]"
       >
         <svg
           className="h-8 w-8"
@@ -70,7 +70,7 @@ export function CreatePlaceForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-xl border border-accent/40 bg-bg-card p-5"
+      className="flex max-h-[90vh] flex-col gap-3 overflow-y-auto rounded-xl border border-accent/40 bg-bg-card p-4 sm:p-5"
     >
       <input
         type="text"
@@ -82,7 +82,7 @@ export function CreatePlaceForm() {
         placeholder={t('lobby.placeNamePlaceholder')}
         maxLength={MAX_PLACE_NAME_LENGTH}
         autoFocus
-        className="rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+        className="w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
       />
 
       {/* Theme selection */}
@@ -100,7 +100,7 @@ export function CreatePlaceForm() {
           >
             <span className="text-lg">{thm.emoji}</span>
             <span className="font-medium">{themeLabels[thm.value]?.label ?? thm.label}</span>
-            <span className="text-[10px] opacity-70">{themeLabels[thm.value]?.description ?? thm.description}</span>
+            <span className="text-xs opacity-70">{themeLabels[thm.value]?.description ?? thm.description}</span>
           </button>
         ))}
       </div>

@@ -165,14 +165,14 @@ function BubbleSpawner() {
  */
 // ONE shared MeshStandardMaterial — compiled once, cloned per bubble (same shader program)
 const sharedBubbleMaterial = new THREE.MeshStandardMaterial({
-  metalness: 0.1,
-  roughness: 0.1,
+  metalness: 0.15,
+  roughness: 0.05,
   transparent: true,
-  opacity: 0.3,
+  opacity: 0.15,
   side: THREE.DoubleSide,
   depthWrite: false,
   emissive: new THREE.Color('#4488cc'),
-  emissiveIntensity: 0.05,
+  emissiveIntensity: 0.08,
 });
 
 function BubbleRenderer() {

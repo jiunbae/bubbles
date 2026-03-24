@@ -93,14 +93,14 @@ export function BubbleMesh({
 
     const age = physics.age;
     let scale = radius;
-    let opacity = 0.5;
+    let opacity = 0.25;
 
     if (age < GROW_DURATION) {
       const t = age / GROW_DURATION;
       const eased = 1 - Math.pow(1 - t, 2.5);
       const wobble = Math.sin(age * (5 + bubble.seed % 7)) * 0.06 * (1 - t);
       scale = radius * Math.max(0.01, eased + wobble);
-      opacity = 0.5 * Math.min(1, t * 3);
+      opacity = 0.25 * Math.min(1, t * 3);
     }
 
     if (poppingRef.current) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchPlaces } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,6 +18,14 @@ export function LobbyPage() {
   const { places, setPlaces } = usePlaceStore();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
+
+  // Refetch places on mount AND when returning from a place (visibility change)
+  useEffect(() => {
+    const onFocus = () => setFetchKey((k) => k + 1);
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,7 +46,7 @@ export function LobbyPage() {
     return () => {
       cancelled = true;
     };
-  }, [setPlaces]);
+  }, [setPlaces, fetchKey]);
 
   const sortedPlaces = useMemo(
     () => [...places].sort((a, b) => b.userCount - a.userCount),

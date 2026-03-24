@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { createPlace } from '@/lib/api';
+import { usePlaceStore } from '@/stores/place-store';
 import { MAX_PLACE_NAME_LENGTH, PLACE_THEMES, type PlaceTheme } from '@bubbles/shared';
 import { showToast } from '@/components/shared/Toast';
 
@@ -26,6 +27,11 @@ export function CreatePlaceForm() {
 
     try {
       const place = await createPlace(trimmedName, theme);
+      // Add to store so lobby list updates immediately on back navigation
+      usePlaceStore.getState().setPlaces([
+        place,
+        ...usePlaceStore.getState().places,
+      ]);
       showToast(`Created "${place.name}"`, 'success');
       navigate(`/place/${place.id}`);
     } catch (err) {

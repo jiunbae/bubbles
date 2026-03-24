@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { ObjectId } from 'mongodb';
 import { getCollection } from '../db/mongo';
-import { getRoomUserCount } from '../ws/rooms';
+import { getRoomUserCountAsync } from '../ws/rooms';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -271,7 +271,7 @@ og.get('/place/:placeId.png', async (c) => {
 
     const themeKey = (place.theme as string) || 'rooftop';
     const theme = themes[themeKey] || themes.rooftop;
-    const userCount = getRoomUserCount(placeId);
+    const userCount = await getRoomUserCountAsync(placeId);
 
     await ensureWasm();
     const svg = generateSVG(place.name, theme, userCount, 0);

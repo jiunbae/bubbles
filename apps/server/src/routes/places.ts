@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 import { getCollection } from '../db/mongo';
 import { authMiddleware } from '../middleware/auth';
 import { rateLimiterMiddleware } from '../middleware/rateLimiter';
-import { getRoomUserCount } from '../ws/rooms';
+import { getRoomUserCountAsync } from '../ws/rooms';
 import { logAction } from '../ws/actions';
 import { MAX_PLACE_NAME_LENGTH } from '@bubbles/shared';
 
@@ -32,18 +32,18 @@ places.get('/', async (c) => {
     .limit(100)
     .toArray();
 
-  const result = docs.map((doc) => ({
+  const result = await Promise.all(docs.map(async (doc) => ({
     id: doc._id.toHexString(),
     name: doc.name,
     theme: doc.theme || 'rooftop',
     createdBy: doc.createdBy,
-    userCount: getRoomUserCount(doc._id.toHexString()),
+    userCount: await getRoomUserCountAsync(doc._id.toHexString()),
     bubbleCount: 0,
     totalVisitors: doc.totalVisitors || 0,
     totalBubbles: doc.totalBubbles || 0,
     createdAt: doc.createdAt.toISOString(),
     lastActivityAt: doc.lastActivityAt.toISOString(),
-  }));
+  })));
 
   return c.json(result);
 });
@@ -133,7 +133,7 @@ places.get('/:placeId', async (c) => {
     name: doc.name,
     theme: doc.theme || 'rooftop',
     createdBy: doc.createdBy,
-    userCount: getRoomUserCount(placeId),
+    userCount: await getRoomUserCountAsync(placeId),
     bubbleCount: 0,
     totalVisitors: doc.totalVisitors || 0,
     totalBubbles: doc.totalBubbles || 0,

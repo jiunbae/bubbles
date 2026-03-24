@@ -348,6 +348,18 @@ export function getRoomUserCount(placeId: string): number {
   return room ? room.clients.size : 0;
 }
 
+/** Get user count from Redis (cross-pod). Falls back to local count. */
+export async function getRoomUserCountAsync(placeId: string): Promise<number> {
+  const redis = getRedis();
+  if (!redis) return getRoomUserCount(placeId);
+  try {
+    const count = await redis.hlen(memberKey(placeId));
+    return count;
+  } catch {
+    return getRoomUserCount(placeId);
+  }
+}
+
 export function cleanupStaleRooms(): void {
   const now = Date.now();
   for (const [placeId, room] of rooms) {

@@ -178,10 +178,11 @@ export function StealthMode() {
   const cellContent = useMemo(() => {
     if (!selectedCell) return null;
     if (selectedCell.row === 1) {
-      const headers: Record<string, string> = {
-        A: 'Timestamp', B: 'Status', C: 'Assignee', D: 'Task', E: 'Priority', F: 'Category', G: 'Notes',
+      const headerKeys: Record<string, string> = {
+        A: 'stealthCols.timestamp', B: 'stealthCols.status', C: 'stealthCols.assignee',
+        D: 'stealthCols.task', E: 'stealthCols.priority', F: 'stealthCols.category', G: 'stealthCols.notes',
       };
-      return headers[selectedCell.col] ?? '';
+      return t(headerKeys[selectedCell.col] ?? '');
     }
     const dataRow = spreadsheetRows[selectedCell.row - 2];
     if (!dataRow) return '';

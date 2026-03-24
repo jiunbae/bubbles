@@ -29,47 +29,38 @@ export interface SpreadsheetRow {
 // Fake task name pool (>30 entries)
 // ---------------------------------------------------------------------------
 
-const FAKE_TASKS: string[] = [
-  'Q1 Budget Review',
-  'Sprint Retrospective Notes',
-  'Client Onboarding Checklist',
-  'Performance Review Draft',
-  'Marketing Campaign Analysis',
-  'Weekly Status Update',
-  'Vendor Contract Review',
-  'Team Capacity Planning',
-  'Risk Assessment Matrix',
-  'Stakeholder Presentation',
-  'Project Timeline Update',
-  'Resource Allocation Sheet',
-  'Monthly KPI Dashboard',
-  'Training Schedule',
-  'Compliance Audit Checklist',
-  'Inventory Reconciliation',
-  'Customer Feedback Summary',
-  'Employee Satisfaction Survey',
-  'Annual Revenue Forecast',
-  'Operational Efficiency Report',
-  'Hiring Pipeline Tracker',
-  'IT Infrastructure Audit',
-  'Travel Expense Report',
-  'Product Roadmap Review',
-  'Quarterly OKR Update',
-  'Security Compliance Review',
-  'Brand Guidelines Update',
-  'Office Supply Inventory',
-  'Meeting Room Schedule',
-  'Sales Funnel Analysis',
-  'Customer Retention Plan',
-  'Data Migration Checklist',
-  'Employee Onboarding Plan',
-  'Social Media Calendar',
-  'Bug Triage Spreadsheet',
-];
+import i18n from '@/i18n';
+
+function getFakeTasks(): string[] {
+  return i18n.language === 'ko' ? [
+    '1분기 예산 검토', '스프린트 회고 노트', '고객 온보딩 체크리스트',
+    '성과 리뷰 초안', '마케팅 캠페인 분석', '주간 현황 보고',
+    '협력사 계약 검토', '팀 역량 계획', '리스크 평가 매트릭스',
+    '이해관계자 발표자료', '프로젝트 일정 업데이트', '자원 배분 시트',
+    '월간 KPI 대시보드', '교육 일정표', '컴플라이언스 감사 체크리스트',
+    '재고 조정', '고객 피드백 요약', '직원 만족도 설문',
+    '연간 매출 예측', '운영 효율 보고서', '채용 파이프라인 추적',
+    'IT 인프라 감사', '출장비 보고서', '제품 로드맵 검토',
+    '분기별 OKR 업데이트', '보안 컴플라이언스 검토', '브랜드 가이드 업데이트',
+    '사무용품 재고', '회의실 일정표', '영업 퍼널 분석',
+  ] : [
+    'Q1 Budget Review', 'Sprint Retrospective Notes', 'Client Onboarding Checklist',
+    'Performance Review Draft', 'Marketing Campaign Analysis', 'Weekly Status Update',
+    'Vendor Contract Review', 'Team Capacity Planning', 'Risk Assessment Matrix',
+    'Stakeholder Presentation', 'Project Timeline Update', 'Resource Allocation Sheet',
+    'Monthly KPI Dashboard', 'Training Schedule', 'Compliance Audit Checklist',
+    'Inventory Reconciliation', 'Customer Feedback Summary', 'Employee Satisfaction Survey',
+    'Annual Revenue Forecast', 'Operational Efficiency Report', 'Hiring Pipeline Tracker',
+    'IT Infrastructure Audit', 'Travel Expense Report', 'Product Roadmap Review',
+    'Quarterly OKR Update', 'Security Compliance Review', 'Brand Guidelines Update',
+    'Office Supply Inventory', 'Meeting Room Schedule', 'Sales Funnel Analysis',
+  ];
+}
 
 let taskIndex = 0;
 function nextTask(): string {
-  const task = FAKE_TASKS[taskIndex % FAKE_TASKS.length];
+  const tasks = getFakeTasks();
+  const task = tasks[taskIndex % tasks.length];
   taskIndex++;
   return task;
 }
@@ -79,31 +70,32 @@ function nextTask(): string {
 // ---------------------------------------------------------------------------
 
 export function sizeToPriority(size: BubbleSize): string {
+  const isKo = i18n.language === 'ko';
   switch (size) {
-    case 'S':
-      return 'Low';
-    case 'M':
-      return 'Medium';
-    case 'L':
-      return 'High';
-    default:
-      return 'Medium';
+    case 'S': return isKo ? '낮음' : 'Low';
+    case 'M': return isKo ? '보통' : 'Medium';
+    case 'L': return isKo ? '높음' : 'High';
+    default: return isKo ? '보통' : 'Medium';
   }
 }
 
-const COLOR_CATEGORIES: Record<string, string> = {
-  '#FFB5C2': 'Marketing',
-  '#87CEEB': 'Engineering',
-  '#98FB98': 'Operations',
-  '#DDA0DD': 'Design',
-  '#FFD700': 'Finance',
-  '#FFDAB9': 'Sales',
-  '#F5F5F5': 'General',
-  '#FF69B4': 'Executive',
-};
+function getColorCategories(): Record<string, string> {
+  const isKo = i18n.language === 'ko';
+  return {
+    '#FFB5C2': isKo ? '마케팅' : 'Marketing',
+    '#87CEEB': isKo ? '개발' : 'Engineering',
+    '#98FB98': isKo ? '운영' : 'Operations',
+    '#DDA0DD': isKo ? '디자인' : 'Design',
+    '#FFD700': isKo ? '재무' : 'Finance',
+    '#FFDAB9': isKo ? '영업' : 'Sales',
+    '#F5F5F5': isKo ? '일반' : 'General',
+    '#FF69B4': isKo ? '경영' : 'Executive',
+  };
+}
 
 export function colorToCategory(color: string): string {
-  return COLOR_CATEGORIES[color] ?? 'General';
+  const cats = getColorCategories();
+  return cats[color] ?? (i18n.language === 'ko' ? '일반' : 'General');
 }
 
 export function patternToNotes(pattern: BubblePattern): string {

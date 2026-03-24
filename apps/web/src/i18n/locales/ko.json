@@ -175,6 +175,15 @@
     "keyboardShortcuts": "바로 가기 키",
     "about": "정보"
   },
+  "stealthCols": {
+    "timestamp": "시간",
+    "status": "상태",
+    "assignee": "담당자",
+    "task": "작업",
+    "priority": "우선순위",
+    "category": "분류",
+    "notes": "비고"
+  },
   "stealthToolbar": {
     "paste": "붙여넣기 (Ctrl+V)",
     "cut": "잘라내기 (Ctrl+X)",

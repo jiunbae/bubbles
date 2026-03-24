@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SpreadsheetRow } from './stealth-utils';
 
 interface SpreadsheetViewProps {
@@ -9,14 +10,14 @@ interface SpreadsheetViewProps {
 }
 
 const COLUMNS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'] as const;
-const HEADERS: Record<string, string> = {
-  A: 'Timestamp',
-  B: 'Status',
-  C: 'Assignee',
-  D: 'Task',
-  E: 'Priority',
-  F: 'Category',
-  G: 'Notes',
+const HEADER_KEYS: Record<string, string> = {
+  A: 'stealthCols.timestamp',
+  B: 'stealthCols.status',
+  C: 'stealthCols.assignee',
+  D: 'stealthCols.task',
+  E: 'stealthCols.priority',
+  F: 'stealthCols.category',
+  G: 'stealthCols.notes',
 };
 
 const COL_WIDTHS: Record<string, string> = {
@@ -59,6 +60,7 @@ export function SpreadsheetView({
   onCellSelect,
   newRowId,
 }: SpreadsheetViewProps) {
+  const { t } = useTranslation();
   const bottomRef = useRef<HTMLDivElement>(null);
   const prevRowCount = useRef(rows.length);
 
@@ -109,7 +111,7 @@ export function SpreadsheetView({
                   }`}
                   onClick={() => onCellSelect(1, col)}
                 >
-                  {HEADERS[col]}
+                  {t(HEADER_KEYS[col])}
                 </td>
               );
             })}

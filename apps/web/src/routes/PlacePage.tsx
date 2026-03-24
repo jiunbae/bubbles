@@ -288,7 +288,7 @@ export function PlacePage() {
           {/* Cumulative stats */}
           {currentPlace && (
             <span className="hidden text-xs text-text-muted sm:inline" title={`${t('place.totalVisitors', { count: currentPlace.totalVisitors })} / ${t('place.totalBubbles', { count: currentPlace.totalBubbles })}`}>
-              {currentPlace.totalVisitors}{'\u{1F465}'} {currentPlace.totalBubbles}{'\u{1FAE7}'}
+              {currentPlace.totalVisitors} {'\u{1F465}'} · {currentPlace.totalBubbles} {'\u{1FAE7}'}
             </span>
           )}
 

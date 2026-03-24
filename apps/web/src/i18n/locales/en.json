@@ -176,6 +176,15 @@
     "keyboardShortcuts": "Keyboard Shortcuts",
     "about": "About"
   },
+  "stealthCols": {
+    "timestamp": "Timestamp",
+    "status": "Status",
+    "assignee": "Assignee",
+    "task": "Task",
+    "priority": "Priority",
+    "category": "Category",
+    "notes": "Notes"
+  },
   "stealthToolbar": {
     "paste": "Paste (Ctrl+V)",
     "cut": "Cut (Ctrl+X)",

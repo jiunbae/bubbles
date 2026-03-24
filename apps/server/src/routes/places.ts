@@ -27,7 +27,7 @@ places.use('*', authMiddleware);
 places.get('/', async (c) => {
   const col = getCollection<PlaceDoc>('places');
   const docs = await col
-    .find({ deleteAfter: { $exists: false } })
+    .find({ $or: [{ deleteAfter: { $exists: false } }, { deleteAfter: { $gt: new Date() } }] })
     .sort({ lastActivityAt: -1 })
     .limit(100)
     .toArray();
@@ -69,11 +69,11 @@ places.post('/', rateLimiterMiddleware('createPlace'), async (c) => {
 
   const col = getCollection<PlaceDoc>('places');
 
-  // If a place with this name is pending deletion, remove it first
-  await col.deleteOne({ name, deleteAfter: { $exists: true } });
+  // Remove expired places with this name (deleteAfter in the past)
+  await col.deleteOne({ name, deleteAfter: { $lte: new Date() } });
 
-  // Check uniqueness among active places
-  const existing = await col.findOne({ name, deleteAfter: { $exists: false } });
+  // Check uniqueness — place exists and is either active or not yet expired
+  const existing = await col.findOne({ name });
   if (existing) {
     return c.json({ error: 'A place with that name already exists' }, 409);
   }

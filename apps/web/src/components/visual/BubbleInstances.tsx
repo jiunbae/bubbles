@@ -154,8 +154,9 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
       new THREE.InstancedBufferAttribute(opacityArray, 1),
     );
 
-    // Hide all instances initially
-    _dummy.scale.setScalar(0);
+    // Hide all instances initially — move far away so they don't intercept raycasts
+    _dummy.position.set(0, -1000, 0);
+    _dummy.scale.setScalar(0.001);
     _dummy.updateMatrix();
     for (let i = 0; i < MAX_BUBBLES; i++) {
       mesh.setMatrixAt(i, _dummy.matrix);
@@ -186,7 +187,8 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
           activeCountRef.current--;
 
           if (mesh) {
-            _dummy.scale.setScalar(0);
+            _dummy.position.set(0, -1000, 0);
+            _dummy.scale.setScalar(0.001);
             _dummy.updateMatrix();
             mesh.setMatrixAt(entry.slotIndex, _dummy.matrix);
             opacityArray[entry.slotIndex] = 0;
@@ -293,8 +295,9 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
         const popAge = time - entry.popStart;
         if (popAge >= POP_DURATION) {
           expired.push(id);
-          // Hide immediately
-          _dummy.scale.setScalar(0);
+          // Hide immediately — move far away to avoid raycast hits
+          _dummy.position.set(0, -1000, 0);
+          _dummy.scale.setScalar(0.001);
           _dummy.updateMatrix();
           mesh.setMatrixAt(entry.slotIndex, _dummy.matrix);
           opacityArray[entry.slotIndex] = 0;

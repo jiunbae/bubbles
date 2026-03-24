@@ -8,6 +8,7 @@ import { BubbleScene } from './BubbleScene';
 import { BubbleControls } from './BubbleControls';
 import { BubbleWandCursor } from './BubbleWandCursor';
 import { usePlaceStore } from '@/stores/place-store';
+import { useUIStore } from '@/stores/ui-store';
 
 function OnboardingOverlay() {
   const { t } = useTranslation();
@@ -76,22 +77,24 @@ function OnboardingOverlay() {
 
 export function VisualMode() {
   const currentPlace = usePlaceStore((s) => s.currentPlace);
+  const interactionMode = useUIStore((s) => s.interactionMode);
 
   return (
     <div style={{
       width: '100%', height: '100%', position: 'relative',
-      background: '#0a0a14', cursor: 'none',
+      background: '#0a0a14',
+      cursor: interactionMode === 'pop' ? 'crosshair' : 'none',
     }}>
       <Canvas
         dpr={[1, 1.5]}
         camera={{ fov: 50, near: 0.1, far: 100, position: [0, 2, 8] }}
         gl={{ antialias: true, alpha: false }}
-        style={{ width: '100%', height: '100%', cursor: 'none' }}
+        style={{ width: '100%', height: '100%', cursor: interactionMode === 'pop' ? 'crosshair' : 'none' }}
       >
         <Suspense fallback={null}>
           <SkyEnvironment theme={currentPlace?.theme} />
           <BubbleScene />
-          <BubbleWandCursor />
+          {interactionMode === 'blow' && <BubbleWandCursor />}
 
           <OrbitControls
             enablePan={false}

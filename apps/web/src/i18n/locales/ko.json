@@ -65,7 +65,15 @@
     "blowBubbles": "왼쪽 클릭 & 홀드 — 비눗방울 불기",
     "lookAround": "오른쪽 클릭 & 드래그 — 둘러보기",
     "popBubble": "비눗방울 클릭 — 터뜨리기",
-    "spaceBlowBubbles": "스페이스바 — 비눗방울 불기"
+    "spaceBlowBubbles": "스페이스바 — 비눗방울 불기",
+    "touchControls": "탭하여 불기, 드래그하여 둘러보기",
+    "helpTitle": "조작법",
+    "colorPicker": "헤더 점 — 방울 색상 변경",
+    "sizeSelector": "S / M / L 버튼 — 방울 크기 변경",
+    "editName": "이름 클릭 — 표시 이름 편집",
+    "modeToggle": "헤더의 불기 / 터뜨리기 전환",
+    "dismissHint": "아무 곳이나 클릭하거나 Escape를 눌러 닫기",
+    "showHelp": "조작법 보기"
   },
   "activity": {
     "title": "활동 기록",

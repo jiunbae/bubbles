@@ -11,16 +11,76 @@ import { RemoteCursors } from './RemoteCursors';
 import { CursorSender } from './CursorSender';
 import { usePlaceStore } from '@/stores/place-store';
 import { useUIStore } from '@/stores/ui-store';
+import type { BubbleSize } from '@bubbles/shared';
 
-function OnboardingOverlay() {
+/* ------------------------------------------------------------------ */
+/*  Size selector (S / M / L) – floating pill next to blow controls    */
+/* ------------------------------------------------------------------ */
+
+const SIZES: BubbleSize[] = ['S', 'M', 'L'];
+
+function SizeSelector() {
+  const selectedSize = useUIStore((s) => s.selectedSize);
+  const setSelectedSize = useUIStore((s) => s.setSelectedSize);
+  const interactionMode = useUIStore((s) => s.interactionMode);
+
+  if (interactionMode !== 'blow') return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: 'calc(env(safe-area-inset-bottom, 16px) + 90px)',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 10000,
+      pointerEvents: 'auto',
+      display: 'flex',
+      gap: 6,
+      padding: '6px 10px',
+      borderRadius: 20,
+      background: 'rgba(20, 20, 30, 0.8)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      border: '1px solid rgba(255,255,255,0.15)',
+      fontFamily: 'system-ui, sans-serif',
+    }}>
+      {SIZES.map((size) => (
+        <button
+          key={size}
+          onClick={() => setSelectedSize(size)}
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            border: selectedSize === size
+              ? '2px solid rgba(255,255,255,0.8)'
+              : '1px solid rgba(255,255,255,0.25)',
+            background: selectedSize === size
+              ? 'rgba(100, 180, 255, 0.35)'
+              : 'rgba(255,255,255,0.1)',
+            color: '#fff',
+            fontSize: size === 'S' ? 11 : size === 'M' ? 13 : 15,
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.15s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {size}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Onboarding / help overlay                                          */
+/* ------------------------------------------------------------------ */
+
+function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss: () => void }) {
   const { t } = useTranslation();
-  const [visible, setVisible] = useState(() => {
-    try {
-      return localStorage.getItem('bubbles_onboarded') !== '1';
-    } catch {
-      return true;
-    }
-  });
   const [fading, setFading] = useState(false);
 
   const dismiss = useCallback(() => {
@@ -28,16 +88,32 @@ function OnboardingOverlay() {
     try {
       localStorage.setItem('bubbles_onboarded', '1');
     } catch {}
-    setTimeout(() => setVisible(false), 400);
-  }, []);
+    setTimeout(() => {
+      setFading(false);
+      onDismiss();
+    }, 400);
+  }, [onDismiss]);
 
+  // Auto-dismiss after 8 seconds on first show
   useEffect(() => {
     if (!visible) return;
-    const timer = setTimeout(dismiss, 5000);
+    const timer = setTimeout(dismiss, 8000);
     return () => clearTimeout(timer);
   }, [visible, dismiss]);
 
+  // Escape key dismisses
+  useEffect(() => {
+    if (!visible) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') dismiss();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [visible, dismiss]);
+
   if (!visible) return null;
+
+  const isTouch = 'ontouchstart' in window;
 
   return (
     <div
@@ -56,34 +132,118 @@ function OnboardingOverlay() {
       }}
     >
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'rgba(10, 10, 20, 0.85)',
+          background: 'rgba(10, 10, 20, 0.9)',
           color: 'white',
-          padding: '24px 32px',
+          padding: '28px 36px',
           borderRadius: 16,
-          fontSize: 16,
+          fontSize: 15,
           lineHeight: 2,
-          maxWidth: 360,
+          maxWidth: 400,
           textAlign: 'left',
-          pointerEvents: 'none',
+          pointerEvents: 'auto',
+          cursor: 'default',
         }}
       >
+        <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>
+          {t('visual.helpTitle', 'Controls')}
+        </div>
+
+        {/* Blow & pop */}
         <div>{'\u{1FAE7}'} {t('visual.blowBubbles')}</div>
         <div>{'\u{1F5B1}\uFE0F'} {t('visual.lookAround')}</div>
         <div>{'\u{1F4A5}'} {t('visual.popBubble')}</div>
-        {'ontouchstart' in window ? (
+
+        {/* Touch or keyboard */}
+        {isTouch ? (
           <div>{'\u{1F44B}'} {t('visual.touchControls', 'Tap to blow, drag to look around')}</div>
         ) : (
           <div>{'\u2328\uFE0F'} {t('visual.spaceBlowBubbles')}</div>
         )}
+
+        {/* Extra controls */}
+        <div>{'\u{1F3A8}'} {t('visual.colorPicker', 'Header dot — Change bubble color')}</div>
+        <div>{'\u{1F4CF}'} {t('visual.sizeSelector', 'S / M / L buttons — Change bubble size')}</div>
+        <div>{'\u270F\uFE0F'} {t('visual.editName', 'Click your name — Edit display name')}</div>
+        <div>{'\u{1F504}'} {t('visual.modeToggle', 'Blow / Pop toggle in header')}</div>
+
+        <div style={{
+          marginTop: 12,
+          fontSize: 12,
+          color: 'rgba(255,255,255,0.5)',
+          textAlign: 'center',
+        }}>
+          {t('visual.dismissHint', 'Click anywhere or press Escape to close')}
+        </div>
       </div>
     </div>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Help "?" floating button                                           */
+/* ------------------------------------------------------------------ */
+
+function HelpButton({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <button
+      onClick={onClick}
+      title={t('visual.showHelp', 'Show controls')}
+      style={{
+        position: 'fixed',
+        bottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
+        right: 16,
+        zIndex: 10000,
+        width: 36,
+        height: 36,
+        borderRadius: '50%',
+        border: '1px solid rgba(255,255,255,0.2)',
+        background: 'rgba(20, 20, 30, 0.7)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 18,
+        fontWeight: 700,
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'system-ui, sans-serif',
+        transition: 'all 0.15s',
+        pointerEvents: 'auto',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'rgba(100, 180, 255, 0.3)';
+        e.currentTarget.style.color = '#fff';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'rgba(20, 20, 30, 0.7)';
+        e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+      }}
+    >
+      ?
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main VisualMode                                                    */
+/* ------------------------------------------------------------------ */
+
 export function VisualMode() {
   const currentPlace = usePlaceStore((s) => s.currentPlace);
   const interactionMode = useUIStore((s) => s.interactionMode);
+
+  // Help overlay state: show on first visit, re-showable via "?" button
+  const [showHelp, setShowHelp] = useState(() => {
+    try {
+      return localStorage.getItem('bubbles_onboarded') !== '1';
+    } catch {
+      return true;
+    }
+  });
 
   return (
     <div style={{
@@ -133,7 +293,9 @@ export function VisualMode() {
       </Canvas>
 
       <BubbleControls />
-      <OnboardingOverlay />
+      <SizeSelector />
+      <HelpButton onClick={() => setShowHelp(true)} />
+      <OnboardingOverlay visible={showHelp} onDismiss={() => setShowHelp(false)} />
     </div>
   );
 }

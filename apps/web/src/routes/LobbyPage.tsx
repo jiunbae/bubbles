@@ -8,6 +8,8 @@ import { CreatePlaceForm } from '@/components/lobby/CreatePlaceForm';
 import { AdInfeed } from '@/components/ads/AdInfeed';
 import { AdDisplay } from '@/components/ads/AdDisplay';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { GlobalStatsBanner } from '@/components/lobby/GlobalStatsBanner';
+import { BubbleLoader } from '@/components/shared/BubbleLoader';
 import { LoginDropdown } from '@/components/shared/LoginDropdown';
 
 const BACKGROUND_BUBBLE_COUNT = 12;
@@ -125,6 +127,8 @@ export function LobbyPage() {
           </p>
         </header>
 
+        <GlobalStatsBanner />
+
         {/* Error state */}
         {error && (
           <div className="mb-6 rounded-lg border border-error/30 bg-error/10 p-4 text-center text-error">
@@ -135,7 +139,7 @@ export function LobbyPage() {
         {/* Loading state */}
         {isLoading && (
           <div className="flex justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+            <BubbleLoader />
           </div>
         )}
 

@@ -47,22 +47,31 @@ export function CreatePlaceForm() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="flex min-h-[100px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border text-text-muted transition-all duration-200 hover:border-accent/50 hover:text-text-secondary sm:min-h-[120px]"
+        className="flex w-full items-center justify-between gap-4 rounded-xl border border-accent/30 bg-accent/10 p-4 text-left transition-all duration-200 hover:border-accent/50 hover:bg-accent/15 sm:p-5"
       >
-        <svg
-          className="h-8 w-8"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 4.5v15m7.5-7.5h-15"
-          />
-        </svg>
-        <span className="text-sm font-medium">{t('lobby.newPlace')}</span>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold text-text-primary">
+            {t('lobby.createPlaceButton')}
+          </span>
+          <span className="text-xs text-text-secondary">
+            {t('lobby.createPlacePrompt')}
+          </span>
+        </div>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-white">
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4.5v15m7.5-7.5h-15"
+            />
+          </svg>
+        </div>
       </button>
     );
   }

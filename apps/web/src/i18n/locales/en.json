@@ -65,7 +65,15 @@
     "blowBubbles": "Left click & hold — Blow bubbles",
     "lookAround": "Right click & drag — Look around",
     "popBubble": "Click a bubble — Pop it",
-    "spaceBlowBubbles": "Space — Blow bubbles"
+    "spaceBlowBubbles": "Space — Blow bubbles",
+    "touchControls": "Tap to blow, drag to look around",
+    "helpTitle": "Controls",
+    "colorPicker": "Header dot — Change bubble color",
+    "sizeSelector": "S / M / L buttons — Change bubble size",
+    "editName": "Click your name — Edit display name",
+    "modeToggle": "Blow / Pop toggle in header",
+    "dismissHint": "Click anywhere or press Escape to close",
+    "showHelp": "Show controls"
   },
   "activity": {
     "title": "Activity Log",

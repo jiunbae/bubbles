@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { parseJwt } from '@/lib/token';
 import { JIUN_API_URL } from '@/lib/auth';
 import type { AuthUser } from '@/stores/auth-store';
+import { BubbleLoader } from '@/components/shared/BubbleLoader';
 
 export function AuthCallback() {
   const { t } = useTranslation();
@@ -105,7 +106,7 @@ export function AuthCallback() {
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="flex items-center gap-3 text-text-secondary">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+        <BubbleLoader />
         {t('common.signingIn')}
       </div>
     </div>

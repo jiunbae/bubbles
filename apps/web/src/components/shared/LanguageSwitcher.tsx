@@ -14,6 +14,8 @@ export function LanguageSwitcher() {
         <button
           key={lang.code}
           onClick={() => i18n.changeLanguage(lang.code)}
+          aria-label={`Switch language to ${lang.code === 'en' ? 'English' : 'Korean'}`}
+          aria-pressed={i18n.language.startsWith(lang.code)}
           className={`rounded px-2 py-1.5 text-xs font-medium transition-colors ${
             i18n.language.startsWith(lang.code)
               ? 'bg-accent text-white'

@@ -360,6 +360,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
     );
     onPopRef.current(id, _pos.clone(), entry.color, entry.radius);
     playPop();
+    navigator.vibrate?.(10);
 
     if (globalWsClient.isConnected()) {
       globalWsClient.send({ type: 'pop', data: { bubbleId: id } });

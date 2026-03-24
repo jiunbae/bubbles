@@ -5,6 +5,7 @@
  * duplicated tint/randSize/makeId/spawn logic.
  */
 import { useBubbleStore } from '@/stores/bubble-store';
+import { useUIStore } from '@/stores/ui-store';
 import { globalWsClient } from '@/lib/ws-client';
 import { analytics } from '@/lib/analytics';
 import { BUBBLE_LIFETIME } from '@bubbles/shared';
@@ -44,7 +45,7 @@ export function createBubbleInfo(
   z: number,
   color: string,
 ): BubbleInfo {
-  const size = randSize();
+  const size = useUIStore.getState().selectedSize;
   const now = Date.now();
   const range = BUBBLE_LIFETIME[size];
   const lifetime = range.min + Math.random() * (range.max - range.min);

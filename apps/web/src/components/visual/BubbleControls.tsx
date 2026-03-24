@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { useUIStore } from '@/stores/ui-store';
-import { BUBBLE_COLORS } from '@bubbles/shared';
 import { spawnBubble } from '@/lib/bubble-factory';
 import { scheduleExpiry } from './BubbleScene';
 
@@ -50,11 +49,12 @@ export function BubbleControls() {
     if (intervalRef.current !== null) return;
     buttonActive = true;
     setIsBlowing(true);
-    spawnBatch(BUBBLE_COLORS[1]);
+    const color = useUIStore.getState().selectedColor;
+    spawnBatch(color);
 
-    // Continue spawning
+    // Continue spawning — read selectedColor each tick so mid-blow color changes apply
     intervalRef.current = window.setInterval(() => {
-      spawnBatch(BUBBLE_COLORS[1]);
+      spawnBatch(useUIStore.getState().selectedColor);
     }, BLOW_INTERVAL);
   };
 

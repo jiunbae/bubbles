@@ -70,39 +70,70 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
   const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, 3), []);
   const material = useMemo(() => {
     const mat = new THREE.MeshStandardMaterial({
-      metalness: 0.15,
+      metalness: 0.2,
       roughness: 0.05,
       transparent: true,
-      opacity: 0.25,
+      opacity: 0.35,
       side: THREE.DoubleSide,
       depthWrite: false,
-      emissive: new THREE.Color('#4488cc'),
-      emissiveIntensity: 0.08,
+      emissive: new THREE.Color('#6699cc'),
+      emissiveIntensity: 0.3,
       envMapIntensity: 0,
     });
 
-    // Inject per-instance opacity via onBeforeCompile.
-    // We add an instance attribute `instanceOpacity` and multiply it
-    // into the fragment shader's final alpha.
+    // Inject per-instance opacity + Fresnel rim glow via onBeforeCompile.
     mat.onBeforeCompile = (shader) => {
-      // Vertex: declare attribute and pass to fragment via varying
+      // Vertex: pass instance opacity + world normal/view dir for Fresnel
       shader.vertexShader = shader.vertexShader
         .replace(
           'void main() {',
-          'attribute float instanceOpacity;\nvarying float vInstanceOpacity;\nvoid main() {\n  vInstanceOpacity = instanceOpacity;',
+          [
+            'attribute float instanceOpacity;',
+            'varying float vInstanceOpacity;',
+            'varying vec3 vWorldNormal;',
+            'varying vec3 vViewDir;',
+            'void main() {',
+            '  vInstanceOpacity = instanceOpacity;',
+          ].join('\n'),
+        );
+      // Compute world normal and view direction after position is known
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          '#include <worldpos_vertex>',
+          [
+            '#include <worldpos_vertex>',
+            'vWorldNormal = normalize((modelMatrix * vec4(objectNormal, 0.0)).xyz);',
+            'vViewDir = normalize(cameraPosition - (modelMatrix * vec4(position, 1.0)).xyz);',
+          ].join('\n'),
         );
 
-      // Fragment: declare varying and multiply into gl_FragColor alpha
+      // Fragment: Fresnel rim glow + per-instance opacity
       shader.fragmentShader = shader.fragmentShader
         .replace(
           'void main() {',
-          'varying float vInstanceOpacity;\nvoid main() {',
+          [
+            'varying float vInstanceOpacity;',
+            'varying vec3 vWorldNormal;',
+            'varying vec3 vViewDir;',
+            'void main() {',
+          ].join('\n'),
         );
-      // Apply instance opacity right before the final output
+      // Apply Fresnel rim glow + instance opacity before final output
       shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <dithering_fragment>',
-          'gl_FragColor.a *= vInstanceOpacity;\n#include <dithering_fragment>',
+          [
+            '// Fresnel rim glow — edges of bubble glow brighter',
+            'float fresnelDot = max(dot(normalize(vWorldNormal), normalize(vViewDir)), 0.0);',
+            'float fresnel = pow(1.0 - fresnelDot, 3.0);',
+            '// Add rim glow: tinted by diffuse color, additive blend',
+            'vec3 rimColor = gl_FragColor.rgb * 1.5 + vec3(0.3, 0.5, 0.8);',
+            'gl_FragColor.rgb += rimColor * fresnel * 0.6;',
+            '// Fresnel also boosts alpha at edges (like real soap film)',
+            'float fresnelAlpha = mix(0.15, 0.7, fresnel);',
+            'gl_FragColor.a = fresnelAlpha * vInstanceOpacity;',
+            '#include <dithering_fragment>',
+          ].join('\n'),
         );
     };
 
@@ -242,10 +273,10 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
         physics.position[2],
       );
 
-      // Scale + opacity
+      // Scale + opacity (opacity is a multiplier for the Fresnel shader)
       const age = physics.age;
       let scale = entry.radius;
-      let opacity = 0.25;
+      let opacity = 1.0;
 
       // Grow animation
       if (age < GROW_DURATION) {
@@ -254,7 +285,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
         const wobble =
           Math.sin(age * (5 + (bubble.seed % 7))) * 0.06 * (1 - t);
         scale = entry.radius * Math.max(0.01, eased + wobble);
-        opacity = 0.25 * Math.min(1, t * 3);
+        opacity = Math.min(1, t * 3);
       }
 
       // Pop animation

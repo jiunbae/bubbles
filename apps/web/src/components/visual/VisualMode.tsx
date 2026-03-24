@@ -7,6 +7,8 @@ import { SkyEnvironment } from './SkyEnvironment';
 import { BubbleScene } from './BubbleScene';
 import { BubbleControls } from './BubbleControls';
 import { BubbleWandCursor } from './BubbleWandCursor';
+import { RemoteCursors } from './RemoteCursors';
+import { CursorSender } from './CursorSender';
 import { usePlaceStore } from '@/stores/place-store';
 import { useUIStore } from '@/stores/ui-store';
 
@@ -105,6 +107,8 @@ export function VisualMode() {
           <SkyEnvironment theme={currentPlace?.theme} />
           <BubbleScene />
           {interactionMode === 'blow' && <BubbleWandCursor />}
+          <RemoteCursors />
+          <CursorSender />
 
           <OrbitControls
             enablePan={false}

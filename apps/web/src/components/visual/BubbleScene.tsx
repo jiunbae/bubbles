@@ -4,6 +4,7 @@ import { useThree } from '@react-three/fiber';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { useUIStore } from '@/stores/ui-store';
 import { isButtonBlowing } from './BubbleControls';
+import { playBlow } from '@/lib/sounds';
 import { spawnBubble } from '@/lib/bubble-factory';
 import { BubbleInstances } from './BubbleInstances';
 import { PopEffectRenderer, usePopEffect } from './PopEffect';
@@ -77,6 +78,7 @@ function BubbleSpawner() {
       colorRef.current,
       scheduleExpiry,
     );
+    playBlow();
   }, []);
 
   useEffect(() => {

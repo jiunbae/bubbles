@@ -11,6 +11,8 @@ import type { ClientMessage, ServerMessage } from '@bubbles/shared';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { usePlaceStore } from '@/stores/place-store';
 import { useUIStore } from '@/stores/ui-store';
+import { useCursorStore } from '@/stores/cursor-store';
+import { playPop, playJoin } from '@/lib/sounds';
 
 export interface WebSocketContextValue {
   wsClient: WsClient;
@@ -60,13 +62,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           addBubble(msg.data);
           break;
         case 'bubble_popped':
-          popBubble(msg.data.bubbleId); // remove + queue pop effect
+          popBubble(msg.data.bubbleId);
+          playPop();
           break;
         case 'bubble_expired':
-          popBubble(msg.data.bubbleId); // remove + queue pop effect
+          popBubble(msg.data.bubbleId);
           break;
         case 'user_joined':
           addOnlineUser(msg.data);
+          playJoin();
           break;
         case 'user_renamed':
           renameOnlineUser(msg.data.sessionId, msg.data.displayName);
@@ -80,7 +84,22 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           break;
         case 'user_left':
           removeOnlineUser(msg.data.sessionId);
+          useCursorStore.getState().removeCursor(msg.data.sessionId);
           break;
+        case 'cursor_moved': {
+          const myId = usePlaceStore.getState().mySessionId;
+          if (msg.data.sessionId === myId) break;
+          const users = usePlaceStore.getState().onlineUsers;
+          const cursorUser = users.find((u) => u.sessionId === msg.data.sessionId);
+          useCursorStore.getState().updateCursor(
+            msg.data.sessionId,
+            msg.data.x,
+            msg.data.y,
+            cursorUser?.color ?? '#ffffff',
+            cursorUser?.displayName ?? 'Guest',
+          );
+          break;
+        }
         case 'pong':
           // heartbeat acknowledged
           break;

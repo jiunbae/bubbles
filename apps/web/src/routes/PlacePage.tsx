@@ -12,6 +12,7 @@ import { BUBBLE_COLORS } from '@bubbles/shared';
 import { ModeSwitch } from '@/components/shared/ModeSwitch';
 import { ActivityLog } from '@/components/shared/ActivityLog';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { initAudio } from '@/lib/sounds';
 import { LoginDropdown } from '@/components/shared/LoginDropdown';
 
 const VisualMode = lazy(() =>
@@ -34,6 +35,8 @@ export function PlacePage() {
   const mode = useUIStore((s) => s.mode);
   const interactionMode = useUIStore((s) => s.interactionMode);
   const toggleInteractionMode = useUIStore((s) => s.toggleInteractionMode);
+  const isSoundEnabled = useUIStore((s) => s.isSoundEnabled);
+  const toggleSound = useUIStore((s) => s.toggleSound);
   const { currentPlace, setCurrentPlace, onlineUsers, mySessionId } = usePlaceStore();
   const bubbleCount = useBubbleStore((s) => s.bubbles.size);
   const [isLogOpen, setIsLogOpen] = useState(false);
@@ -101,6 +104,17 @@ export function PlacePage() {
       disconnect();
     };
   }, [placeId, token, connect, disconnect]);
+
+  // Initialize audio on first user interaction (Chrome autoplay policy)
+  useEffect(() => {
+    const handler = () => initAudio();
+    window.addEventListener('pointerdown', handler, { once: true });
+    window.addEventListener('touchstart', handler, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', handler);
+      window.removeEventListener('touchstart', handler);
+    };
+  }, []);
 
   if (loadError) {
     return (
@@ -314,6 +328,24 @@ export function PlacePage() {
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
             </svg>
+          </button>
+
+          {/* Sound toggle */}
+          <button
+            onClick={toggleSound}
+            className="rounded-md p-2 text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary"
+            title={isSoundEnabled ? t('place.muteSound', 'Mute') : t('place.unmuteSound', 'Unmute')}
+          >
+            {isSoundEnabled ? (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.9M6.5 8H4a1 1 0 00-1 1v6a1 1 0 001 1h2.5l4.5 4V4l-4.5 4z" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5v14a1 1 0 01-1.707.707L5.586 15z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+              </svg>
+            )}
           </button>
 
           <button

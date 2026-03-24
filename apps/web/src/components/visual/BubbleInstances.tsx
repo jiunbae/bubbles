@@ -3,6 +3,7 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { globalWsClient } from '@/lib/ws-client';
+import { playPop } from '@/lib/sounds';
 import { useBubbleStore } from '@/stores/bubble-store';
 import type { BubbleInfo } from '@bubbles/shared';
 import {
@@ -358,6 +359,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
       entry.physics.position[2],
     );
     onPopRef.current(id, _pos.clone(), entry.color, entry.radius);
+    playPop();
 
     if (globalWsClient.isConnected()) {
       globalWsClient.send({ type: 'pop', data: { bubbleId: id } });

@@ -21,7 +21,8 @@
     "user_other": "{{count}}명",
     "bubbleCount": "비눗방울 {{count}}개",
     "totalVisitors": "{{count}}명 방문",
-    "totalBubbles": "{{count}}개 생성"
+    "totalBubbles": "{{count}}개 생성",
+    "yourRooms": "내 방"
   },
   "themes": {
     "rooftop": "옥상",
@@ -42,7 +43,11 @@
     "totalVisitors": "{{count}}명 방문",
     "totalBubbles": "{{count}}개 생성",
     "share": "공유",
-    "linkCopied": "링크 복사됨!"
+    "linkCopied": "링크 복사됨!",
+    "milestone": "🎉 이 방에서 비눗방울 {{count}}개를 달성했어요!",
+    "inviteBanner": "🫧 함께하면 더 즐거워요 — 친구를 초대해보세요",
+    "copyLink": "링크 복사",
+    "inviteDismiss": "닫기"
   },
   "auth": {
     "login": "로그인",

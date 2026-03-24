@@ -53,6 +53,14 @@ export function LobbyPage() {
     [places],
   );
 
+  const myRooms = useMemo(
+    () =>
+      isAuthenticated && user
+        ? places.filter((p) => p.createdBy === user.name)
+        : [],
+    [places, isAuthenticated, user],
+  );
+
   const backgroundBubbles = useMemo(
     () =>
       Array.from({ length: BACKGROUND_BUBBLE_COUNT }, (_, i) => ({
@@ -129,6 +137,20 @@ export function LobbyPage() {
           <div className="flex justify-center py-20">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           </div>
+        )}
+
+        {/* Your Rooms section (logged-in users with owned rooms) */}
+        {!isLoading && myRooms.length > 0 && (
+          <section className="mb-8">
+            <h2 className="mb-3 text-lg font-semibold text-text-primary">
+              {t('lobby.yourRooms')}
+            </h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {myRooms.map((place) => (
+                <PlaceCard key={place.id} place={place} />
+              ))}
+            </div>
+          </section>
         )}
 
         {/* Places grid */}

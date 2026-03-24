@@ -14,6 +14,7 @@ import { ActivityLog } from '@/components/shared/ActivityLog';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { initAudio } from '@/lib/sounds';
 import { LoginDropdown } from '@/components/shared/LoginDropdown';
+import { InviteBanner } from '@/components/shared/InviteBanner';
 
 const VisualMode = lazy(() =>
   import('@/components/visual/VisualMode').then((m) => ({
@@ -394,6 +395,9 @@ export function PlacePage() {
           />
         )}
       </div>
+
+      {/* Invite banner — shows after 30s, once per session */}
+      <InviteBanner />
     </div>
   );
 }

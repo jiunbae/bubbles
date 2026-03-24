@@ -14,6 +14,7 @@
     "sortLively": "lively",
     "sortNew": "new",
     "sortQuiet": "quiet",
+    "yourRooms": "Your Rooms",
     "failedToLoadPlaces": "Failed to load places: {{error}}",
     "newPlace": "New Place",
     "placeNamePlaceholder": "Place name...",
@@ -42,7 +43,11 @@
     "totalVisitors": "{{count}} visited",
     "totalBubbles": "{{count}} blown",
     "share": "Share",
-    "linkCopied": "Link copied!"
+    "linkCopied": "Link copied!",
+    "milestone": "\ud83c\udf89 This room hit {{count}} bubbles!",
+    "inviteBanner": "\ud83e\udee7 Bubbles are better together \u2014 invite a friend",
+    "copyLink": "Copy Link",
+    "inviteDismiss": "Dismiss"
   },
   "auth": {
     "login": "Login",

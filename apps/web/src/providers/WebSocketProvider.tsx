@@ -13,6 +13,10 @@ import { usePlaceStore } from '@/stores/place-store';
 import { useUIStore } from '@/stores/ui-store';
 import { useCursorStore } from '@/stores/cursor-store';
 import { playPop, playJoin } from '@/lib/sounds';
+import { showToast } from '@/components/shared/Toast';
+import i18n from '@/i18n';
+
+const MILESTONE_THRESHOLDS = [100, 500, 1000, 5000] as const;
 
 export interface WebSocketContextValue {
   wsClient: WsClient;
@@ -35,6 +39,10 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     useBubbleStore();
   const { setMySessionId, setOnlineUsers, addOnlineUser, removeOnlineUser, renameOnlineUser, updateOnlineUserColor } = usePlaceStore();
 
+  // Milestone tracking
+  const totalBubbleCountRef = useRef(0);
+  const shownMilestonesRef = useRef(new Set<number>());
+
   useEffect(() => {
     const client = wsClientRef.current;
 
@@ -48,6 +56,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           setMySessionId(msg.data.mySessionId);
           setOnlineUsers(msg.data.users);
           setBubbles(msg.data.bubbles);
+          // Reset milestone tracking for the new room
+          totalBubbleCountRef.current = 0;
+          shownMilestonesRef.current = new Set<number>();
           // Sync selected color to my server-assigned user color
           const myUser = msg.data.users.find(
             (u: { sessionId: string }) => u.sessionId === msg.data.mySessionId
@@ -57,10 +68,23 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           }
           break;
         }
-        case 'bubble_created':
+        case 'bubble_created': {
           // From another user — server handles expiry via bubble_expired event
           addBubble(msg.data);
+          // Milestone check
+          totalBubbleCountRef.current += 1;
+          const count = totalBubbleCountRef.current;
+          for (const threshold of MILESTONE_THRESHOLDS) {
+            if (count >= threshold && !shownMilestonesRef.current.has(threshold)) {
+              shownMilestonesRef.current.add(threshold);
+              showToast(
+                i18n.t('place.milestone', { count: threshold.toLocaleString() }),
+                'success',
+              );
+            }
+          }
           break;
+        }
         case 'bubble_popped':
           popBubble(msg.data.bubbleId);
           playPop();

@@ -95,13 +95,12 @@ function BubbleSpawner() {
     return () => window.removeEventListener('pointerup', onUp);
   }, []);
 
+  // Mobile tap detection — must be above the conditional return (React hooks rule)
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
+  const TAP_THRESHOLD = 8;
+
   // In pop mode, don't render the spawner plane so clicks pass through to bubbles
   if (interactionMode !== 'blow') return null;
-
-  // On mobile, single-finger drag = camera rotation (OrbitControls).
-  // Only spawn bubbles on quick taps (not drags) or via the blow button.
-  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
-  const TAP_THRESHOLD = 8; // pixels — below this = tap, above = drag
 
   return (
     <mesh

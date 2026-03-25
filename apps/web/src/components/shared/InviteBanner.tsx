@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { showToast } from '@/components/shared/Toast';
+import { analytics } from '@/lib/analytics';
 
 const SESSION_KEY = 'bubbles_invite_shown';
+const STEALTH_HINT_KEY = 'bubbles_stealth_hint_shown';
 const DELAY_MS = 30_000;
+const STEALTH_HINT_DELAY_MS = 10_000;
 
 export function InviteBanner() {
   const { t } = useTranslation();
@@ -22,10 +25,26 @@ export function InviteBanner() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Stealth mode hint — show once ever (localStorage), 10s after load
+  useEffect(() => {
+    if (localStorage.getItem(STEALTH_HINT_KEY)) return;
+
+    const timer = setTimeout(() => {
+      if (!localStorage.getItem(STEALTH_HINT_KEY)) {
+        showToast(t('place.stealthHint', 'Try Stealth Mode — looks like Excel! (Ctrl+Shift+M)'), 'success');
+        localStorage.setItem(STEALTH_HINT_KEY, '1');
+      }
+    }, STEALTH_HINT_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, [t]);
+
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      const text = t('place.shareText', 'Come blow bubbles together! 🫧');
+      await navigator.clipboard.writeText(`${text}\n${window.location.href}`);
       showToast(t('place.linkCopied'), 'success');
+      analytics.share('invite_banner');
     } catch {
       // Fallback: do nothing
     }

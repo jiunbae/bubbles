@@ -60,7 +60,9 @@
     "blowMode": "Blow",
     "popMode": "Pop",
     "muteSound": "Mute",
-    "unmuteSound": "Unmute"
+    "unmuteSound": "Unmute",
+    "shareText": "Come blow bubbles together! 🫧",
+    "stealthHint": "Try Stealth Mode — looks like Excel! (Ctrl+Shift+M)"
   },
   "controls": {
     "bubblesFloating": "{{count}} bubbles floating",
@@ -222,6 +224,16 @@
     "lastActivity": "Last Activity",
     "noProjects": "No projects available"
   },
+  "breakTimer": {
+    "startBreak": "Bubble Break",
+    "cancel": "Cancel",
+    "complete": "Break complete!",
+    "duration1": "1m",
+    "duration3": "3m",
+    "duration5": "5m",
+    "todayCount": "Today: {{count}} breaks",
+    "todayNone": "No breaks yet today"
+  },
   "errors": {
     "somethingWentWrong": "Something went wrong",
     "unexpectedError": "An unexpected error occurred.",
@@ -236,5 +248,11 @@
   },
   "meta": {
     "description": "Blow bubbles together — a multiplayer bubble-blowing community"
+  },
+  "ambient": {
+    "toggle": "Ambient sounds",
+    "volume": "Volume",
+    "on": "On",
+    "off": "Off"
   }
 }

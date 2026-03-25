@@ -1,7 +1,29 @@
 import * as THREE from 'three';
-import { useRef } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { PlaceTheme } from '@bubbles/shared';
+import { getTimeOfDay, type TimeColors } from '../../lib/time-of-day';
+
+// ═══════════════════════════════════════════════════════════════════
+// Time-of-day hook — refreshes every 60s
+// ═══════════════════════════════════════════════════════════════════
+
+function useTimeOfDay(): TimeColors {
+  const [colors, setColors] = useState<TimeColors>(() => getTimeOfDay());
+
+  useEffect(() => {
+    const id = setInterval(() => setColors(getTimeOfDay()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  return colors;
+}
+
+// Blend a theme hex color with a time-of-day color.
+// factor=0 → pure theme, factor=1 → pure time color
+function blendHex(themeHex: string, timeColor: THREE.Color, factor: number): THREE.Color {
+  return new THREE.Color(themeHex).lerp(timeColor, factor);
+}
 
 interface SkyEnvironmentProps {
   theme?: PlaceTheme;
@@ -69,13 +91,19 @@ function NeonSign({ position }: { position: [number, number, number] }) {
   );
 }
 
-function RooftopEnvironment() {
+function RooftopEnvironment({ time }: { time: TimeColors }) {
+  const bg = useMemo(() => blendHex('#1e2040', time.skyTop, 0.4), [time]);
+  const ambientColor = useMemo(() => blendHex('#8899bb', time.sunColor, 0.3), [time]);
   return (
     <>
-      <color attach="background" args={['#1e2040']} />
-      <ambientLight color="#8899bb" intensity={1.2} />
-      <directionalLight color="#ffa54f" intensity={3.0} position={[8, 6, 3]} />
-      <directionalLight color="#6688bb" intensity={1.2} position={[-5, 4, -5]} />
+      <color attach="background" args={[bg]} />
+      <ambientLight color={ambientColor} intensity={1.2 * time.ambientIntensity} />
+      <directionalLight
+        color={new THREE.Color('#ffa54f').lerp(time.sunColor, 0.3)}
+        intensity={3.0 * time.sunIntensity}
+        position={time.sunPosition}
+      />
+      <directionalLight color="#6688bb" intensity={1.2 * time.ambientIntensity} position={[-5, 4, -5]} />
       <GroundPlane color="#4a4a5a" />
 
       {/* Modern railing */}
@@ -205,15 +233,25 @@ function Fireflies({ count = 12, area = 8 }: { count?: number; area?: number }) 
   );
 }
 
-function ParkEnvironment() {
+function ParkEnvironment({ time }: { time: TimeColors }) {
+  const bg = useMemo(() => blendHex('#142814', time.skyTop, 0.35), [time]);
+  const ambientColor = useMemo(() => blendHex('#669966', time.sunColor, 0.25), [time]);
   return (
     <>
-      <color attach="background" args={['#142814']} />
-      <ambientLight color="#669966" intensity={1.0} />
-      <directionalLight color="#eeeedd" intensity={2.0} position={[5, 10, 5]} />
-      <directionalLight color="#8899bb" intensity={0.6} position={[-4, 6, -3]} />
-      {/* Moonlight */}
-      <directionalLight color="#aabbdd" intensity={0.8} position={[-2, 8, -1]} />
+      <color attach="background" args={[bg]} />
+      <ambientLight color={ambientColor} intensity={1.0 * time.ambientIntensity} />
+      <directionalLight
+        color={new THREE.Color('#eeeedd').lerp(time.sunColor, 0.3)}
+        intensity={2.0 * time.sunIntensity}
+        position={time.sunPosition}
+      />
+      <directionalLight color="#8899bb" intensity={0.6 * time.ambientIntensity} position={[-4, 6, -3]} />
+      {/* Moonlight — stronger at night */}
+      <directionalLight
+        color="#aabbdd"
+        intensity={0.8 * (time.period === 'night' ? 1.5 : time.period === 'dawn' || time.period === 'sunset' ? 0.8 : 0.3)}
+        position={[-2, 8, -1]}
+      />
       <GroundPlane color="#2a4a2a" />
 
       {/* Trees */}
@@ -327,12 +365,18 @@ function WallBracketLamp({ position, side = 'left' }: { position: [number, numbe
   );
 }
 
-function AlleyEnvironment() {
+function AlleyEnvironment({ time }: { time: TimeColors }) {
+  const bg = useMemo(() => blendHex('#1a1410', time.skyTop, 0.3), [time]);
+  const ambientColor = useMemo(() => blendHex('#887766', time.sunColor, 0.2), [time]);
   return (
     <>
-      <color attach="background" args={['#1a1410']} />
-      <ambientLight color="#887766" intensity={1.0} />
-      <directionalLight color="#889aaa" intensity={1.0} position={[0, 8, 2]} />
+      <color attach="background" args={[bg]} />
+      <ambientLight color={ambientColor} intensity={1.0 * time.ambientIntensity} />
+      <directionalLight
+        color={new THREE.Color('#889aaa').lerp(time.sunColor, 0.25)}
+        intensity={1.0 * time.sunIntensity}
+        position={time.sunPosition}
+      />
       <GroundPlane color="#3a3020" />
 
       {/* Brick walls */}
@@ -407,13 +451,15 @@ function AlleyEnvironment() {
 }
 
 export function SkyEnvironment({ theme = 'rooftop' }: SkyEnvironmentProps) {
+  const time = useTimeOfDay();
+
   switch (theme) {
     case 'park':
-      return <ParkEnvironment />;
+      return <ParkEnvironment time={time} />;
     case 'alley':
-      return <AlleyEnvironment />;
+      return <AlleyEnvironment time={time} />;
     case 'rooftop':
     default:
-      return <RooftopEnvironment />;
+      return <RooftopEnvironment time={time} />;
   }
 }

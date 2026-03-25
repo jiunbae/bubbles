@@ -59,7 +59,9 @@
     "blowMode": "불기",
     "popMode": "터뜨리기",
     "muteSound": "음소거",
-    "unmuteSound": "음소거 해제"
+    "unmuteSound": "음소거 해제",
+    "shareText": "같이 비눗방울 불자! 🫧",
+    "stealthHint": "스텔스 모드를 써보세요 — 엑셀처럼 보여요! (Ctrl+Shift+M)"
   },
   "controls": {
     "bubblesFloating": "비눗방울 {{count}}개 떠다니는 중",
@@ -221,6 +223,16 @@
     "lastActivity": "최근 활동",
     "noProjects": "이용 가능한 프로젝트가 없습니다"
   },
+  "breakTimer": {
+    "startBreak": "버블 브레이크",
+    "cancel": "취소",
+    "complete": "휴식 완료!",
+    "duration1": "1분",
+    "duration3": "3분",
+    "duration5": "5분",
+    "todayCount": "오늘: {{count}}번 휴식",
+    "todayNone": "오늘 아직 휴식 없음"
+  },
   "errors": {
     "somethingWentWrong": "문제가 발생했습니다",
     "unexpectedError": "예기치 않은 오류가 발생했습니다.",
@@ -235,5 +247,11 @@
   },
   "meta": {
     "description": "함께 비눗방울을 불어보세요 — 멀티플레이어 비눗방울 커뮤니티"
+  },
+  "ambient": {
+    "toggle": "배경 소리",
+    "volume": "음량",
+    "on": "켜기",
+    "off": "끄기"
   }
 }

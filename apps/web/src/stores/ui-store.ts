@@ -8,6 +8,8 @@ interface UIState {
   mode: AppMode;
   interactionMode: InteractionMode;
   isSoundEnabled: boolean;
+  isAmbientEnabled: boolean;
+  ambientVolume: number;
   selectedSize: BubbleSize;
   selectedColor: string;
   selectedPattern: BubblePattern;
@@ -15,6 +17,8 @@ interface UIState {
   setInteractionMode: (mode: InteractionMode) => void;
   toggleInteractionMode: () => void;
   toggleSound: () => void;
+  toggleAmbient: () => void;
+  setAmbientVolume: (v: number) => void;
   setSelectedSize: (size: BubbleSize) => void;
   setSelectedColor: (color: string) => void;
   setSelectedPattern: (pattern: BubblePattern) => void;
@@ -30,10 +34,35 @@ function loadMode(): AppMode {
   return 'visual';
 }
 
+function loadAmbientEnabled(): boolean {
+  try {
+    const stored = localStorage.getItem('bubbles_ambient_enabled');
+    if (stored === 'false') return false;
+  } catch {
+    // ignore
+  }
+  return true;
+}
+
+function loadAmbientVolume(): number {
+  try {
+    const stored = localStorage.getItem('bubbles_ambient_volume');
+    if (stored !== null) {
+      const v = parseFloat(stored);
+      if (!isNaN(v) && v >= 0 && v <= 1) return v;
+    }
+  } catch {
+    // ignore
+  }
+  return 0.3;
+}
+
 export const useUIStore = create<UIState>((set) => ({
   mode: loadMode(),
   interactionMode: 'blow' as InteractionMode,
   isSoundEnabled: true,
+  isAmbientEnabled: loadAmbientEnabled(),
+  ambientVolume: loadAmbientVolume(),
   selectedSize: 'M',
   selectedColor: '#87CEEB',
   selectedPattern: 'plain',
@@ -50,6 +79,18 @@ export const useUIStore = create<UIState>((set) => ({
   })),
 
   toggleSound: () => set((state) => ({ isSoundEnabled: !state.isSoundEnabled })),
+
+  toggleAmbient: () => set((state) => {
+    const next = !state.isAmbientEnabled;
+    localStorage.setItem('bubbles_ambient_enabled', String(next));
+    return { isAmbientEnabled: next };
+  }),
+
+  setAmbientVolume: (v: number) => {
+    const clamped = Math.max(0, Math.min(1, v));
+    localStorage.setItem('bubbles_ambient_volume', String(clamped));
+    set({ ambientVolume: clamped });
+  },
 
   setSelectedSize: (size: BubbleSize) => set({ selectedSize: size }),
 

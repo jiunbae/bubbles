@@ -25,4 +25,5 @@ export const analytics = {
   placeCreate: (name: string, theme: string) => trackEvent('place_create', { place_name: name, theme }),
   placeJoin: (placeId: string) => trackEvent('place_join', { place_id: placeId }),
   modeSwitch: (mode: string) => trackEvent('mode_switch', { mode }),
+  share: (method: string) => trackEvent('share', { method }),
 };

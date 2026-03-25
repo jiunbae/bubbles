@@ -15,6 +15,10 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { initAudio } from '@/lib/sounds';
 import { LoginDropdown } from '@/components/shared/LoginDropdown';
 import { InviteBanner } from '@/components/shared/InviteBanner';
+import { BreakTimer } from '@/components/shared/BreakTimer';
+import { AmbientControls } from '@/components/shared/AmbientControls';
+import { analytics } from '@/lib/analytics';
+import { useAmbientSound } from '@/hooks/useAmbientSound';
 
 const VisualMode = lazy(() =>
   import('@/components/visual/VisualMode').then((m) => ({
@@ -40,6 +44,9 @@ export function PlacePage() {
   const toggleSound = useUIStore((s) => s.toggleSound);
   const { currentPlace, setCurrentPlace, onlineUsers, mySessionId } = usePlaceStore();
   const bubbleCount = useBubbleStore((s) => s.bubbles.size);
+
+  // Ambient soundscape
+  useAmbientSound(currentPlace?.theme);
   const [isLogOpen, setIsLogOpen] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -66,17 +73,21 @@ export function PlacePage() {
 
   const handleShare = useCallback(async () => {
     const url = window.location.href;
+    const text = t('place.shareText', 'Come blow bubbles together! 🫧');
     try {
       if (navigator.share) {
-        await navigator.share({ title: currentPlace?.name ?? 'Bubbles', url });
+        await navigator.share({ title: currentPlace?.name ?? 'Bubbles', text, url });
+        analytics.share('native');
       } else {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(`${text}\n${url}`);
         showToast(t('place.linkCopied', 'Link copied!'), 'success');
+        analytics.share('clipboard');
       }
     } catch {
       try {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(`${text}\n${url}`);
         showToast(t('place.linkCopied', 'Link copied!'), 'success');
+        analytics.share('clipboard_fallback');
       } catch {
         // Clipboard also failed — silently ignore
       }
@@ -335,6 +346,9 @@ export function PlacePage() {
             </svg>
           </button>
 
+          {/* Ambient sound controls */}
+          <AmbientControls />
+
           {/* Sound toggle */}
           <button
             onClick={toggleSound}
@@ -402,6 +416,9 @@ export function PlacePage() {
 
       {/* Invite banner — shows after 30s, once per session */}
       <InviteBanner />
+
+      {/* Break timer — bottom-left floating */}
+      <BreakTimer />
     </div>
   );
 }

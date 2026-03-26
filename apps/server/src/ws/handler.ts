@@ -18,6 +18,7 @@ import {
   createBubble,
   removeBubble,
   incPlaceStats,
+  updateMemberInRedis,
 } from './rooms';
 import { logAction } from './actions';
 import type { BubblesUser } from '../middleware/auth';
@@ -307,6 +308,9 @@ export function createWSHandlers(placeId: string, c: Context) {
 
           console.log(`[ws] ${oldName} renamed to ${trimmed}`);
 
+          // Sync updated name to Redis so cross-pod room_state is correct
+          updateMemberInRedis(pid, sessionId, user);
+
           const renameMsg: ServerMessage = {
             type: 'user_renamed', ts: Date.now(),
             data: { sessionId, displayName: trimmed },
@@ -327,6 +331,9 @@ export function createWSHandlers(placeId: string, c: Context) {
             const client = colorRoom.clients.get(sessionId);
             if (client) client.user.color = newColor;
           }
+
+          // Sync updated color to Redis
+          updateMemberInRedis(pid, sessionId, user);
 
           const colorMsg: ServerMessage = {
             type: 'user_color_changed', ts: Date.now(),

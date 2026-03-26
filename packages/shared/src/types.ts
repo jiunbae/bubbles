@@ -54,7 +54,7 @@ export const BUBBLE_COLORS = [
 ] as const;
 
 export const BUBBLE_LIFETIME = {
-  S: { min: 6000, max: 15000 },
-  M: { min: 10000, max: 20000 },
-  L: { min: 15000, max: 30000 },
+  S: { min: 12000, max: 35000 },
+  M: { min: 20000, max: 50000 },
+  L: { min: 30000, max: 75000 },
 } as const;

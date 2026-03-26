@@ -81,6 +81,9 @@ async function redisAddMember(placeId: string, sessionId: string, user: BubblesU
   }
 }
 
+/** Re-export for handler to call after name/color changes. */
+export { redisAddMember as updateMemberInRedis };
+
 async function redisRemoveMember(placeId: string, sessionId: string): Promise<void> {
   const redis = getRedis();
   if (!redis) return;

@@ -30,12 +30,22 @@ function loadMode(): AppMode {
   return 'visual';
 }
 
+function loadSavedColor(): string | null {
+  try {
+    const stored = localStorage.getItem('bubbles_user_color');
+    if (stored && /^#[0-9a-fA-F]{6}$/.test(stored)) return stored;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 export const useUIStore = create<UIState>((set) => ({
   mode: loadMode(),
   interactionMode: 'blow' as InteractionMode,
   isSoundEnabled: true,
   selectedSize: 'M',
-  selectedColor: '#87CEEB',
+  selectedColor: loadSavedColor() ?? '#87CEEB',
   selectedPattern: 'plain',
 
   setMode: (mode: AppMode) => {
@@ -53,7 +63,10 @@ export const useUIStore = create<UIState>((set) => ({
 
   setSelectedSize: (size: BubbleSize) => set({ selectedSize: size }),
 
-  setSelectedColor: (color: string) => set({ selectedColor: color }),
+  setSelectedColor: (color: string) => {
+    localStorage.setItem('bubbles_user_color', color);
+    set({ selectedColor: color });
+  },
 
   setSelectedPattern: (pattern: BubblePattern) =>
     set({ selectedPattern: pattern }),

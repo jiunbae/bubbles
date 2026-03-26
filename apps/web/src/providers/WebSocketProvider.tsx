@@ -72,12 +72,20 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           // Reset milestone tracking for the new room
           totalBubbleCountRef.current = 0;
           shownMilestonesRef.current = new Set<number>();
-          // Sync selected color to my server-assigned user color
+
+          // Restore user's saved color: if we have a locally saved color that
+          // differs from the server-assigned one, send set_color to sync it.
           const myUser = msg.data.users.find(
             (u: { sessionId: string }) => u.sessionId === msg.data.mySessionId
           );
-          if (myUser?.color) {
-            useUIStore.getState().setSelectedColor(myUser.color);
+          const savedColor = useUIStore.getState().selectedColor;
+          const serverColor = myUser?.color;
+          if (savedColor && serverColor && savedColor !== serverColor) {
+            // Restore our preferred color on the server
+            client.send({ type: 'set_color', data: { color: savedColor } });
+          } else if (serverColor) {
+            // First time — adopt server-assigned color
+            useUIStore.getState().setSelectedColor(serverColor);
           }
           break;
         }

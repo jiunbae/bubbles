@@ -6,7 +6,8 @@
     "reload": "새로고침",
     "create": "만들기",
     "creating": "만드는 중...",
-    "cancel": "취소"
+    "cancel": "취소",
+    "more": "더보기"
   },
   "lobby": {
     "title": "Bubbles",
@@ -247,11 +248,5 @@
   },
   "meta": {
     "description": "함께 비눗방울을 불어보세요 — 멀티플레이어 비눗방울 커뮤니티"
-  },
-  "ambient": {
-    "toggle": "배경 소리",
-    "volume": "음량",
-    "on": "켜기",
-    "off": "끄기"
   }
 }

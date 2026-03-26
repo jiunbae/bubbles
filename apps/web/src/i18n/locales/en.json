@@ -6,7 +6,8 @@
     "reload": "Reload",
     "create": "Create",
     "creating": "Creating...",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "more": "More"
   },
   "lobby": {
     "title": "Bubbles",
@@ -248,11 +249,5 @@
   },
   "meta": {
     "description": "Blow bubbles together — a multiplayer bubble-blowing community"
-  },
-  "ambient": {
-    "toggle": "Ambient sounds",
-    "volume": "Volume",
-    "on": "On",
-    "off": "Off"
   }
 }

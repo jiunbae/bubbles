@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBreakTimerStore } from '@/stores/break-timer-store';
 
@@ -30,8 +30,10 @@ export function BreakTimer() {
   const tick = useBreakTimerStore((s) => s.tick);
   const clearComplete = useBreakTimerStore((s) => s.clearComplete);
 
+  const [isExpanded, setIsExpanded] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const dismissRef = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Tick interval while active
   useEffect(() => {
@@ -59,149 +61,116 @@ export function BreakTimer() {
     };
   }, [isComplete, clearComplete]);
 
-  // Check if todayCount is still for today (date may have rolled over)
+  // Close panel on outside click
+  useEffect(() => {
+    if (!isExpanded) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsExpanded(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isExpanded]);
+
   const today = new Date().toISOString().slice(0, 10);
   const displayCount = todayDate === today ? todayCount : 0;
-
   const progress = duration > 0 ? (duration - remaining) / duration : 0;
 
-  return (
-    <div style={{
-      position: 'fixed',
-      bottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
-      left: 16,
-      zIndex: 10000,
-      pointerEvents: 'auto',
-      fontFamily: 'system-ui, sans-serif',
-    }}>
-      <div style={{
-        background: 'rgba(20, 20, 30, 0.8)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        border: '1px solid rgba(255,255,255,0.15)',
-        borderRadius: 16,
-        padding: '12px 16px',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-        minWidth: 160,
-      }}>
-        {/* Complete state */}
-        {isComplete && (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              color: '#fff',
-              fontSize: 16,
-              fontWeight: 700,
-              marginBottom: 4,
-            }}>
-              {'\uD83C\uDF89'} {t('breakTimer.complete')}
-            </div>
-          </div>
-        )}
-
-        {/* Active state */}
-        {isActive && !isComplete && (
-          <div style={{ textAlign: 'center' }}>
-            {/* Progress bar */}
-            <div style={{
-              width: '100%',
-              height: 4,
-              borderRadius: 2,
-              background: 'rgba(255,255,255,0.15)',
-              marginBottom: 10,
-              overflow: 'hidden',
-            }}>
-              <div style={{
-                width: `${progress * 100}%`,
-                height: '100%',
-                borderRadius: 2,
-                background: 'rgba(100, 180, 255, 0.8)',
-                transition: 'width 0.25s linear',
-              }} />
-            </div>
-            <div style={{
-              color: '#fff',
-              fontSize: 28,
-              fontWeight: 700,
-              fontVariantNumeric: 'tabular-nums',
-              letterSpacing: 2,
-              marginBottom: 8,
-            }}>
-              {formatTime(remaining)}
-            </div>
-            <button
-              onClick={cancel}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.2)',
-                background: 'rgba(255,255,255,0.1)',
-                color: 'rgba(255,255,255,0.7)',
-                fontSize: 13,
-                cursor: 'pointer',
-                fontFamily: 'system-ui, sans-serif',
-              }}
-            >
-              {t('breakTimer.cancel')}
-            </button>
-          </div>
-        )}
-
-        {/* Idle state */}
-        {!isActive && !isComplete && (
-          <div>
-            <div style={{
-              color: '#fff',
-              fontSize: 14,
-              fontWeight: 600,
-              marginBottom: 8,
-            }}>
-              {'\u2615'} {t('breakTimer.startBreak')}
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {DURATION_PRESETS.map((preset) => (
-                <button
-                  key={preset.key}
-                  onClick={() => start(preset.seconds)}
-                  style={{
-                    flex: 1,
-                    padding: '6px 0',
-                    borderRadius: 12,
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    background: 'rgba(255,255,255,0.1)',
-                    color: '#fff',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontFamily: 'system-ui, sans-serif',
-                    transition: 'all 0.15s',
-                  }}
-                  onPointerEnter={(e) => {
-                    (e.target as HTMLButtonElement).style.background = 'rgba(100, 180, 255, 0.3)';
-                  }}
-                  onPointerLeave={(e) => {
-                    (e.target as HTMLButtonElement).style.background = 'rgba(255,255,255,0.1)';
-                  }}
-                >
-                  {t(`breakTimer.${preset.key}`)}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Daily count */}
-        <div style={{
-          color: 'rgba(255,255,255,0.5)',
-          fontSize: 11,
-          marginTop: 8,
-          textAlign: 'center',
-        }}>
-          {displayCount > 0
-            ? t('breakTimer.todayCount', { count: displayCount })
-            : t('breakTimer.todayNone')
-          }
+  // When timer is active, always show the countdown (compact)
+  if (isActive && !isComplete) {
+    return (
+      <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] left-3 z-[100] sm:bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] sm:left-4">
+        <div className="flex items-center gap-2 rounded-full border border-white/15 bg-[rgba(20,20,30,0.85)] px-3 py-1.5 shadow-lg backdrop-blur-xl">
+          {/* Mini progress ring */}
+          <svg className="h-6 w-6 -rotate-90" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
+            <circle
+              cx="12" cy="12" r="10" fill="none"
+              stroke="rgba(100,180,255,0.8)" strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeDasharray={`${progress * 62.83} 62.83`}
+            />
+          </svg>
+          <span className="text-sm font-bold tabular-nums tracking-wide text-white">
+            {formatTime(remaining)}
+          </span>
+          <button
+            onClick={cancel}
+            className="ml-0.5 rounded-full p-0.5 text-white/50 transition-colors hover:text-white"
+            title={t('breakTimer.cancel')}
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       </div>
+    );
+  }
+
+  // Complete state — brief celebration
+  if (isComplete) {
+    return (
+      <div className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] left-3 z-[100] sm:bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] sm:left-4">
+        <div className="animate-[scaleIn_0.3s_ease-out] rounded-full border border-white/15 bg-[rgba(20,20,30,0.85)] px-4 py-2 shadow-lg backdrop-blur-xl">
+          <span className="text-sm font-semibold text-white">
+            {'\uD83C\uDF89'} {t('breakTimer.complete')}
+          </span>
+        </div>
+        <style>{`
+          @keyframes scaleIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Idle state — small trigger button that expands to show presets
+  return (
+    <div
+      ref={containerRef}
+      className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+80px)] left-3 z-[100] sm:bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] sm:left-4"
+    >
+      {isExpanded ? (
+        <div className="rounded-2xl border border-white/15 bg-[rgba(20,20,30,0.85)] p-3 shadow-lg backdrop-blur-xl">
+          <div className="mb-2 text-xs font-medium text-white/70">
+            {'\u2615'} {t('breakTimer.startBreak')}
+          </div>
+          <div className="flex gap-1.5">
+            {DURATION_PRESETS.map((preset) => (
+              <button
+                key={preset.key}
+                onClick={() => {
+                  start(preset.seconds);
+                  setIsExpanded(false);
+                }}
+                className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent/30"
+              >
+                {t(`breakTimer.${preset.key}`)}
+              </button>
+            ))}
+          </div>
+          {displayCount > 0 && (
+            <div className="mt-2 text-center text-[10px] text-white/40">
+              {t('breakTimer.todayCount', { count: displayCount })}
+            </div>
+          )}
+        </div>
+      ) : (
+        <button
+          onClick={() => setIsExpanded(true)}
+          className="flex items-center gap-1.5 rounded-full border border-white/15 bg-[rgba(20,20,30,0.7)] px-3 py-1.5 text-xs font-medium text-white/70 shadow-md backdrop-blur-xl transition-colors hover:bg-[rgba(20,20,30,0.9)] hover:text-white"
+          title={t('breakTimer.startBreak')}
+        >
+          {'\u2615'}
+          {displayCount > 0 && (
+            <span className="tabular-nums text-white/50">{displayCount}</span>
+          )}
+        </button>
+      )}
     </div>
   );
 }

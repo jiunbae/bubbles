@@ -47,11 +47,11 @@ export function Toaster() {
   }
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+    <div className="pointer-events-none fixed bottom-4 left-4 right-4 z-50 flex flex-col items-end gap-2 sm:left-auto">
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`pointer-events-auto animate-[slideIn_0.2s_ease-out] rounded-lg px-4 py-2.5 text-sm font-medium shadow-lg transition-all ${
+          className={`pointer-events-auto animate-[slideIn_0.2s_ease-out] rounded-lg px-4 py-2.5 text-sm font-medium shadow-lg transition-all max-w-full sm:max-w-sm ${
             t.type === 'error'
               ? 'bg-error/90 text-white'
               : t.type === 'success'

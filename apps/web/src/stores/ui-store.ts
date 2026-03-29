@@ -18,6 +18,9 @@ interface UIState {
   setSelectedSize: (size: BubbleSize) => void;
   setSelectedColor: (color: string) => void;
   setSelectedPattern: (pattern: BubblePattern) => void;
+  cameraMode: boolean;
+  setCameraMode: (on: boolean) => void;
+  toggleCameraMode: () => void;
 }
 
 function loadMode(): AppMode {
@@ -50,7 +53,7 @@ export const useUIStore = create<UIState>((set) => ({
 
   setMode: (mode: AppMode) => {
     localStorage.setItem('bubbles_mode', mode);
-    set({ mode });
+    set({ mode, cameraMode: false });
   },
 
   setInteractionMode: (interactionMode: InteractionMode) => set({ interactionMode }),
@@ -70,4 +73,8 @@ export const useUIStore = create<UIState>((set) => ({
 
   setSelectedPattern: (pattern: BubblePattern) =>
     set({ selectedPattern: pattern }),
+
+  cameraMode: false,
+  setCameraMode: (on: boolean) => set({ cameraMode: on }),
+  toggleCameraMode: () => set((state) => ({ cameraMode: !state.cameraMode })),
 }));

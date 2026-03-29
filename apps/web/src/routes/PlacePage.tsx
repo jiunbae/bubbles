@@ -40,6 +40,9 @@ export function PlacePage() {
   const toggleInteractionMode = useUIStore((s) => s.toggleInteractionMode);
   const isSoundEnabled = useUIStore((s) => s.isSoundEnabled);
   const toggleSound = useUIStore((s) => s.toggleSound);
+  const cameraMode = useUIStore((s) => s.cameraMode);
+  const toggleCameraMode = useUIStore((s) => s.toggleCameraMode);
+  const cameraToggleRef = useRef(false);
   const { currentPlace, setCurrentPlace, onlineUsers, mySessionId } = usePlaceStore();
   const bubbleCount = useBubbleStore((s) => s.bubbles.size);
 
@@ -271,6 +274,28 @@ export function PlacePage() {
                   <span className="hidden sm:inline">{t('place.popMode', 'Pop')}</span>
                 </>
               )}
+            </button>
+          )}
+
+          {/* Camera mode toggle (visual mode only, debounced) */}
+          {mode === 'visual' && (
+            <button
+              onClick={() => {
+                if (cameraToggleRef.current) return;
+                cameraToggleRef.current = true;
+                toggleCameraMode();
+                setTimeout(() => { cameraToggleRef.current = false; }, 1000);
+              }}
+              className={`rounded-md p-1 transition-colors sm:p-1.5 ${
+                cameraMode
+                  ? 'bg-accent/20 text-accent'
+                  : 'text-text-secondary hover:bg-bg-secondary hover:text-text-primary'
+              }`}
+              title={t(cameraMode ? 'place.cameraModeOn' : 'place.cameraModeOff')}
+            >
+              <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
             </button>
           )}
 

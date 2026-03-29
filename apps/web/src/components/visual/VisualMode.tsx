@@ -9,6 +9,7 @@ import { BubbleControls } from './BubbleControls';
 import { BubbleWandCursor } from './BubbleWandCursor';
 import { RemoteCursors } from './RemoteCursors';
 import { CursorSender } from './CursorSender';
+import { CameraFeed } from './CameraFeed';
 import { usePlaceStore } from '@/stores/place-store';
 import { useUIStore } from '@/stores/ui-store';
 import type { BubbleSize } from '@bubbles/shared';
@@ -235,6 +236,7 @@ function HelpButton({ onClick }: { onClick: () => void }) {
 export function VisualMode() {
   const currentPlace = usePlaceStore((s) => s.currentPlace);
   const interactionMode = useUIStore((s) => s.interactionMode);
+  const cameraMode = useUIStore((s) => s.cameraMode);
 
   // Help overlay state: show on first visit, re-showable via "?" button
   const [showHelp, setShowHelp] = useState(() => {
@@ -248,23 +250,28 @@ export function VisualMode() {
   return (
     <div style={{
       width: '100%', height: '100%', position: 'relative',
-      background: '#0a0a14',
+      background: cameraMode ? 'transparent' : '#0a0a14',
       cursor: interactionMode === 'pop' ? 'crosshair' : 'none',
       touchAction: 'none',       // prevent browser zoom/scroll on touch
       overscrollBehavior: 'none', // prevent pull-to-refresh
     }}>
+      {cameraMode && <CameraFeed />}
       <Canvas
         dpr={[1, 1.5]}
         camera={{ fov: 50, near: 0.1, far: 100, position: [0, 2, 8] }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: true }}
         style={{
           width: '100%', height: '100%',
+          position: cameraMode ? 'absolute' : undefined,
+          inset: cameraMode ? 0 : undefined,
+          zIndex: cameraMode ? 1 : undefined,
+          background: 'transparent',
           cursor: interactionMode === 'pop' ? 'crosshair' : 'none',
           touchAction: 'none',
         }}
       >
         <Suspense fallback={null}>
-          <SkyEnvironment theme={currentPlace?.theme} />
+          <SkyEnvironment theme={currentPlace?.theme} cameraMode={cameraMode} />
           <BubbleScene />
           {interactionMode === 'blow' && <BubbleWandCursor />}
           <RemoteCursors />

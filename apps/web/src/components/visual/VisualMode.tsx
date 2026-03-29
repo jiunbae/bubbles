@@ -257,9 +257,10 @@ export function VisualMode() {
     }}>
       {cameraMode && <CameraFeed />}
       <Canvas
-        dpr={[1, 1.5]}
+        key={cameraMode ? 'ar' : 'scene'}
+        dpr={cameraMode ? [1, 1] : [1, 1.5]}
         camera={{ fov: 50, near: 0.1, far: 100, position: [0, 2, 8] }}
-        gl={{ antialias: true, alpha: true }}
+        gl={{ antialias: true, alpha: cameraMode }}
         style={{
           width: '100%', height: '100%',
           position: cameraMode ? 'absolute' : undefined,

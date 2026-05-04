@@ -12,7 +12,7 @@ import {
   joinRoom,
   leaveRoom,
   broadcastToRoom,
-  broadcastToLocalClients,
+  broadcastSerializedToLocal,
   sendToClient,
   getRoom,
   createBubble,
@@ -26,6 +26,9 @@ import type { ClientMessage, ServerMessage, BubbleSize, BubblePattern } from '@b
 import { BUBBLE_LIFETIME } from '@bubbles/shared';
 import { isAllowedOrigin } from '../middleware/cors';
 import { incCounter, incGauge, decGauge } from '../metrics';
+import { createLogger } from '../logger';
+
+const log = createLogger('ws');
 
 const lastCursorSent = new Map<string, number>();
 const CURSOR_THROTTLE_MS = 100;
@@ -61,7 +64,7 @@ export function createWSHandlers(placeId: string, c: Context) {
     async onOpen(_event: Event, ws: WSContext) {
       const origin = c.req.header('Origin');
       if (origin && !isAllowedOrigin(origin)) {
-        console.warn(`[ws] Rejected from unauthorized origin: ${origin}`);
+        log.warn('Rejected from unauthorized origin', { origin });
         ws.close(1008, 'Forbidden origin');
         return;
       }
@@ -81,7 +84,7 @@ export function createWSHandlers(placeId: string, c: Context) {
           displayName = ticketData.displayName;
           isAuthenticated = true;
         } else {
-          console.warn(`[ws] Invalid or expired WS ticket`);
+          log.warn('Invalid or expired WS ticket');
           authError = 'TICKET_INVALID';
         }
       }
@@ -105,7 +108,7 @@ export function createWSHandlers(placeId: string, c: Context) {
       // Store by sessionId — survives WSContext recreation
       sessionStates.set(sessionId, { placeId, user, ws });
 
-      console.log(`[ws] ${displayName} (${sessionId.slice(0,8)}) joined room ${placeId.slice(0,8)}`);
+      log.info('User joined room', { user: displayName, sessionId: sessionId.slice(0,8), placeId: placeId.slice(0,8) });
       incGauge('ws_connections_active');
       incCounter('ws_connections_total');
       await joinRoom(placeId, sessionId, ws, user);
@@ -126,7 +129,7 @@ export function createWSHandlers(placeId: string, c: Context) {
       // Look up state by sessionId (captured in closure)
       const state = sessionStates.get(sessionId);
       if (!state) {
-        console.warn(`[ws] No state for session ${sessionId.slice(0,8)}`);
+        log.warn('No state for session', { sessionId: sessionId.slice(0,8) });
         return;
       }
       // Update ws reference (may be a new WSContext instance)
@@ -154,9 +157,8 @@ export function createWSHandlers(placeId: string, c: Context) {
       }
 
       const { placeId: pid, user } = state;
-      // Only log non-noisy message types
       if (msg.type !== 'ping' && msg.type !== 'cursor') {
-        console.log(`[ws] Message from ${user.displayName}: ${msg.type}`);
+        log.debug('Message received', { user: user.displayName, type: msg.type });
       }
 
       switch (msg.type) {
@@ -227,7 +229,7 @@ export function createWSHandlers(placeId: string, c: Context) {
             },
           };
 
-          console.log(`[ws] Bubble blown by ${user.displayName}, broadcasting to others`);
+          log.debug('Bubble blown', { user: user.displayName, size });
           incCounter('bubbles_blown_total', { size });
           broadcastToRoom(pid, createdMsg, sessionId);
 
@@ -306,7 +308,7 @@ export function createWSHandlers(placeId: string, c: Context) {
             if (client) client.user.displayName = trimmed;
           }
 
-          console.log(`[ws] ${oldName} renamed to ${trimmed}`);
+          log.info('User renamed', { from: oldName, to: trimmed });
 
           // Sync updated name to Redis so cross-pod room_state is correct
           updateMemberInRedis(pid, sessionId, user);
@@ -350,11 +352,12 @@ export function createWSHandlers(placeId: string, c: Context) {
           if (now - last < CURSOR_THROTTLE_MS) return;
           lastCursorSent.set(key, now);
 
+          // Use pre-serialized broadcast to avoid JSON.stringify per-client
           const cursorMsg: ServerMessage = {
             type: 'cursor_moved', ts: now,
             data: { sessionId, x: msg.data.x, y: msg.data.y },
           };
-          broadcastToLocalClients(pid, cursorMsg, sessionId);
+          broadcastSerializedToLocal(pid, JSON.stringify(cursorMsg), sessionId);
           break;
         }
 
@@ -374,7 +377,7 @@ export function createWSHandlers(placeId: string, c: Context) {
       const state = sessionStates.get(sessionId);
       if (!state) return;
 
-      console.log(`[ws] ${state.user.displayName} left room ${state.placeId.slice(0,8)}`);
+      log.info('User left room', { user: state.user.displayName, placeId: state.placeId.slice(0,8) });
       decGauge('ws_connections_active');
       leaveRoom(state.placeId, sessionId);
       sessionStates.delete(sessionId);
@@ -387,7 +390,7 @@ export function createWSHandlers(placeId: string, c: Context) {
       // Only log — onClose always fires after onError, so all cleanup happens there.
       const state = sessionStates.get(sessionId);
       if (state) {
-        console.error(`[ws] Error for ${state.user.displayName}`);
+        log.error('WebSocket error', { user: state.user.displayName });
       }
     },
   };

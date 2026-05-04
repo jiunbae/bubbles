@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { useUIStore } from '@/stores/ui-store';
@@ -47,7 +47,7 @@ export function BubbleControls() {
     return useBubbleStore.subscribe((s) => setBubbleCount(s.bubbles.size));
   }, []);
 
-  const startBlowing = () => {
+  const startBlowing = useCallback(() => {
     if (intervalRef.current !== null) return;
     buttonActive = true;
     setIsBlowing(true);
@@ -58,18 +58,18 @@ export function BubbleControls() {
     intervalRef.current = window.setInterval(() => {
       spawnBatch(useUIStore.getState().selectedColor);
     }, BLOW_INTERVAL);
-  };
+  }, []);
 
-  const stopBlowing = () => {
+  const stopBlowing = useCallback(() => {
     buttonActive = false;
     setIsBlowing(false);
     if (intervalRef.current !== null) {
       window.clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-  };
+  }, []);
 
-  // Spacebar
+  // Spacebar — stable refs ensure the exact same function is removed on cleanup
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !e.repeat && !(e.target instanceof HTMLInputElement)) {
@@ -85,7 +85,7 @@ export function BubbleControls() {
       window.removeEventListener('keyup', up);
       stopBlowing();
     };
-  }, []);
+  }, [startBlowing, stopBlowing]);
 
   // Hide blow controls in pop mode
   if (interactionMode !== 'blow') return null;

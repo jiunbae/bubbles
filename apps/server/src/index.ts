@@ -15,6 +15,9 @@ import { initPubSub } from './ws/pubsub';
 import { PLACE_INACTIVE_TIMEOUT } from '@bubbles/shared';
 import { metricsMiddleware, metricsRoute } from './metrics';
 import { og } from './routes/og';
+import { createLogger } from './logger';
+
+const log = createLogger('server');
 
 const app = new Hono();
 const { upgradeWebSocket, websocket } = createBunWebSocket();
@@ -80,7 +83,7 @@ async function start() {
     await connectMongo();
     await ensureIndexes();
   } catch (err) {
-    console.error('[startup] Failed to connect to MongoDB:', err);
+    log.error('Failed to connect to MongoDB', { err: String(err) });
     process.exit(1);
   }
 
@@ -103,12 +106,12 @@ async function start() {
     if (isShuttingDown) return;
     isShuttingDown = true;
 
-    console.log('\n[shutdown] Shutting down gracefully...');
+    log.info('Shutting down gracefully');
     setShuttingDown(); // readiness probe returns 503
 
     // Clean up all sessions: leave rooms (removes from Redis) then close WS
     const sessions = getAllSessions();
-    console.log(`[shutdown] Cleaning up ${sessions.size} WebSocket sessions...`);
+    log.info('Cleaning up WebSocket sessions', { count: sessions.size });
     for (const [sessionId, session] of sessions) {
       try {
         leaveRoom(session.placeId, sessionId);
@@ -135,7 +138,7 @@ async function start() {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
-  console.log(`[server] Bubbles server running on port ${config.PORT} (pod: ${config.POD_ID})`);
+  log.info('Bubbles server running', { port: config.PORT, pod: config.POD_ID });
 }
 
 start();

@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 import { getCollection } from '../db/mongo';
 import { authMiddleware } from '../middleware/auth';
 import { rateLimiterMiddleware } from '../middleware/rateLimiter';
-import { getRoomUserCountAsync } from '../ws/rooms';
+import { getRoomUserCountAsync, getRoomUserCountsBatch } from '../ws/rooms';
 import { logAction } from '../ws/actions';
 import { MAX_PLACE_NAME_LENGTH } from '@bubbles/shared';
 
@@ -32,18 +32,25 @@ places.get('/', async (c) => {
     .limit(100)
     .toArray();
 
-  const result = await Promise.all(docs.map(async (doc) => ({
-    id: doc._id.toHexString(),
-    name: doc.name,
-    theme: doc.theme || 'rooftop',
-    createdBy: doc.createdBy,
-    userCount: await getRoomUserCountAsync(doc._id.toHexString()),
-    bubbleCount: 0,
-    totalVisitors: doc.totalVisitors || 0,
-    totalBubbles: doc.totalBubbles || 0,
-    createdAt: doc.createdAt.toISOString(),
-    lastActivityAt: doc.lastActivityAt.toISOString(),
-  })));
+  // Batch-fetch all user counts in one Redis pipeline (avoids N+1 round-trips)
+  const placeIds = docs.map((d) => d._id.toHexString());
+  const userCounts = await getRoomUserCountsBatch(placeIds);
+
+  const result = docs.map((doc) => {
+    const id = doc._id.toHexString();
+    return {
+      id,
+      name: doc.name,
+      theme: doc.theme || 'rooftop',
+      createdBy: doc.createdBy,
+      userCount: userCounts.get(id) ?? 0,
+      bubbleCount: 0,
+      totalVisitors: doc.totalVisitors || 0,
+      totalBubbles: doc.totalBubbles || 0,
+      createdAt: doc.createdAt.toISOString(),
+      lastActivityAt: doc.lastActivityAt.toISOString(),
+    };
+  });
 
   return c.json(result);
 });

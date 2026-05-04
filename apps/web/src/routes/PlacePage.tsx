@@ -10,6 +10,7 @@ import { usePlaceStore } from '@/stores/place-store';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { BUBBLE_COLORS } from '@bubbles/shared';
 import { ModeSwitch } from '@/components/shared/ModeSwitch';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { ActivityLog } from '@/components/shared/ActivityLog';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { initAudio } from '@/lib/sounds';
@@ -474,15 +475,23 @@ export function PlacePage() {
       {/* Main content */}
       <div className="relative flex flex-1">
         <main className="flex-1">
-          <Suspense
+          <ErrorBoundary
             fallback={
               <div className="flex h-full items-center justify-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                <p className="text-sm text-text-secondary">{t('errors.unexpectedError')}</p>
               </div>
             }
           >
-            {mode === 'visual' ? <VisualMode /> : <StealthMode />}
-          </Suspense>
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+                </div>
+              }
+            >
+              {mode === 'visual' ? <VisualMode /> : <StealthMode />}
+            </Suspense>
+          </ErrorBoundary>
         </main>
 
         {/* Activity log sidebar */}

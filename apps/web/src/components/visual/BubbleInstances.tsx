@@ -67,7 +67,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
   );
   const activeCountRef = useRef(0);
 
-  // Shared geometry & material (created once)
+  // Shared geometry & material (created once, disposed on unmount)
   const geometry = useMemo(() => new THREE.IcosahedronGeometry(1, 3), []);
   const material = useMemo(() => {
     const mat = new THREE.MeshStandardMaterial({
@@ -140,6 +140,14 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
 
     return mat;
   }, []);
+
+  // Dispose GPU resources on unmount
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+      material.dispose();
+    };
+  }, [geometry, material]);
 
   // Per-instance opacity buffer (attribute)
   const opacityArray = useMemo(() => new Float32Array(MAX_BUBBLES).fill(0), []);

@@ -8,6 +8,9 @@ import { setGauge, incCounter } from '../metrics';
 import { getRedis, isRedisEnabled } from '../db/redis';
 import { config } from '../config';
 import { publishToRoom, subscribeRoom, unsubscribeRoom, setPubSubHandler, setRemoteBubbleHandler } from './pubsub';
+import { createLogger } from '../logger';
+
+const log = createLogger('rooms');
 
 /** Validate placeId is a 24-character hex string (MongoDB ObjectId format). */
 export function isValidPlaceId(id: string): boolean {
@@ -363,6 +366,36 @@ export async function getRoomUserCountAsync(placeId: string): Promise<number> {
   }
 }
 
+/**
+ * Batch-fetch user counts for multiple rooms in a single Redis pipeline.
+ * O(N) round-trips → O(1). Falls back to local counts when Redis is unavailable.
+ */
+export async function getRoomUserCountsBatch(placeIds: string[]): Promise<Map<string, number>> {
+  const result = new Map<string, number>();
+  if (placeIds.length === 0) return result;
+
+  const redis = getRedis();
+  if (!redis) {
+    for (const id of placeIds) result.set(id, getRoomUserCount(id));
+    return result;
+  }
+
+  try {
+    const pipeline = redis.pipeline();
+    for (const id of placeIds) pipeline.hlen(memberKey(id));
+    const replies = await pipeline.exec();
+
+    placeIds.forEach((id, i) => {
+      const count = (replies?.[i]?.[1] as number) ?? getRoomUserCount(id);
+      result.set(id, count);
+    });
+  } catch {
+    for (const id of placeIds) result.set(id, getRoomUserCount(id));
+  }
+
+  return result;
+}
+
 export function cleanupStaleRooms(): void {
   const now = Date.now();
   for (const [placeId, room] of rooms) {
@@ -373,7 +406,7 @@ export function cleanupStaleRooms(): void {
       }
       rooms.delete(placeId);
       incTotalBubbles(-bubbleCount);
-      console.log(`[rooms] Cleaned up stale room: ${placeId}`);
+      log.info('Cleaned up stale room', { placeId });
     }
   }
   syncRoomGauges();
@@ -493,10 +526,10 @@ export async function cleanupRedisStaleEntries(): Promise<void> {
 
     if (pipelineOps > 0) {
       await pipeline.exec();
-      console.log(`[rooms/redis] Cleanup pipeline executed ${pipelineOps} HDEL ops`);
+      log.info('Redis cleanup executed', { ops: pipelineOps });
     }
   } catch (err) {
-    console.error('[rooms/redis] Cleanup failed:', err);
+    log.error('Redis cleanup failed', { err: String(err) });
   }
 }
 
@@ -521,7 +554,7 @@ export async function incPlaceStats(placeId: string, field: 'totalVisitors' | 't
       { $inc: { [field]: amount } }
     );
   } catch (err) {
-    console.error('[rooms] Failed to inc place stats:', err);
+    log.error('Failed to inc place stats', { err: String(err) });
   }
 }
 
@@ -533,7 +566,7 @@ async function updatePlaceActivity(placeId: string): Promise<void> {
       { $set: { lastActivityAt: new Date() }, $unset: { deleteAfter: '' } }
     );
   } catch (err) {
-    console.error('[rooms] Failed to update place activity:', err);
+    log.error('Failed to update place activity', { err: String(err) });
   }
 }
 

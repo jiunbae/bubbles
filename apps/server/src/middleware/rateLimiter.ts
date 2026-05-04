@@ -9,12 +9,24 @@ interface TokenBucket {
 // Per-session, per-action buckets
 const buckets = new Map<string, TokenBucket>();
 
-// Clean up stale buckets periodically
+// Hard cap: evict oldest entries when map exceeds this size
+const MAX_BUCKETS = 10_000;
+
+// Clean up stale buckets periodically and enforce hard cap
 const CLEANUP_INTERVAL = 5 * 60 * 1000;
 setInterval(() => {
   const now = Date.now();
   for (const [key, bucket] of buckets) {
     if (now - bucket.lastRefill > CLEANUP_INTERVAL) {
+      buckets.delete(key);
+    }
+  }
+  // If still over cap, evict oldest (Map insertion order)
+  if (buckets.size > MAX_BUCKETS) {
+    const overflow = buckets.size - MAX_BUCKETS;
+    let i = 0;
+    for (const key of buckets.keys()) {
+      if (i++ >= overflow) break;
       buckets.delete(key);
     }
   }

@@ -1,6 +1,9 @@
 import { MongoClient, type Db, type Collection, type Document } from 'mongodb';
 import { config } from '../config';
 import { LOG_RETENTION_DAYS } from '@bubbles/shared';
+import { createLogger } from '../logger';
+
+const log = createLogger('mongo');
 
 let client: MongoClient;
 let db: Db;
@@ -14,7 +17,7 @@ export async function connectMongo(): Promise<void> {
 
   await client.connect();
   db = client.db();
-  console.log('[mongo] Connected to MongoDB');
+  log.info('Connected to MongoDB');
 }
 
 export function getDb(): Db {
@@ -37,6 +40,7 @@ export async function ensureIndexes(): Promise<void> {
     placesCol.createIndex({ name: 1 }, { unique: true }),
     placesCol.createIndex({ deleteAfter: 1 }, { expireAfterSeconds: 0 }),
     placesCol.createIndex({ lastActivityAt: -1 }),
+    placesCol.createIndex({ createdBy: 1 }),
 
     // Action logs indexes
     logsCol.createIndex({ placeId: 1, createdAt: -1 }),
@@ -47,12 +51,12 @@ export async function ensureIndexes(): Promise<void> {
     ),
   ]);
 
-  console.log('[mongo] Indexes ensured');
+  log.info('Indexes ensured');
 }
 
 export async function disconnectMongo(): Promise<void> {
   if (client) {
     await client.close();
-    console.log('[mongo] Disconnected from MongoDB');
+    log.info('Disconnected from MongoDB');
   }
 }

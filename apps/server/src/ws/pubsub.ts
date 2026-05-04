@@ -7,6 +7,9 @@
 import { getRedis, getSub, isRedisEnabled } from '../db/redis';
 import { config } from '../config';
 import type { ServerMessage } from '@bubbles/shared';
+import { createLogger } from '../logger';
+
+const log = createLogger('pubsub');
 
 interface PubSubMessage {
   originPodId: string;
@@ -78,11 +81,11 @@ export function initPubSub(): void {
         relayHandler(placeId, message, parsed.originSessionId);
       }
     } catch (err) {
-      console.error('[pubsub] Failed to handle message:', err);
+      log.error('Failed to handle message', { err: String(err) });
     }
   });
 
-  console.log('[pubsub] Initialized');
+  log.info('Initialized');
 }
 
 /**
@@ -94,7 +97,7 @@ export async function subscribeRoom(placeId: string): Promise<void> {
 
   subscribedRooms.add(placeId);
   await sub.subscribe(channelName(placeId)).catch((err) => {
-    console.error(`[pubsub] Failed to subscribe to ${placeId}:`, err.message);
+    log.error('Failed to subscribe to room', { placeId, err: err.message });
     subscribedRooms.delete(placeId);
   });
 }
@@ -131,6 +134,6 @@ export async function publishToRoom(
   };
 
   await redis.publish(channelName(placeId), JSON.stringify(payload)).catch((err) => {
-    console.error(`[pubsub] Failed to publish to ${placeId}:`, err.message);
+    log.error('Failed to publish to room', { placeId, err: err.message });
   });
 }

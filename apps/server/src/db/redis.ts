@@ -1,5 +1,8 @@
 import Redis from 'ioredis';
 import { config } from '../config';
+import { createLogger } from '../logger';
+
+const log = createLogger('redis');
 
 let redis: Redis | null = null;
 let sub: Redis | null = null;
@@ -10,7 +13,7 @@ export function isRedisEnabled(): boolean {
 
 export function connectRedis(): void {
   if (!config.REDIS_URL) {
-    console.log('[redis] No REDIS_URL configured, running in local-only mode');
+    log.info('No REDIS_URL configured, running in local-only mode');
     return;
   }
 
@@ -26,10 +29,10 @@ export function connectRedis(): void {
   redis = new Redis(config.REDIS_URL, sharedOptions);
   sub = new Redis(config.REDIS_URL, sharedOptions);
 
-  redis.on('error', (err) => console.error('[redis] Command connection error:', err.message));
-  sub.on('error', (err) => console.error('[redis] Sub connection error:', err.message));
-  redis.on('connect', () => console.log('[redis] Command connection established'));
-  sub.on('connect', () => console.log('[redis] Sub connection established'));
+  redis.on('error', (err) => log.error('Command connection error', { err: err.message }));
+  sub.on('error', (err) => log.error('Sub connection error', { err: err.message }));
+  redis.on('connect', () => log.info('Command connection established'));
+  sub.on('connect', () => log.info('Sub connection established'));
 }
 
 export function getRedis(): Redis | null {

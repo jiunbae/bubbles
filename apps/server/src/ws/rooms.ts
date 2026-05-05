@@ -80,7 +80,7 @@ async function redisAddMember(placeId: string, sessionId: string, user: BubblesU
     };
     await redis.hset(memberKey(placeId), sessionId, JSON.stringify(info));
   } catch (err) {
-    console.error('[rooms/redis] Failed to add member:', err);
+    log.error('Failed to add member to Redis', { err: String(err) });
   }
 }
 
@@ -93,7 +93,7 @@ async function redisRemoveMember(placeId: string, sessionId: string): Promise<vo
   try {
     await redis.hdel(memberKey(placeId), sessionId);
   } catch (err) {
-    console.error('[rooms/redis] Failed to remove member:', err);
+    log.error('Failed to remove member from Redis', { err: String(err) });
   }
 }
 
@@ -104,7 +104,7 @@ async function redisAddBubble(placeId: string, bubble: Omit<ActiveBubble, 'timer
     const { ...data } = bubble;
     await redis.hset(bubbleKey(placeId), bubble.id, JSON.stringify(data));
   } catch (err) {
-    console.error('[rooms/redis] Failed to add bubble:', err);
+    log.error('Failed to add bubble to Redis', { err: String(err) });
   }
 }
 
@@ -114,7 +114,7 @@ async function redisRemoveBubble(placeId: string, bubbleId: string): Promise<voi
   try {
     await redis.hdel(bubbleKey(placeId), bubbleId);
   } catch (err) {
-    console.error('[rooms/redis] Failed to remove bubble:', err);
+    log.error('Failed to remove bubble from Redis', { err: String(err) });
   }
 }
 
@@ -535,11 +535,19 @@ export async function cleanupRedisStaleEntries(): Promise<void> {
 
 // --- Private helpers ---
 
+// TTL cache for place names — avoids a DB round-trip on every join
+const placeNameCache = new Map<string, { name: string; expiresAt: number }>();
+const PLACE_NAME_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 async function getPlaceName(placeId: string): Promise<string> {
+  const cached = placeNameCache.get(placeId);
+  if (cached && cached.expiresAt > Date.now()) return cached.name;
   try {
     const col = getCollection('places');
-    const doc = await col.findOne({ _id: new ObjectId(placeId) });
-    return doc?.name ?? 'Unknown Place';
+    const doc = await col.findOne({ _id: new ObjectId(placeId) }, { projection: { name: 1 } });
+    const name = doc?.name ?? 'Unknown Place';
+    placeNameCache.set(placeId, { name, expiresAt: Date.now() + PLACE_NAME_CACHE_TTL });
+    return name;
   } catch {
     return 'Unknown Place';
   }
@@ -671,6 +679,6 @@ async function markPlaceForDeletion(placeId: string): Promise<void> {
       { $set: { deleteAfter } }
     );
   } catch (err) {
-    console.error('[rooms] Failed to mark place for deletion:', err);
+    log.error('Failed to mark place for deletion', { err: String(err) });
   }
 }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { forwardRef, useRef, useState, useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { PlaceTheme } from '@bubbles/shared';
 import { getTimeOfDay, type TimeColors } from '../../lib/time-of-day';
@@ -97,32 +97,39 @@ function ModernStreetlamp({ position, height = 3.5 }: { position: [number, numbe
   );
 }
 
-function NeonSign({ position }: { position: [number, number, number] }) {
-  const ref = useRef<THREE.PointLight>(null);
-  useFrame((state) => {
-    if (ref.current) {
-      ref.current.intensity = 4 + Math.sin(state.clock.elapsedTime * 8) * 0.5;
-    }
-  });
-  return (
-    <group position={position}>
-      <mesh>
-        <boxGeometry args={[0.8, 0.4, 0.03]} />
-        <meshStandardMaterial color="#222" roughness={0.8} />
-      </mesh>
-      <mesh position={[0, 0, 0.03]}>
-        <boxGeometry args={[0.6, 0.2, 0.02]} />
-        <meshStandardMaterial color="#ff4488" emissive="#ff2266" emissiveIntensity={4} transparent opacity={0.9} />
-      </mesh>
-      <pointLight ref={ref} color="#ff4488" intensity={4} position={[0, 0, 0.3]} distance={12} decay={1} />
-    </group>
-  );
-}
+// NeonSign exposes its PointLight ref so the parent can animate it in a single useFrame
+const NeonSign = forwardRef<THREE.PointLight, { position: [number, number, number] }>(
+  function NeonSign({ position }, ref) {
+    return (
+      <group position={position}>
+        <mesh>
+          <boxGeometry args={[0.8, 0.4, 0.03]} />
+          <meshStandardMaterial color="#222" roughness={0.8} />
+        </mesh>
+        <mesh position={[0, 0, 0.03]}>
+          <boxGeometry args={[0.6, 0.2, 0.02]} />
+          <meshStandardMaterial color="#ff4488" emissive="#ff2266" emissiveIntensity={4} transparent opacity={0.9} />
+        </mesh>
+        <pointLight ref={ref} color="#ff4488" intensity={4} position={[0, 0, 0.3]} distance={12} decay={1} />
+      </group>
+    );
+  }
+);
 
 function RooftopEnvironment({ time, cameraMode }: { time: TimeColors; cameraMode?: boolean }) {
   const bg = useMemo(() => blendHex('#1e2040', time.skyTop, 0.4), [time]);
   const ambientColor = useMemo(() => blendHex('#8899bb', time.sunColor, 0.3), [time]);
   const sunColor = useMemo(() => new THREE.Color('#ffa54f').lerp(time.sunColor, 0.3), [time]);
+
+  // Neon sign flicker — single useFrame instead of one inside NeonSign
+  const neonRef = useRef<THREE.PointLight>(null);
+  useFrame((state) => {
+    if (neonRef.current) {
+      const t = state.clock.elapsedTime;
+      neonRef.current.intensity = 4 + Math.sin(t * 3.7) * 0.4 + Math.sin(t * 11.3) * 0.2;
+    }
+  });
+
   return (
     <>
       <SceneBackground color={bg} cameraMode={cameraMode} />
@@ -169,7 +176,7 @@ function RooftopEnvironment({ time, cameraMode }: { time: TimeColors; cameraMode
         <ModernStreetlamp position={[3, -1, 4]} height={3.0} />
 
         {/* Neon sign */}
-        <NeonSign position={[-2, 1.5, -5.9]} />
+        <NeonSign ref={neonRef} position={[-2, 1.5, -5.9]} />
 
         {/* Water tower silhouette */}
         <group position={[6, -1, -5]}>
@@ -344,42 +351,39 @@ function ParkEnvironment({ time, cameraMode }: { time: TimeColors; cameraMode?: 
 // ALLEY — Paper lanterns + wall bracket lamps + neon sign
 // ═══════════════════════════════════════════════════════════════════
 
-function PaperLantern({ position, color = '#ff4422' }: { position: [number, number, number]; color?: string }) {
-  const lightRef = useRef<THREE.PointLight>(null);
-  useFrame((state) => {
-    if (lightRef.current) {
-      lightRef.current.intensity = 5 + Math.sin(state.clock.elapsedTime * 1.5 + position[0]) * 1;
-    }
-  });
-  return (
-    <group position={position}>
-      <mesh position={[0, 0.2, 0]}>
-        <cylinderGeometry args={[0.005, 0.005, 0.4, 4]} />
-        <meshStandardMaterial color="#444" />
-      </mesh>
-      <mesh>
-        <sphereGeometry args={[0.15, 8, 8]} />
-        <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={3}
-          transparent
-          opacity={0.8}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <mesh position={[0, 0.12, 0]}>
-        <cylinderGeometry args={[0.05, 0.05, 0.02, 8]} />
-        <meshStandardMaterial color="#aa8844" metalness={0.6} roughness={0.3} />
-      </mesh>
-      <mesh position={[0, -0.12, 0]}>
-        <cylinderGeometry args={[0.04, 0.04, 0.02, 8]} />
-        <meshStandardMaterial color="#aa8844" metalness={0.6} roughness={0.3} />
-      </mesh>
-      <pointLight ref={lightRef} color={color} intensity={5} position={[0, 0, 0]} distance={14} decay={1} />
-    </group>
-  );
-}
+// PaperLantern exposes its PointLight ref so the parent drives all flicker in one useFrame
+const PaperLantern = forwardRef<THREE.PointLight, { position: [number, number, number]; color?: string }>(
+  function PaperLantern({ position, color = '#ff4422' }, ref) {
+    return (
+      <group position={position}>
+        <mesh position={[0, 0.2, 0]}>
+          <cylinderGeometry args={[0.005, 0.005, 0.4, 4]} />
+          <meshStandardMaterial color="#444" />
+        </mesh>
+        <mesh>
+          <sphereGeometry args={[0.15, 8, 8]} />
+          <meshStandardMaterial
+            color={color}
+            emissive={color}
+            emissiveIntensity={3}
+            transparent
+            opacity={0.8}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+        <mesh position={[0, 0.12, 0]}>
+          <cylinderGeometry args={[0.05, 0.05, 0.02, 8]} />
+          <meshStandardMaterial color="#aa8844" metalness={0.6} roughness={0.3} />
+        </mesh>
+        <mesh position={[0, -0.12, 0]}>
+          <cylinderGeometry args={[0.04, 0.04, 0.02, 8]} />
+          <meshStandardMaterial color="#aa8844" metalness={0.6} roughness={0.3} />
+        </mesh>
+        <pointLight ref={ref} color={color} intensity={5} position={[0, 0, 0]} distance={14} decay={1} />
+      </group>
+    );
+  }
+);
 
 function WallBracketLamp({ position, side = 'left' }: { position: [number, number, number]; side?: 'left' | 'right' }) {
   const dir = side === 'left' ? 1 : -1;
@@ -406,6 +410,22 @@ function AlleyEnvironment({ time, cameraMode }: { time: TimeColors; cameraMode?:
   const bg = useMemo(() => blendHex('#1a1410', time.skyTop, 0.3), [time]);
   const ambientColor = useMemo(() => blendHex('#887766', time.sunColor, 0.2), [time]);
   const sunColor = useMemo(() => new THREE.Color('#889aaa').lerp(time.sunColor, 0.25), [time]);
+
+  // Single useFrame drives all 5 lantern flickers (was 5 separate useFrame hooks)
+  const l0 = useRef<THREE.PointLight>(null);
+  const l1 = useRef<THREE.PointLight>(null);
+  const l2 = useRef<THREE.PointLight>(null);
+  const l3 = useRef<THREE.PointLight>(null);
+  const l4 = useRef<THREE.PointLight>(null);
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (l0.current) l0.current.intensity = 5 + Math.sin(t * 1.5 - 1.5) * 1;
+    if (l1.current) l1.current.intensity = 5 + Math.sin(t * 1.5) * 1;
+    if (l2.current) l2.current.intensity = 5 + Math.sin(t * 1.5 + 1.2) * 1;
+    if (l3.current) l3.current.intensity = 5 + Math.sin(t * 1.5 - 0.5) * 1;
+    if (l4.current) l4.current.intensity = 5 + Math.sin(t * 1.5 + 1.0) * 1;
+  });
+
   return (
     <>
       <SceneBackground color={bg} cameraMode={cameraMode} />
@@ -439,16 +459,12 @@ function AlleyEnvironment({ time, cameraMode }: { time: TimeColors; cameraMode?:
           <meshStandardMaterial color="#5a3818" roughness={0.9} />
         </mesh>
 
-        {/* Paper lanterns */}
-        {[
-          { pos: [-1.5, 3.2, -3] as [number, number, number], color: '#ff4422' },
-          { pos: [0, 3.0, -1.5] as [number, number, number], color: '#ff6622' },
-          { pos: [1.2, 3.3, 0] as [number, number, number], color: '#ff4422' },
-          { pos: [-0.5, 3.1, 1.5] as [number, number, number], color: '#ffaa22' },
-          { pos: [1.0, 3.2, 3] as [number, number, number], color: '#ff4422' },
-        ].map(({ pos, color }, i) => (
-          <PaperLantern key={i} position={pos} color={color} />
-        ))}
+        {/* Paper lanterns — refs for single-useFrame flicker in parent */}
+        <PaperLantern ref={l0} position={[-1.5, 3.2, -3]} color="#ff4422" />
+        <PaperLantern ref={l1} position={[0, 3.0, -1.5]} color="#ff6622" />
+        <PaperLantern ref={l2} position={[1.2, 3.3, 0]} color="#ff4422" />
+        <PaperLantern ref={l3} position={[-0.5, 3.1, 1.5]} color="#ffaa22" />
+        <PaperLantern ref={l4} position={[1.0, 3.2, 3]} color="#ff4422" />
         <mesh position={[0, 3.4, 0]} rotation={[0, 0.3, 0]}>
           <cylinderGeometry args={[0.003, 0.003, 10, 4]} />
           <meshStandardMaterial color="#333" />

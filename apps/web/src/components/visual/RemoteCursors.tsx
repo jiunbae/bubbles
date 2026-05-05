@@ -4,6 +4,10 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useCursorStore, type RemoteCursor } from '@/stores/cursor-store';
 
+// Scratch objects — allocated once, reused across all RemoteWand instances
+const _ndc = new THREE.Vector3();
+const _dir = new THREE.Vector3();
+
 const STALE_TIMEOUT = 3000;
 const LERP_SPEED = 0.12;
 
@@ -22,26 +26,23 @@ function RemoteWand({
   const initializedRef = useRef(false);
   const { camera } = useThree();
 
-  // Unproject the normalized screen coordinates to 3D
+  // Unproject only when cursor position changes — not every frame
+  useEffect(() => {
+    _ndc.set(cursor.x * 2 - 1, -(cursor.y * 2 - 1), 0.5).unproject(camera);
+    _dir.copy(_ndc).sub(camera.position).normalize();
+    targetRef.current.copy(camera.position).addScaledVector(_dir, 5);
+  }, [cursor.x, cursor.y, camera]);
+
+  // Per-frame: smooth lerp only (cheap)
   useFrame(() => {
     const g = groupRef.current;
     if (!g) return;
-
-    // Convert normalized coords to NDC (-1 to 1)
-    const ndc = new THREE.Vector3(cursor.x * 2 - 1, -(cursor.y * 2 - 1), 0.5);
-    ndc.unproject(camera);
-
-    const dir = ndc.sub(camera.position).normalize();
-    const target = camera.position.clone().addScaledVector(dir, 5);
-    targetRef.current.copy(target);
-
     if (!initializedRef.current) {
       g.position.copy(targetRef.current);
       initializedRef.current = true;
     } else {
       g.position.lerp(targetRef.current, LERP_SPEED);
     }
-
     g.lookAt(camera.position);
   });
 

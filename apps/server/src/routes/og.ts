@@ -8,9 +8,10 @@ import { join } from 'node:path';
 
 const og = new Hono();
 
-// Cache generated images for 5 minutes
+// Cache generated images for 5 minutes (capped to prevent unbounded memory growth)
 const imageCache = new Map<string, { data: Uint8Array; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000;
+const MAX_CACHE_SIZE = 200;
 
 // Initialize WASM once
 let wasmInitialized = false;
@@ -232,6 +233,7 @@ og.get('/default.png', async (c) => {
     const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
     const png = resvg.render().asPng();
 
+    if (imageCache.size >= MAX_CACHE_SIZE) imageCache.delete(imageCache.keys().next().value!);
     imageCache.set(cacheKey, { data: png, timestamp: Date.now() });
     return new Response(png.buffer as ArrayBuffer, {
       status: 200,
@@ -278,6 +280,7 @@ og.get('/place/:placeId.png', async (c) => {
     const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } });
     const png = resvg.render().asPng();
 
+    if (imageCache.size >= MAX_CACHE_SIZE) imageCache.delete(imageCache.keys().next().value!);
     imageCache.set(cacheKey, { data: png, timestamp: Date.now() });
     return new Response(png.buffer as ArrayBuffer, {
       status: 200,

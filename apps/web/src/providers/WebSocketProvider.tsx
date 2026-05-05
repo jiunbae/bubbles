@@ -159,18 +159,23 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     checkMilestones,
   ]);
 
-  // Also track local bubble additions for milestones
+  // Also track local bubble additions for milestones (debounced to avoid firing on every frame)
   useEffect(() => {
     let prevSize = useBubbleStore.getState().bubbles.size;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const unsub = useBubbleStore.subscribe((state) => {
       const newSize = state.bubbles.size;
       if (newSize > prevSize) {
         totalBubbleCountRef.current += (newSize - prevSize);
-        checkMilestones();
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(checkMilestones, 500);
       }
       prevSize = newSize;
     });
-    return unsub;
+    return () => {
+      unsub();
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
   }, [checkMilestones]);
 
   const send = useCallback((msg: ClientMessage) => {

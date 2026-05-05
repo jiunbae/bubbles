@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -7,17 +7,22 @@ const _target = new THREE.Vector3();
 
 export function BubbleWandCursor() {
   const groupRef = useRef<THREE.Group>(null);
+  const targetRef = useRef(new THREE.Vector3());
   const { camera, raycaster, pointer } = useThree();
 
-  useFrame(() => {
-    const g = groupRef.current;
-    if (!g) return;
-
+  // Recalculate 3D target only when pointer actually moves
+  useEffect(() => {
     raycaster.setFromCamera(pointer, camera);
     _dir.copy(raycaster.ray.direction).normalize();
     _target.copy(raycaster.ray.origin).addScaledVector(_dir, 5);
+    targetRef.current.copy(_target);
+  }, [pointer.x, pointer.y, camera, raycaster]);
 
-    g.position.lerp(_target, 0.2);
+  // Per-frame: lerp smoothing only
+  useFrame(() => {
+    const g = groupRef.current;
+    if (!g) return;
+    g.position.lerp(targetRef.current, 0.2);
     g.lookAt(camera.position);
   });
 

@@ -21,7 +21,9 @@
 
 ## What is Bubbles?
 
-Bubbles is a real-time multiplayer web app where people gather in virtual **places** to blow and pop bubbles together. Think of it as a chill, interactive community space with beautiful 3D visuals powered by custom GLSL shaders.
+Inspired by [damta.world](https://www.damta.world/) — if smokers get a cigarette break (담타), non-smokers deserve a bubble break.
+
+Bubbles is a real-time multiplayer web app where people gather in virtual **places** to blow and pop bubbles together. No signup, no rules, just open a link and blow bubbles. A chill, interactive community space with beautiful 3D visuals powered by custom GLSL shaders.
 
 ### Highlights
 
@@ -31,7 +33,8 @@ Bubbles is a real-time multiplayer web app where people gather in virtual **plac
 - **Community places** — Create themed spaces (Rooftop, Park, Alley) for people to hang out in
 - **Multiple bubble styles** — 3 sizes (S/M/L), 8 colors, 4 patterns (plain, spiral, dots, star)
 - **Dynamic lifespans** — Bubbles float and expire naturally (6s–30s based on size)
-- **Visual & Stealth modes** — Switch between full 3D rendering and a spreadsheet-style disguise
+- **Visual & Stealth modes** — Switch between full 3D rendering and a spreadsheet-style disguise (`Ctrl+Shift+M`)
+- **Bubble break timer** — 1/3/5 minute break timer to step away and blow some bubbles
 - **i18n** — English and Korean language support
 - **Zero-downtime deploys** — Rolling updates with graceful WebSocket draining
 

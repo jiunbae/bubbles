@@ -51,7 +51,9 @@ function BubbleSpawner() {
   const interactionMode = useUIStore((s) => s.interactionMode);
 
   const colorRef = useRef(useUIStore.getState().selectedColor);
-  useEffect(() => useUIStore.subscribe((s) => { colorRef.current = s.selectedColor; }), []);
+  useEffect(() => {
+    return useUIStore.subscribe((s) => { colorRef.current = s.selectedColor; });
+  }, []);
 
   const camRef = useRef(camera);
   const ptRef = useRef(pointer);

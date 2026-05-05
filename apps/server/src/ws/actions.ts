@@ -1,5 +1,8 @@
 import { getCollection } from '../db/mongo';
 import type { BubblesUser } from '../middleware/auth';
+import { createLogger } from '../logger';
+
+const log = createLogger('actions');
 
 export type ActionType = 'blow' | 'pop' | 'join' | 'leave' | 'create_place';
 
@@ -32,6 +35,6 @@ export async function logAction(
       createdAt: new Date(),
     });
   } catch (err) {
-    console.error('[actions] Failed to log action:', err);
+    log.error('Failed to log action', { err: String(err) });
   }
 }

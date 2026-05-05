@@ -5,7 +5,9 @@ import { getRoomUserCountAsync } from '../ws/rooms';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { createLogger } from '../logger';
 
+const log = createLogger('og');
 const og = new Hono();
 
 // Cache generated images for 5 minutes (capped to prevent unbounded memory growth)
@@ -24,7 +26,7 @@ async function ensureWasm() {
     await initWasm(wasmData);
     wasmInitialized = true;
   } catch (err) {
-    console.error('[og] Failed to initialize resvg WASM:', err);
+    log.error('Failed to initialize resvg WASM', { err: String(err) });
     throw err;
   }
 }
@@ -188,7 +190,7 @@ function generateSVG(
   <!-- Theme badge -->
   <rect x="60" y="230" width="${theme.label.length * 12 + 50}" height="36" rx="18" fill="${theme.accent}" opacity="0.2"/>
   <text x="80" y="254" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="${theme.accent}">
-    ${theme.emoji} ${theme.label}
+    ${escapeXml(theme.emoji)} ${escapeXml(theme.label)}
   </text>
 
   <!-- Stats -->
@@ -240,7 +242,7 @@ og.get('/default.png', async (c) => {
       headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' },
     });
   } catch (err) {
-    console.error('[og] Failed to generate default image:', err);
+    log.error('Failed to generate default image', { err: String(err) });
     return c.text('Failed to generate image', 500);
   }
 });
@@ -287,7 +289,7 @@ og.get('/place/:placeId.png', async (c) => {
       headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=300' },
     });
   } catch (err) {
-    console.error('[og] Failed to generate place image:', err);
+    log.error('Failed to generate place image', { err: String(err) });
     return c.text('Failed to generate image', 500);
   }
 });

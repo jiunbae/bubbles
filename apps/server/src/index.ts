@@ -26,6 +26,15 @@ const { upgradeWebSocket, websocket } = createBunWebSocket();
 app.use('*', corsMiddleware);
 app.use('*', metricsMiddleware);
 
+// Security headers
+app.use('*', async (c, next) => {
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('Permissions-Policy', 'camera=(self), microphone=()');
+  await next();
+});
+
 // Metrics route — always require bearer token auth
 // Never expose metrics without valid token, regardless of how the request arrived
 app.use('/metrics/*', async (c, next) => {

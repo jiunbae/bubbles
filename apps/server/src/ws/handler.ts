@@ -135,18 +135,22 @@ export function createWSHandlers(placeId: string, c: Context) {
       log.info('User joined room', { user: displayName, sessionId: sessionId.slice(0,8), placeId: placeId.slice(0,8) });
       incGauge('ws_connections_active');
       incCounter('ws_connections_total');
-      await joinRoom(placeId, sessionId, ws, user);
-      incPlaceStats(placeId, 'totalVisitors');
+      try {
+        await joinRoom(placeId, sessionId, ws, user);
+        incPlaceStats(placeId, 'totalVisitors');
 
-      // Notify client if token was provided but failed verification
-      if (authError) {
-        sendToClient(ws, {
-          type: 'error', ts: Date.now(),
-          data: { code: authError, message: 'Authentication failed. Connected as anonymous.' },
-        });
+        // Notify client if token was provided but failed verification
+        if (authError) {
+          sendToClient(ws, {
+            type: 'error', ts: Date.now(),
+            data: { code: authError, message: 'Authentication failed. Connected as anonymous.' },
+          });
+        }
+
+        await logAction('join', placeId, sessionId, user);
+      } catch (err) {
+        log.error('Error during WebSocket onOpen', { err: String(err), sessionId: sessionId.slice(0,8) });
       }
-
-      await logAction('join', placeId, sessionId, user);
     },
 
     async onMessage(event: MessageEvent, ws: WSContext) {
@@ -257,7 +261,11 @@ export function createWSHandlers(placeId: string, c: Context) {
           incCounter('bubbles_blown_total', { size });
           broadcastToRoom(pid, createdMsg, sessionId);
 
-          await logAction('blow', pid, sessionId, user, { bubbleId, size, color });
+          try {
+            await logAction('blow', pid, sessionId, user, { bubbleId, size, color });
+          } catch (err) {
+            log.error('Failed to log blow action', { err: String(err), sessionId: sessionId.slice(0,8) });
+          }
           break;
         }
 
@@ -295,7 +303,11 @@ export function createWSHandlers(placeId: string, c: Context) {
           };
           broadcastToRoom(pid, popMsg, sessionId);
 
-          await logAction('pop', pid, sessionId, user, { bubbleId });
+          try {
+            await logAction('pop', pid, sessionId, user, { bubbleId });
+          } catch (err) {
+            log.error('Failed to log pop action', { err: String(err), sessionId: sessionId.slice(0,8) });
+          }
           break;
         }
 
@@ -403,11 +415,19 @@ export function createWSHandlers(placeId: string, c: Context) {
 
       log.info('User left room', { user: state.user.displayName, placeId: state.placeId.slice(0,8) });
       decGauge('ws_connections_active');
-      leaveRoom(state.placeId, sessionId);
+      try {
+        leaveRoom(state.placeId, sessionId);
+      } catch (err) {
+        log.error('Error leaving room on close', { err: String(err), sessionId: sessionId.slice(0,8) });
+      }
       sessionStates.delete(sessionId);
       lastCursorSent.delete(`${state.placeId}:${sessionId}`);
 
-      await logAction('leave', state.placeId, sessionId, state.user);
+      try {
+        await logAction('leave', state.placeId, sessionId, state.user);
+      } catch (err) {
+        log.error('Failed to log leave action', { err: String(err), sessionId: sessionId.slice(0,8) });
+      }
     },
 
     onError(_event: Event, _ws: WSContext) {

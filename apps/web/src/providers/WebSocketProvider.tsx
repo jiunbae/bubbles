@@ -96,14 +96,14 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           break;
         case 'bubble_popped':
           popBubble(msg.data.bubbleId);
-          playPop();
+          if (useUIStore.getState().isSoundEnabled) playPop();
           break;
         case 'bubble_expired':
           popBubble(msg.data.bubbleId);
           break;
         case 'user_joined':
           addOnlineUser(msg.data);
-          playJoin();
+          if (useUIStore.getState().isSoundEnabled) playJoin();
           break;
         case 'user_renamed':
           renameOnlineUser(msg.data.sessionId, msg.data.displayName);

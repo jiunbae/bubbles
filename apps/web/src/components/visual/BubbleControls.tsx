@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { useUIStore } from '@/stores/ui-store';
 import { spawnBubble } from '@/lib/bubble-factory';
+import { Z_INDEX } from '@/lib/z-index';
 import { scheduleExpiry } from './BubbleScene';
 
 const BLOW_INTERVAL = 250; // ~4 bubbles/sec, feels natural
@@ -93,7 +94,7 @@ export function BubbleControls() {
   return (
     <div style={{
       position: 'fixed', bottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)', left: '50%', transform: 'translateX(-50%)',
-      zIndex: 10000, pointerEvents: 'auto',
+      zIndex: Z_INDEX.UI_CONTROLS, pointerEvents: 'auto',
       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
       maxHeight: 'calc(100vh - 80px)',
     }}>

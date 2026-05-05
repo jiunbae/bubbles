@@ -52,9 +52,13 @@
     "cameraModeOn": "카메라 끄기",
     "cameraModeOff": "AR 카메라",
     "cameraPermissionDenied": "카메라 권한이 거부되었습니다",
+    "cameraAccessDenied": "카메라 접근이 거부되었습니다. 브라우저 설정에서 카메라 접근을 허용해 주세요.",
+    "cameraInUse": "카메라가 다른 애플리케이션에서 사용 중입니다.",
+    "cameraOverconstrained": "요청한 카메라에 접근할 수 없습니다.",
     "cameraNotAvailable": "카메라를 사용할 수 없습니다 (HTTPS 필요)",
     "cameraDisconnected": "카메라 연결이 끊어졌습니다",
     "cameraError": "카메라 오류",
+    "cameraBatteryWarning": "카메라 모드가 오랫동안 활성화되어 있습니다. 배터리 절약을 위해 비활성화를 고려해 주세요.",
     "linkCopied": "링크 복사됨!",
     "milestone": "🎉 이 방에서 비눗방울 {{count}}개를 달성했어요!",
     "inviteBanner": "🫧 함께하면 더 즐거워요 — 친구를 초대해보세요",
@@ -68,7 +72,10 @@
     "muteSound": "음소거",
     "unmuteSound": "음소거 해제",
     "shareText": "같이 비눗방울 불자! 🫧",
-    "stealthHint": "스텔스 모드를 써보세요 — 엑셀처럼 보여요! (Ctrl+Shift+M)"
+    "stealthHint": "스텔스 모드를 써보세요 — 엑셀처럼 보여요! (Ctrl+Shift+M)",
+    "selectColor": "방울 색상 선택",
+    "showOnlineUsers": "접속 중인 사용자 보기",
+    "toggleMoreMenu": "추가 옵션 메뉴 열기"
   },
   "controls": {
     "bubblesFloating": "비눗방울 {{count}}개 떠다니는 중",

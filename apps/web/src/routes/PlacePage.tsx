@@ -18,6 +18,7 @@ import { LoginDropdown } from '@/components/shared/LoginDropdown';
 import { InviteBanner } from '@/components/shared/InviteBanner';
 import { BreakTimer } from '@/components/shared/BreakTimer';
 import { analytics } from '@/lib/analytics';
+import { Z_INDEX } from '@/lib/z-index';
 
 const VisualMode = lazy(() =>
   import('@/components/visual/VisualMode').then((m) => ({
@@ -44,6 +45,7 @@ export function PlacePage() {
   const cameraMode = useUIStore((s) => s.cameraMode);
   const toggleCameraMode = useUIStore((s) => s.toggleCameraMode);
   const cameraToggleRef = useRef(false);
+  const cameraActivatedAtRef = useRef<number | null>(null);
   const { currentPlace, setCurrentPlace, onlineUsers, mySessionId } = usePlaceStore();
   const bubbleCount = useBubbleStore((s) => s.bubbles.size);
 
@@ -145,6 +147,19 @@ export function PlacePage() {
     };
   }, []);
 
+  // Battery drain warning — show toast after 5 minutes of continuous camera use
+  useEffect(() => {
+    if (!cameraMode) {
+      cameraActivatedAtRef.current = null;
+      return;
+    }
+    cameraActivatedAtRef.current = Date.now();
+    const timer = setTimeout(() => {
+      showToast(t('place.cameraBatteryWarning', 'Camera mode has been active for a while. Consider disabling it to save battery.'), 'info');
+    }, 5 * 60 * 1000);
+    return () => clearTimeout(timer);
+  }, [cameraMode, t]);
+
   if (loadError) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
@@ -169,6 +184,7 @@ export function PlacePage() {
             onClick={() => navigate('/')}
             className="shrink-0 rounded-md p-1.5 text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary sm:p-2"
             title={t('place.backToLobby')}
+            aria-label={t('place.backToLobby')}
           >
             <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -201,9 +217,11 @@ export function PlacePage() {
                   className="h-4 w-4 rounded-full border-2 border-white/30 transition-transform hover:scale-125 active:scale-95"
                   style={{ backgroundColor: myUser.color }}
                   title={t('place.changeColor', 'Change bubble color')}
+                  aria-label={t('place.changeColor', 'Change bubble color')}
+                  aria-pressed={showColorPicker}
                 />
                 {showColorPicker && (
-                  <div className="absolute left-0 top-full z-50 mt-2 rounded-lg border border-border bg-bg-card p-2 shadow-lg">
+                  <div className="absolute left-0 top-full mt-2 rounded-lg border border-border bg-bg-card p-2 shadow-lg" style={{ zIndex: Z_INDEX.DROPDOWN }}>
                     <div className="grid grid-cols-4 gap-1.5">
                       {BUBBLE_COLORS.map((color) => (
                         <button
@@ -257,6 +275,8 @@ export function PlacePage() {
                   : 'bg-error/20 text-error'
               }`}
               title={interactionMode === 'blow' ? t('place.switchToPop', 'Switch to Pop mode') : t('place.switchToBlow', 'Switch to Blow mode')}
+              aria-label={interactionMode === 'blow' ? t('place.switchToPop', 'Switch to Pop mode') : t('place.switchToBlow', 'Switch to Blow mode')}
+              aria-pressed={interactionMode === 'pop'}
             >
               {interactionMode === 'blow' ? (
                 <>
@@ -293,6 +313,8 @@ export function PlacePage() {
                   : 'text-text-secondary hover:bg-bg-secondary hover:text-text-primary'
               }`}
               title={t(cameraMode ? 'place.cameraModeOn' : 'place.cameraModeOff')}
+              aria-label={t(cameraMode ? 'place.cameraModeOn' : 'place.cameraModeOff')}
+              aria-pressed={cameraMode}
             >
               <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -307,7 +329,7 @@ export function PlacePage() {
 
           {/* Online users */}
           <div className="relative">
-            <button onClick={() => setShowUsers(!showUsers)} className="flex items-center gap-1 rounded-md p-1.5" title={t('place.onlineUsers')}>
+            <button onClick={() => setShowUsers(!showUsers)} className="flex items-center gap-1 rounded-md p-1.5" title={t('place.onlineUsers')} aria-label={t('place.onlineUsers')} aria-pressed={showUsers}>
               <span className="text-xs text-text-secondary">{onlineUsers.length}</span>
               <div className="flex -space-x-1">
                 {onlineUsers.slice(0, 4).map((user) => (
@@ -323,7 +345,7 @@ export function PlacePage() {
               )}
             </button>
             {showUsers && (
-              <div className="absolute right-0 top-full mt-2 z-50 bg-bg-card border border-border rounded-lg shadow-lg p-3 min-w-[180px] max-w-[calc(100vw-2rem)]">
+              <div className="absolute right-0 top-full mt-2 bg-bg-card border border-border rounded-lg shadow-lg p-3 min-w-[180px] max-w-[calc(100vw-2rem)]" style={{ zIndex: Z_INDEX.DROPDOWN }}>
                 <div className="text-xs text-text-muted mb-2">{t('place.online', { count: onlineUsers.length })}</div>
                 {onlineUsers.map((user) => (
                   <div key={user.sessionId} className="flex items-center gap-2 py-1">
@@ -387,6 +409,7 @@ export function PlacePage() {
             onClick={handleShare}
             className="rounded-md p-1.5 text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary sm:p-2"
             title={t('place.share', 'Share')}
+            aria-label={t('place.share', 'Share')}
           >
             <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -399,6 +422,8 @@ export function PlacePage() {
               onClick={() => setShowMoreMenu((v) => !v)}
               className="rounded-md p-1.5 text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary sm:p-2"
               title={t('common.more', 'More')}
+              aria-label={t('common.more', 'More')}
+              aria-pressed={showMoreMenu}
             >
               <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
@@ -406,11 +431,12 @@ export function PlacePage() {
             </button>
 
             {showMoreMenu && (
-              <div className="absolute right-0 top-full z-50 mt-2 min-w-[160px] rounded-lg border border-border bg-bg-card/95 py-1 shadow-lg backdrop-blur-sm">
+              <div className="absolute right-0 top-full mt-2 min-w-[160px] rounded-lg border border-border bg-bg-card/95 py-1 shadow-lg backdrop-blur-sm" style={{ zIndex: Z_INDEX.DROPDOWN }}>
                 {/* Sound toggle */}
                 <button
                   onClick={() => { toggleSound(); setShowMoreMenu(false); }}
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text-primary transition-colors hover:bg-bg-secondary"
+                  aria-label={isSoundEnabled ? t('place.muteSound', 'Mute') : t('place.unmuteSound', 'Unmute')}
                 >
                   {isSoundEnabled ? (
                     <svg className="h-4 w-4 shrink-0 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -429,6 +455,7 @@ export function PlacePage() {
                 <button
                   onClick={() => { setIsLogOpen((v) => !v); setShowMoreMenu(false); }}
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text-primary transition-colors hover:bg-bg-secondary"
+                  aria-label={t('place.activityLog')}
                 >
                   <svg className="h-4 w-4 shrink-0 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5h6" />
@@ -461,6 +488,7 @@ export function PlacePage() {
                     <button
                       onClick={() => { logout(); setShowMoreMenu(false); }}
                       className="text-xs text-text-muted hover:text-text-primary transition-colors"
+                      aria-label={t('auth.logout')}
                     >
                       {t('auth.logout')}
                     </button>

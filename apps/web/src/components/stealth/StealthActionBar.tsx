@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Z_INDEX } from '@/lib/z-index';
 
 interface StealthActionBarProps {
   onBlowBubble: () => void;
@@ -59,7 +60,8 @@ export function StealthActionBar({
         {showPopDropdown && (
           <div
             ref={dropRef}
-            className="absolute top-full left-0 mt-1 bg-white border border-[#c0c0c0] shadow-md rounded-sm min-w-[160px] py-1 z-50"
+            className="absolute top-full left-0 mt-1 bg-white border border-[#c0c0c0] shadow-md rounded-sm min-w-[160px] py-1"
+            style={{ zIndex: Z_INDEX.DROPDOWN }}
           >
             {poppableBubbles.length === 0 ? (
               <div className="px-3 py-2 text-[12px] text-[#999]">{t('stealth.noRowsToDelete')}</div>

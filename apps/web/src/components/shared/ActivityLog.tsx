@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { usePlaceStore } from '@/stores/place-store';
+import { Z_INDEX } from '@/lib/z-index';
 
 interface ActivityLogProps {
   placeId: string;
@@ -94,18 +95,20 @@ export function ActivityLog({ placeId: _placeId, onClose }: ActivityLogProps) {
     <>
       {/* Mobile overlay backdrop */}
       <div
-        className="fixed inset-0 z-30 bg-black/40 md:hidden"
+        className="fixed inset-0 bg-black/40 md:hidden"
+        style={{ zIndex: Z_INDEX.ACTIVITY_BACKDROP }}
         onClick={onClose}
       />
 
       <aside
         className="
           scrollbar-thin
-          fixed bottom-0 left-0 right-0 z-40 max-h-[60vh] overflow-y-auto
+          fixed bottom-0 left-0 right-0 max-h-[60vh] overflow-y-auto
           rounded-t-xl border-t border-border bg-bg-secondary p-4
           md:relative md:bottom-auto md:left-auto md:right-auto md:z-auto
           md:max-h-none md:w-80 md:rounded-none md:rounded-l-none md:border-l md:border-t-0
         "
+        style={{ zIndex: Z_INDEX.PANEL }}
       >
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-text-primary">

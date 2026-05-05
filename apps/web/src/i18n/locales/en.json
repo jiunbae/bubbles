@@ -53,9 +53,13 @@
     "cameraModeOn": "Turn off camera",
     "cameraModeOff": "AR Camera",
     "cameraPermissionDenied": "Camera permission denied",
+    "cameraAccessDenied": "Camera access denied. Please allow camera access in your browser settings.",
+    "cameraInUse": "Camera is in use by another application.",
+    "cameraOverconstrained": "Could not access the requested camera.",
     "cameraNotAvailable": "Camera not available (HTTPS required)",
     "cameraDisconnected": "Camera disconnected",
     "cameraError": "Camera error",
+    "cameraBatteryWarning": "Camera mode has been active for a while. Consider disabling it to save battery.",
     "linkCopied": "Link copied!",
     "milestone": "\ud83c\udf89 This room hit {{count}} bubbles!",
     "inviteBanner": "\ud83e\udee7 Bubbles are better together \u2014 invite a friend",
@@ -69,7 +73,10 @@
     "muteSound": "Mute",
     "unmuteSound": "Unmute",
     "shareText": "Come blow bubbles together! 🫧",
-    "stealthHint": "Try Stealth Mode — looks like Excel! (Ctrl+Shift+M)"
+    "stealthHint": "Try Stealth Mode — looks like Excel! (Ctrl+Shift+M)",
+    "selectColor": "Select bubble color",
+    "showOnlineUsers": "Show online users",
+    "toggleMoreMenu": "Toggle more options menu"
   },
   "controls": {
     "bubblesFloating": "{{count}} bubbles floating",

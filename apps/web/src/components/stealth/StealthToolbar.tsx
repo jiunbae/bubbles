@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BUBBLE_COLORS, type BubbleSize, type BubblePattern } from '@bubbles/shared';
 import { SIZE_FONT_MAP, PATTERN_BORDER_MAP } from './stealth-utils';
+import { Z_INDEX } from '@/lib/z-index';
 
 interface StealthToolbarProps {
   selectedSize: BubbleSize;
@@ -72,7 +73,8 @@ function Dropdown({
   return (
     <div
       ref={ref}
-      className="absolute top-full left-0 mt-1 bg-white border border-[#c0c0c0] shadow-md rounded-sm z-50"
+      className="absolute top-full left-0 mt-1 bg-white border border-[#c0c0c0] shadow-md rounded-sm"
+      style={{ zIndex: Z_INDEX.DROPDOWN }}
     >
       {children}
     </div>

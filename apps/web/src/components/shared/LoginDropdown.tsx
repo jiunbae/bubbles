@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { redirectToOAuth } from '@/lib/auth';
+import { Z_INDEX } from '@/lib/z-index';
 
 interface LoginDropdownProps {
   size?: 'sm' | 'md';
@@ -38,7 +39,7 @@ export function LoginDropdown({ size = 'md' }: LoginDropdownProps) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1.5 min-w-[180px] rounded-lg border border-border bg-bg-card p-1.5 shadow-lg">
+        <div className="absolute right-0 top-full mt-1.5 min-w-[180px] rounded-lg border border-border bg-bg-card p-1.5 shadow-lg" style={{ zIndex: Z_INDEX.DROPDOWN }}>
           <button
             onClick={() => { setOpen(false); redirectToOAuth('google'); }}
             className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-text-primary transition-colors hover:bg-bg-secondary"

@@ -12,6 +12,7 @@ import { CursorSender } from './CursorSender';
 import { CameraFeed } from './CameraFeed';
 import { usePlaceStore } from '@/stores/place-store';
 import { useUIStore } from '@/stores/ui-store';
+import { Z_INDEX } from '@/lib/z-index';
 import type { BubbleSize } from '@bubbles/shared';
 
 /* ------------------------------------------------------------------ */
@@ -33,7 +34,7 @@ function SizeSelector() {
       bottom: 'calc(env(safe-area-inset-bottom, 16px) + 120px)',
       left: '50%',
       transform: 'translateX(-50%)',
-      zIndex: 10000,
+      zIndex: Z_INDEX.UI_CONTROLS,
       pointerEvents: 'auto',
       display: 'flex',
       gap: 6,
@@ -122,7 +123,7 @@ function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss
       style={{
         position: 'absolute',
         inset: 0,
-        zIndex: 20000,
+        zIndex: Z_INDEX.ONBOARDING,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -196,7 +197,7 @@ function HelpButton({ onClick }: { onClick: () => void }) {
         position: 'fixed',
         bottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)',
         right: 16,
-        zIndex: 10000,
+        zIndex: Z_INDEX.UI_CONTROLS,
         width: 36,
         height: 36,
         borderRadius: '50%',
@@ -257,15 +258,15 @@ export function VisualMode() {
     }}>
       {cameraMode && <CameraFeed />}
       <Canvas
-        key={cameraMode ? 'ar' : 'scene'}
+        key={cameraMode ? 'ar' : 'default'}
         dpr={cameraMode ? [1, 1] : [1, 1.5]}
         camera={{ fov: 50, near: 0.1, far: 100, position: [0, 2, 8] }}
-        gl={{ antialias: true, alpha: cameraMode }}
+        gl={{ antialias: true, alpha: cameraMode, premultipliedAlpha: false }}
         style={{
           width: '100%', height: '100%',
           position: cameraMode ? 'absolute' : undefined,
           inset: cameraMode ? 0 : undefined,
-          zIndex: cameraMode ? 1 : undefined,
+          zIndex: cameraMode ? Z_INDEX.CANVAS_CAMERA : undefined,
           background: 'transparent',
           cursor: interactionMode === 'pop' ? 'crosshair' : 'none',
           touchAction: 'none',

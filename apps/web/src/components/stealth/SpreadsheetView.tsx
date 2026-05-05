@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SpreadsheetRow } from './stealth-utils';
+import { Z_INDEX } from '@/lib/z-index';
 
 interface SpreadsheetViewProps {
   rows: SpreadsheetRow[];
@@ -80,7 +81,7 @@ export function SpreadsheetView({
       <div className="overflow-x-auto min-w-0">
       <table className="w-full border-collapse text-[13px] font-[system-ui] table-fixed min-w-[640px]">
         {/* Column headers */}
-        <thead className="sticky top-0 z-10">
+        <thead className="sticky top-0" style={{ zIndex: Z_INDEX.STICKY_HEADER }}>
           <tr>
             {/* Row number column header */}
             <th className="w-[40px] min-w-[40px] bg-[#f3f4f6] border border-[#d1d5db] text-[#666]" />

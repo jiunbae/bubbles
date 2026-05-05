@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { showToast } from '@/components/shared/Toast';
 import { useUIStore } from '@/stores/ui-store';
+import { Z_INDEX } from '@/lib/z-index';
 import i18n from '@/i18n';
 
 /**
@@ -35,18 +36,41 @@ export function CameraFeed() {
         return;
       }
 
-      try {
-        // Constrain resolution to screen size to avoid 4K overhead on mobile
+      async function requestCamera(facingMode: string) {
         const w = window.screen.width;
         const h = window.screen.height;
-        const stream = await navigator.mediaDevices.getUserMedia({
+        return navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: 'environment',
+            facingMode,
             width: { ideal: Math.max(w, h) },
             height: { ideal: Math.min(w, h) },
           },
           audio: false,
         });
+      }
+
+      try {
+        // Constrain resolution to screen size to avoid 4K overhead on mobile
+        let stream: MediaStream;
+        try {
+          stream = await requestCamera('environment');
+        } catch (firstErr) {
+          // If rear camera fails with OverconstrainedError, retry with front camera
+          if (firstErr instanceof DOMException && firstErr.name === 'OverconstrainedError') {
+            try {
+              stream = await requestCamera('user');
+            } catch {
+              if (!cancelled) {
+                showToast(i18n.t('place.cameraOverconstrained', 'Could not access the requested camera.'), 'error');
+                useUIStore.getState().setCameraMode(false);
+              }
+              return;
+            }
+          } else {
+            throw firstErr;
+          }
+        }
+
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -68,9 +92,21 @@ export function CameraFeed() {
         }
       } catch (err) {
         if (!cancelled) {
-          const msg = err instanceof DOMException && err.name === 'NotAllowedError'
-            ? i18n.t('place.cameraPermissionDenied', 'Camera permission denied')
-            : i18n.t('place.cameraError', 'Camera error');
+          let msg: string;
+          if (err instanceof DOMException) {
+            switch (err.name) {
+              case 'NotAllowedError':
+                msg = i18n.t('place.cameraAccessDenied', 'Camera access denied. Please allow camera access in your browser settings.');
+                break;
+              case 'NotReadableError':
+                msg = i18n.t('place.cameraInUse', 'Camera is in use by another application.');
+                break;
+              default:
+                msg = i18n.t('place.cameraError', 'Camera error');
+            }
+          } else {
+            msg = i18n.t('place.cameraError', 'Camera error');
+          }
           showToast(msg, 'error');
           useUIStore.getState().setCameraMode(false);
         }
@@ -97,7 +133,7 @@ export function CameraFeed() {
         width: '100%',
         height: '100%',
         objectFit: 'cover',
-        zIndex: 0,
+        zIndex: Z_INDEX.CAMERA_FEED,
       }}
     />
   );

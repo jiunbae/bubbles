@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Z_INDEX } from '@/lib/z-index';
 
 interface FakeMenuBarProps {
   onBlowBubble: () => void;
@@ -36,7 +37,8 @@ function MenuDropdown({
   return (
     <div
       ref={ref}
-      className="absolute top-full left-0 mt-0 bg-white border border-[#c0c0c0] shadow-md rounded-sm min-w-[220px] max-w-[calc(100vw-1rem)] max-h-[calc(100vh-4rem)] overflow-y-auto py-1 z-50"
+      className="absolute top-full left-0 mt-0 bg-white border border-[#c0c0c0] shadow-md rounded-sm min-w-[220px] max-w-[calc(100vw-1rem)] max-h-[calc(100vh-4rem)] overflow-y-auto py-1"
+      style={{ zIndex: Z_INDEX.DROPDOWN }}
     >
       {items.map((item, i) =>
         item.divider ? (

@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { Z_INDEX } from '@/lib/z-index';
 
 interface ToastMessage {
   id: number;
@@ -47,7 +48,7 @@ export function Toaster() {
   }
 
   return (
-    <div className="pointer-events-none fixed bottom-4 left-4 right-4 z-50 flex flex-col items-end gap-2 sm:left-auto">
+    <div className="pointer-events-none fixed bottom-4 left-4 right-4 flex flex-col items-end gap-2 sm:left-auto" style={{ zIndex: Z_INDEX.TOAST }}>
       {toasts.map((t) => (
         <div
           key={t.id}

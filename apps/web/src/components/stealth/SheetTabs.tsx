@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { UserInfo, Place } from '@bubbles/shared';
+import { Z_INDEX } from '@/lib/z-index';
 
 interface SheetTabsProps {
   activeTab: number;
@@ -55,9 +56,10 @@ export function SheetTabs({
           key={i}
           className={`px-3 py-2 sm:px-4 text-[12px] border-t border-x ${
             activeTab === i
-              ? 'bg-white border-[#d1d5db] text-[#333] font-medium -mb-[1px] z-10'
+              ? 'bg-white border-[#d1d5db] text-[#333] font-medium -mb-[1px]'
               : 'bg-[#e0e2e6] border-transparent text-[#666] hover:bg-[#d8dade]'
           } rounded-t-sm`}
+          style={activeTab === i ? { zIndex: Z_INDEX.STICKY_HEADER } : undefined}
           title={tab.tooltip}
           onClick={() => onTabChange(i)}
           onContextMenu={(e) => {
@@ -85,8 +87,8 @@ export function SheetTabs({
       {contextMenu && (
         <div
           ref={ctxRef}
-          className="fixed bg-white border border-[#c0c0c0] shadow-md rounded-sm py-1 min-w-[160px] max-w-[calc(100vw-1rem)] z-50 text-[13px]"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
+          className="fixed bg-white border border-[#c0c0c0] shadow-md rounded-sm py-1 min-w-[160px] max-w-[calc(100vw-1rem)] text-[13px]"
+          style={{ left: contextMenu.x, top: contextMenu.y, zIndex: Z_INDEX.DROPDOWN }}
         >
           <button className="w-full text-left px-4 py-1 hover:bg-[#e8f0fe] text-[#999] cursor-default" disabled>
             {t('stealthSheets.insertSheet')}

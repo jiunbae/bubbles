@@ -11,6 +11,7 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { GlobalStatsBanner } from '@/components/lobby/GlobalStatsBanner';
 import { BubbleLoader } from '@/components/shared/BubbleLoader';
 import { LoginDropdown } from '@/components/shared/LoginDropdown';
+import { Z_INDEX } from '@/lib/z-index';
 
 const BACKGROUND_BUBBLE_COUNT = 12;
 
@@ -80,7 +81,7 @@ export function LobbyPage() {
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Background bubbles */}
-      <div className="pointer-events-none fixed inset-0 z-0">
+      <div className="pointer-events-none fixed inset-0" style={{ zIndex: Z_INDEX.BACKGROUND }}>
         {backgroundBubbles.map((b) => (
           <div
             key={b.id}
@@ -99,7 +100,7 @@ export function LobbyPage() {
       </div>
 
       {/* Top-right controls */}
-      <div className="absolute right-4 top-4 z-20 flex items-center gap-3">
+      <div className="absolute right-4 top-4 flex items-center gap-3" style={{ zIndex: Z_INDEX.HEADER_CONTROLS }}>
         {isAuthenticated && user ? (
           <div className="flex items-center gap-2">
             <span className="text-sm text-text-primary">{user.name}</span>
@@ -117,7 +118,7 @@ export function LobbyPage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 mx-auto max-w-5xl px-4 py-12">
+      <div className="relative mx-auto max-w-5xl px-4 py-12" style={{ zIndex: Z_INDEX.CONTENT }}>
         <header className="mb-10 text-center">
           <h1 className="mb-2 text-3xl font-bold tracking-tight text-text-primary sm:text-5xl">
             {t('lobby.title')}

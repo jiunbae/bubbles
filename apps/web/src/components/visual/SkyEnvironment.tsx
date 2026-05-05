@@ -44,16 +44,12 @@ function CameraLighting({ sunPosition }: { sunPosition: [number, number, number]
   );
 }
 
-/** Manages scene.background — sets it to a color or clears it for camera mode */
-function SceneBackground({ color, cameraMode }: { color: THREE.Color; cameraMode?: boolean }) {
+/** Manages scene.background — sets it to a color */
+function SceneBackground({ color }: { color: THREE.Color }) {
   const { scene } = useThree();
   useEffect(() => {
-    if (cameraMode) {
-      scene.background = null;
-    } else {
-      scene.background = color;
-    }
-  }, [cameraMode, color, scene]);
+    scene.background = color;
+  }, [color, scene]);
   return null;
 }
 
@@ -116,7 +112,7 @@ const NeonSign = forwardRef<THREE.PointLight, { position: [number, number, numbe
   }
 );
 
-function RooftopEnvironment({ time, cameraMode }: { time: TimeColors; cameraMode?: boolean }) {
+function RooftopEnvironment({ time }: { time: TimeColors }) {
   const bg = useMemo(() => blendHex('#1e2040', time.skyTop, 0.4), [time]);
   const ambientColor = useMemo(() => blendHex('#8899bb', time.sunColor, 0.3), [time]);
   const sunColor = useMemo(() => new THREE.Color('#ffa54f').lerp(time.sunColor, 0.3), [time]);
@@ -132,17 +128,11 @@ function RooftopEnvironment({ time, cameraMode }: { time: TimeColors; cameraMode
 
   return (
     <>
-      <SceneBackground color={bg} cameraMode={cameraMode} />
-      {cameraMode ? (
-        <CameraLighting sunPosition={time.sunPosition} />
-      ) : (
-        <>
-          <ambientLight color={ambientColor} intensity={1.2 * time.ambientIntensity} />
-          <directionalLight color={sunColor} intensity={3.0 * time.sunIntensity} position={time.sunPosition} />
-          <directionalLight color="#6688bb" intensity={1.2 * time.ambientIntensity} position={[-5, 4, -5]} />
-        </>
-      )}
-      <group visible={!cameraMode}>
+      <SceneBackground color={bg} />
+      <ambientLight color={ambientColor} intensity={1.2 * time.ambientIntensity} />
+      <directionalLight color={sunColor} intensity={3.0 * time.sunIntensity} position={time.sunPosition} />
+      <directionalLight color="#6688bb" intensity={1.2 * time.ambientIntensity} position={[-5, 4, -5]} />
+      <group>
         <GroundPlane color="#4a4a5a" />
 
         {/* Modern railing */}
@@ -273,28 +263,22 @@ function Fireflies({ count = 12, area = 8 }: { count?: number; area?: number }) 
   );
 }
 
-function ParkEnvironment({ time, cameraMode }: { time: TimeColors; cameraMode?: boolean }) {
+function ParkEnvironment({ time }: { time: TimeColors }) {
   const bg = useMemo(() => blendHex('#142814', time.skyTop, 0.35), [time]);
   const ambientColor = useMemo(() => blendHex('#669966', time.sunColor, 0.25), [time]);
   const sunColor = useMemo(() => new THREE.Color('#eeeedd').lerp(time.sunColor, 0.3), [time]);
   return (
     <>
-      <SceneBackground color={bg} cameraMode={cameraMode} />
-      {cameraMode ? (
-        <CameraLighting sunPosition={time.sunPosition} />
-      ) : (
-        <>
-          <ambientLight color={ambientColor} intensity={1.0 * time.ambientIntensity} />
-          <directionalLight color={sunColor} intensity={2.0 * time.sunIntensity} position={time.sunPosition} />
-          <directionalLight color="#8899bb" intensity={0.6 * time.ambientIntensity} position={[-4, 6, -3]} />
-          <directionalLight
-            color="#aabbdd"
-            intensity={0.8 * (time.period === 'night' ? 1.5 : time.period === 'dawn' || time.period === 'sunset' ? 0.8 : 0.3)}
-            position={[-2, 8, -1]}
-          />
-        </>
-      )}
-      <group visible={!cameraMode}>
+      <SceneBackground color={bg} />
+      <ambientLight color={ambientColor} intensity={1.0 * time.ambientIntensity} />
+      <directionalLight color={sunColor} intensity={2.0 * time.sunIntensity} position={time.sunPosition} />
+      <directionalLight color="#8899bb" intensity={0.6 * time.ambientIntensity} position={[-4, 6, -3]} />
+      <directionalLight
+        color="#aabbdd"
+        intensity={0.8 * (time.period === 'night' ? 1.5 : time.period === 'dawn' || time.period === 'sunset' ? 0.8 : 0.3)}
+        position={[-2, 8, -1]}
+      />
+      <group>
         <GroundPlane color="#2a4a2a" />
 
         {/* Trees */}
@@ -406,7 +390,7 @@ function WallBracketLamp({ position, side = 'left' }: { position: [number, numbe
   );
 }
 
-function AlleyEnvironment({ time, cameraMode }: { time: TimeColors; cameraMode?: boolean }) {
+function AlleyEnvironment({ time }: { time: TimeColors }) {
   const bg = useMemo(() => blendHex('#1a1410', time.skyTop, 0.3), [time]);
   const ambientColor = useMemo(() => blendHex('#887766', time.sunColor, 0.2), [time]);
   const sunColor = useMemo(() => new THREE.Color('#889aaa').lerp(time.sunColor, 0.25), [time]);
@@ -428,16 +412,10 @@ function AlleyEnvironment({ time, cameraMode }: { time: TimeColors; cameraMode?:
 
   return (
     <>
-      <SceneBackground color={bg} cameraMode={cameraMode} />
-      {cameraMode ? (
-        <CameraLighting sunPosition={time.sunPosition} />
-      ) : (
-        <>
-          <ambientLight color={ambientColor} intensity={1.0 * time.ambientIntensity} />
-          <directionalLight color={sunColor} intensity={1.0 * time.sunIntensity} position={time.sunPosition} />
-        </>
-      )}
-      <group visible={!cameraMode}>
+      <SceneBackground color={bg} />
+      <ambientLight color={ambientColor} intensity={1.0 * time.ambientIntensity} />
+      <directionalLight color={sunColor} intensity={1.0 * time.sunIntensity} position={time.sunPosition} />
+      <group>
         <GroundPlane color="#3a3020" />
 
         {/* Brick walls */}
@@ -511,13 +489,24 @@ function AlleyEnvironment({ time, cameraMode }: { time: TimeColors; cameraMode?:
 export function SkyEnvironment({ theme = 'rooftop', cameraMode }: SkyEnvironmentProps) {
   const time = useTimeOfDay();
 
+  // In camera/AR mode, skip theme geometry — just clear the background and add neutral lighting
+  if (cameraMode) {
+    return (
+      <>
+        <SceneBackground color={new THREE.Color('#000000')} />
+        <CameraLighting sunPosition={time.sunPosition} />
+        <GroundPlane />
+      </>
+    );
+  }
+
   switch (theme) {
     case 'park':
-      return <ParkEnvironment time={time} cameraMode={cameraMode} />;
+      return <ParkEnvironment time={time} />;
     case 'alley':
-      return <AlleyEnvironment time={time} cameraMode={cameraMode} />;
+      return <AlleyEnvironment time={time} />;
     case 'rooftop':
     default:
-      return <RooftopEnvironment time={time} cameraMode={cameraMode} />;
+      return <RooftopEnvironment time={time} />;
   }
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { showToast } from '@/components/shared/Toast';
 import { analytics } from '@/lib/analytics';
+import { Z_INDEX } from '@/lib/z-index';
 
 const SESSION_KEY = 'bubbles_invite_shown';
 const STEALTH_HINT_KEY = 'bubbles_stealth_hint_shown';
@@ -53,7 +54,7 @@ export function InviteBanner() {
   if (!visible) return null;
 
   return (
-    <div className="fixed left-1/2 top-16 z-40 -translate-x-1/2 animate-[slideUp_0.3s_ease-out]">
+    <div className="fixed left-1/2 top-16 -translate-x-1/2 animate-slide-up" style={{ zIndex: Z_INDEX.PANEL }}>
       <div className="flex items-center gap-3 rounded-xl border border-border bg-bg-card/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
         <span className="text-sm text-text-secondary">
           {t('place.inviteBanner')}
@@ -74,13 +75,6 @@ export function InviteBanner() {
           </svg>
         </button>
       </div>
-
-      <style>{`
-        @keyframes slideUp {
-          from { transform: translate(-50%, 100%); opacity: 0; }
-          to { transform: translate(-50%, 0); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }

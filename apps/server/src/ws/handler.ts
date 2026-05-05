@@ -56,6 +56,30 @@ export function cleanupStaleCursors(): void {
   }
 }
 
+/** Clean up sessionStates entries for sessions with no recent ping (zombie TCP connections). */
+export function cleanupStaleSessions(): void {
+  const now = Date.now();
+  const STALE_SESSION_THRESHOLD = 2 * 60 * 1000; // 2 minutes
+  for (const [sessionId, state] of sessionStates) {
+    const room = getRoom(state.placeId);
+    if (!room) {
+      sessionStates.delete(sessionId);
+      lastCursorSent.delete(`${state.placeId}:${sessionId}`);
+      continue;
+    }
+    const client = room.clients.get(sessionId);
+    if (!client || now - client.lastPingAt > STALE_SESSION_THRESHOLD) {
+      try {
+        leaveRoom(state.placeId, sessionId);
+      } catch {
+        // best-effort cleanup
+      }
+      sessionStates.delete(sessionId);
+      lastCursorSent.delete(`${state.placeId}:${sessionId}`);
+    }
+  }
+}
+
 export function createWSHandlers(placeId: string, c: Context) {
   // Generate session ID at handler creation time (before WS events)
   let sessionId = generateSessionId();

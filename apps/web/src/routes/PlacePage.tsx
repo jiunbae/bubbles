@@ -45,6 +45,7 @@ export function PlacePage() {
   const cameraMode = useUIStore((s) => s.cameraMode);
   const toggleCameraMode = useUIStore((s) => s.toggleCameraMode);
   const cameraToggleRef = useRef(false);
+  const cameraDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cameraActivatedAtRef = useRef<number | null>(null);
   const { currentPlace, setCurrentPlace, onlineUsers, mySessionId } = usePlaceStore();
   const bubbleCount = useBubbleStore((s) => s.bubbles.size);
@@ -57,6 +58,7 @@ export function PlacePage() {
   const [nameInput, setNameInput] = useState('');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const nameFocusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
 
   const myUser = onlineUsers.find((u) => u.sessionId === mySessionId);
@@ -64,7 +66,7 @@ export function PlacePage() {
   const handleNameEdit = () => {
     setNameInput(myUser?.displayName ?? '');
     setIsEditingName(true);
-    setTimeout(() => nameInputRef.current?.focus(), 0);
+    nameFocusTimeoutRef.current = setTimeout(() => nameInputRef.current?.focus(), 0);
   };
 
   const handleNameSubmit = () => {
@@ -109,6 +111,14 @@ export function PlacePage() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showMoreMenu]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (nameFocusTimeoutRef.current) clearTimeout(nameFocusTimeoutRef.current);
+      if (cameraDebounceRef.current) clearTimeout(cameraDebounceRef.current);
+    };
+  }, []);
 
   // Load place data
   useEffect(() => {
@@ -305,7 +315,8 @@ export function PlacePage() {
                 if (cameraToggleRef.current) return;
                 cameraToggleRef.current = true;
                 toggleCameraMode();
-                setTimeout(() => { cameraToggleRef.current = false; }, 1000);
+                if (cameraDebounceRef.current) clearTimeout(cameraDebounceRef.current);
+                cameraDebounceRef.current = setTimeout(() => { cameraToggleRef.current = false; }, 1000);
               }}
               className={`rounded-md p-1 transition-colors sm:p-1.5 ${
                 cameraMode

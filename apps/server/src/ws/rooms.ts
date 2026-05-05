@@ -420,6 +420,10 @@ export async function createBubble(
   if (!room) return;
 
   const timeToLive = bubble.expiresAt - Date.now();
+  if (timeToLive <= 0) {
+    expireBubble(placeId, bubble.id);
+    return;
+  }
   const timer = setTimeout(() => {
     expireBubble(placeId, bubble.id);
   }, timeToLive);
@@ -538,15 +542,26 @@ export async function cleanupRedisStaleEntries(): Promise<void> {
 // TTL cache for place names — avoids a DB round-trip on every join
 const placeNameCache = new Map<string, { name: string; expiresAt: number }>();
 const PLACE_NAME_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const PLACE_NAME_CACHE_MAX = 500;
 
 async function getPlaceName(placeId: string): Promise<string> {
+  const now = Date.now();
   const cached = placeNameCache.get(placeId);
-  if (cached && cached.expiresAt > Date.now()) return cached.name;
+  if (cached && cached.expiresAt > now) return cached.name;
+  // Periodic purge of expired entries (cheap cleanup every Nth access)
+  if (placeNameCache.size >= PLACE_NAME_CACHE_MAX) {
+    for (const [key, entry] of placeNameCache) {
+      if (entry.expiresAt <= now) placeNameCache.delete(key);
+    }
+  }
   try {
     const col = getCollection('places');
     const doc = await col.findOne({ _id: new ObjectId(placeId) }, { projection: { name: 1 } });
     const name = doc?.name ?? 'Unknown Place';
-    placeNameCache.set(placeId, { name, expiresAt: Date.now() + PLACE_NAME_CACHE_TTL });
+    if (placeNameCache.size >= PLACE_NAME_CACHE_MAX) {
+      placeNameCache.delete(placeNameCache.keys().next().value!);
+    }
+    placeNameCache.set(placeId, { name, expiresAt: now + PLACE_NAME_CACHE_TTL });
     return name;
   } catch {
     return 'Unknown Place';

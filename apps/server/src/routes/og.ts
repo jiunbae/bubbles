@@ -311,7 +311,9 @@ og.get('/html/place/:placeId', async (c) => {
     const themeKey = (place.theme as string) || 'rooftop';
     const theme = themes[themeKey] || themes.rooftop;
     const forwardedHost = c.req.header('X-Forwarded-Host');
-    const baseUrl = forwardedHost
+    // Validate forwarded host against allowlist to prevent host header injection
+    const allowedHosts = ['bubbles.jiun.dev', 'jiun.dev', 'localhost'];
+    const baseUrl = forwardedHost && allowedHosts.includes(forwardedHost)
       ? `https://${forwardedHost}`
       : 'https://bubbles.jiun.dev';
 

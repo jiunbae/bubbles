@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Z_INDEX } from '@/lib/z-index';
 
 interface ToastMessage {
@@ -27,9 +27,25 @@ export function useToast(): ToastContextValue {
 // Standalone toaster that manages its own state
 export function Toaster() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const timeoutMapRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
   const dismiss = useCallback((id: number) => {
+    const timer = timeoutMapRef.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timeoutMapRef.current.delete(id);
+    }
     setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // Cleanup all timeouts on unmount
+  useEffect(() => {
+    return () => {
+      for (const timer of timeoutMapRef.current.values()) {
+        clearTimeout(timer);
+      }
+      timeoutMapRef.current.clear();
+    };
   }, []);
 
   // Expose a global toast function via window for convenience
@@ -37,7 +53,8 @@ export function Toaster() {
     (text: string, type: ToastMessage['type'] = 'info') => {
       const id = ++nextId;
       setToasts((prev) => [...prev.slice(-4), { id, text, type }]);
-      setTimeout(() => dismiss(id), 4000);
+      const timer = setTimeout(() => dismiss(id), 4000);
+      timeoutMapRef.current.set(id, timer);
     },
     [dismiss],
   );

@@ -10,6 +10,8 @@ function generateId() {
   return `b_${Date.now()}_${++idCounter}_${Math.random().toString(36).slice(2, 6)}`;
 }
 
+const bubbleTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+
 function tintColor(hex: string, amount: number): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -57,7 +59,11 @@ function createBubble(color: string, x: number, y: number, z: number) {
 
   // Direct store access — no React dependency chain
   useBubbleStore.getState().addBubble(bubble);
-  setTimeout(() => useBubbleStore.getState().removeBubble(bubble.bubbleId), lifetime);
+  const timer = setTimeout(() => {
+    bubbleTimeouts.delete(bubble.bubbleId);
+    useBubbleStore.getState().removeBubble(bubble.bubbleId);
+  }, lifetime);
+  bubbleTimeouts.set(bubble.bubbleId, timer);
 }
 
 // Blow from random position (button/spacebar)
@@ -85,6 +91,13 @@ export function useBubbles() {
 
   return {
     bubbles,
-    popBubble: (bubbleId: string) => removeBubble(bubbleId),
+    popBubble: (bubbleId: string) => {
+      const timer = bubbleTimeouts.get(bubbleId);
+      if (timer) {
+        clearTimeout(timer);
+        bubbleTimeouts.delete(bubbleId);
+      }
+      removeBubble(bubbleId);
+    },
   };
 }

@@ -34,7 +34,8 @@ export async function authMiddleware(c: Context, next: Next): Promise<void | Res
       const secret = new TextEncoder().encode(config.JWT_SECRET);
       const { payload } = await jose.jwtVerify(token, secret);
       userId = payload.sub;
-      displayName = (payload.name as string) || (payload.username as string);
+      const rawName = (payload.name as string) || (payload.username as string) || '';
+      displayName = rawName.trim().slice(0, 30).replace(/[<>&"']/g, '').replace(/[\x00-\x1f\x7f-\x9f]/g, '');
       isAuthenticated = true;
     } catch {
       // Invalid token — fall through to anonymous

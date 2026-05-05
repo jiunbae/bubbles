@@ -1,4 +1,4 @@
-import { useRef, useMemo, useCallback, useState } from 'react';
+import { useRef, useMemo, useCallback, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -119,6 +119,7 @@ interface PopEffectRendererProps {
 
 export function PopEffectRenderer({ pops, setPops }: PopEffectRendererProps) {
   const pointsRef = useRef<THREE.Points>(null);
+  const toRemoveRef = useRef<number[]>([]);
 
   const { positions, colors, lives, sizes } = useMemo(() => {
     return {
@@ -189,16 +190,36 @@ export function PopEffectRenderer({ pops, setPops }: PopEffectRendererProps) {
       lives[i] = 0;
     }
 
-    geometry.attributes.position.needsUpdate = true;
-    (geometry.attributes.a_color as THREE.BufferAttribute).needsUpdate = true;
-    (geometry.attributes.a_life as THREE.BufferAttribute).needsUpdate = true;
-    (geometry.attributes.a_size as THREE.BufferAttribute).needsUpdate = true;
+    if ('needsUpdate' in geometry.attributes.position) geometry.attributes.position.needsUpdate = true;
+    if ('needsUpdate' in geometry.attributes.a_color) (geometry.attributes.a_color as THREE.BufferAttribute).needsUpdate = true;
+    if ('needsUpdate' in geometry.attributes.a_life) (geometry.attributes.a_life as THREE.BufferAttribute).needsUpdate = true;
+    if ('needsUpdate' in geometry.attributes.a_size) (geometry.attributes.a_size as THREE.BufferAttribute).needsUpdate = true;
     geometry.setDrawRange(0, particleIdx);
 
     if (toRemove.length > 0) {
-      setPops((prev) => prev.filter((p) => !toRemove.includes(p.id)));
+      toRemoveRef.current.push(...toRemove);
     }
   });
+
+  // Periodic cleanup of dead pops instead of calling setPops every frame
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (toRemoveRef.current.length > 0) {
+        const ids = [...toRemoveRef.current];
+        toRemoveRef.current = [];
+        setPops((prev) => prev.filter((p) => !ids.includes(p.id)));
+      }
+    }, 500);
+
+    return () => {
+      clearInterval(interval);
+      // Final cleanup on unmount
+      if (toRemoveRef.current.length > 0) {
+        const ids = [...toRemoveRef.current];
+        setPops((prev) => prev.filter((p) => !ids.includes(p.id)));
+      }
+    };
+  }, [setPops]);
 
   if (pops.length === 0) return null;
 

@@ -44,6 +44,7 @@ export function StealthMode() {
   const prevBubbleIdsRef = useRef<Set<string>>(new Set());
   const prevUserIdsRef = useRef<Set<string>>(new Set());
   const initializedRef = useRef(false);
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize from existing bubbles on mount
   useEffect(() => {
@@ -135,7 +136,8 @@ export function StealthMode() {
   // Flash "Calculating..." briefly
   const flashCalculating = useCallback(() => {
     setIsCalculating(true);
-    setTimeout(() => setIsCalculating(false), 800);
+    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    flashTimeoutRef.current = setTimeout(() => setIsCalculating(false), 800);
   }, []);
 
   // Blow bubble handler
@@ -191,6 +193,13 @@ export function StealthMode() {
     };
     return dataRow[colMap[selectedCell.col]] ?? '';
   }, [selectedCell, spreadsheetRows]);
+
+  // Cleanup flash timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    };
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {

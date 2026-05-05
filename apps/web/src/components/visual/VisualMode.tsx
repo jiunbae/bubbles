@@ -1,4 +1,4 @@
-import { Suspense, useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { MOUSE, TOUCH } from 'three';
@@ -84,13 +84,15 @@ function SizeSelector() {
 function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss: () => void }) {
   const { t } = useTranslation();
   const [fading, setFading] = useState(false);
+  const dismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismiss = useCallback(() => {
     setFading(true);
     try {
       localStorage.setItem('bubbles_onboarded', '1');
     } catch {}
-    setTimeout(() => {
+    if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
+    dismissTimeoutRef.current = setTimeout(() => {
       setFading(false);
       onDismiss();
     }, 400);
@@ -102,6 +104,13 @@ function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss
     const timer = setTimeout(dismiss, 8000);
     return () => clearTimeout(timer);
   }, [visible, dismiss]);
+
+  // Cleanup dismiss timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
+    };
+  }, []);
 
   // Escape key dismisses
   useEffect(() => {

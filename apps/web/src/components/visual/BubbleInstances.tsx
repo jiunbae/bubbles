@@ -44,6 +44,69 @@ interface BubbleInstancesProps {
   onExpire: (bubbleId: string) => void;
 }
 
+interface BubbleTooltipProps {
+  hoveredId: string | null;
+  stateMapRef: React.RefObject<Map<string, BubbleInstanceState>>;
+}
+
+function BubbleTooltip({ hoveredId, stateMapRef }: BubbleTooltipProps) {
+  const [tooltipPos, setTooltipPos] = useState<[number, number, number] | null>(null);
+  const [displayName, setDisplayName] = useState<string>('');
+
+  useEffect(() => {
+    if (!hoveredId) {
+      setTooltipPos(null);
+      setDisplayName('');
+      return;
+    }
+    const entry = stateMapRef.current?.get(hoveredId);
+    if (entry) {
+      setDisplayName(entry.bubble.blownBy.displayName);
+    }
+  }, [hoveredId]);
+
+  useFrame(() => {
+    if (!hoveredId) {
+      if (tooltipPos !== null) setTooltipPos(null);
+      return;
+    }
+    const entry = stateMapRef.current?.get(hoveredId);
+    if (!entry) {
+      if (tooltipPos !== null) setTooltipPos(null);
+      return;
+    }
+    setTooltipPos([
+      entry.physics.position[0],
+      entry.physics.position[1],
+      entry.physics.position[2],
+    ]);
+  });
+
+  if (!tooltipPos) return null;
+
+  return (
+    <Html
+      position={tooltipPos}
+      center
+      distanceFactor={8}
+      style={{ pointerEvents: 'none' }}
+    >
+      <div
+        style={{
+          color: 'white',
+          fontSize: 11,
+          background: 'rgba(0,0,0,0.5)',
+          padding: '2px 8px',
+          borderRadius: 8,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {displayName}
+      </div>
+    </Html>
+  );
+}
+
 export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -341,7 +404,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
     if (matrixDirty) {
       mesh.instanceMatrix.needsUpdate = true;
       const opacityAttr = mesh.geometry.getAttribute('instanceOpacity');
-      if (opacityAttr) (opacityAttr as THREE.BufferAttribute).needsUpdate = true;
+      if (opacityAttr && 'needsUpdate' in opacityAttr) (opacityAttr as THREE.BufferAttribute).needsUpdate = true;
     }
 
     // Fire expire callbacks outside the loop to avoid mutating during iteration
@@ -389,18 +452,9 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
   }, []);
 
   const handlePointerLeave = useCallback(() => {
+    hoveredIdRef.current = null;
     setHoveredId(null);
   }, []);
-
-  // Tooltip position
-  const hoveredEntry = hoveredId ? stateMapRef.current.get(hoveredId) : null;
-  const tooltipPos = hoveredEntry
-    ? ([
-        hoveredEntry.physics.position[0],
-        hoveredEntry.physics.position[1],
-        hoveredEntry.physics.position[2],
-      ] as [number, number, number])
-    : null;
 
   return (
     <>
@@ -413,27 +467,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
       />
-      {hoveredEntry && tooltipPos && (
-        <Html
-          position={tooltipPos}
-          center
-          distanceFactor={8}
-          style={{ pointerEvents: 'none' }}
-        >
-          <div
-            style={{
-              color: 'white',
-              fontSize: 11,
-              background: 'rgba(0,0,0,0.5)',
-              padding: '2px 8px',
-              borderRadius: 8,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {hoveredEntry.bubble.blownBy.displayName}
-          </div>
-        </Html>
-      )}
+      <BubbleTooltip hoveredId={hoveredId} stateMapRef={stateMapRef} />
     </>
   );
 }

@@ -8,7 +8,7 @@ import { health, setShuttingDown } from './routes/health';
 import { auth } from './routes/auth';
 import { places } from './routes/places';
 import { logs } from './routes/logs';
-import { createWSHandlers, getAllSessions, cleanupStaleCursors } from './ws/handler';
+import { createWSHandlers, getAllSessions, cleanupStaleCursors, cleanupStaleSessions } from './ws/handler';
 import { leaveRoom } from './ws/rooms';
 import { cleanupStaleRooms, cleanupRedisStaleEntries } from './ws/rooms';
 import { initPubSub } from './ws/pubsub';
@@ -26,23 +26,17 @@ const { upgradeWebSocket, websocket } = createBunWebSocket();
 app.use('*', corsMiddleware);
 app.use('*', metricsMiddleware);
 
-// Metrics route — guard against public access
-// Block requests with X-Forwarded-For (coming through public ingress)
+// Metrics route — always require bearer token auth
+// Never expose metrics without valid token, regardless of how the request arrived
 app.use('/metrics/*', async (c, next) => {
   const metricsToken = process.env.METRICS_TOKEN;
-  const forwarded = c.req.header('X-Forwarded-For');
-
-  // If request came through a proxy (public ingress), require token auth
-  if (forwarded) {
-    if (!metricsToken) {
-      return c.text('Forbidden', 403);
-    }
-    const auth = c.req.header('Authorization');
-    if (auth !== `Bearer ${metricsToken}`) {
-      return c.text('Forbidden', 403);
-    }
+  if (!metricsToken) {
+    return c.text('Forbidden', 403);
   }
-
+  const auth = c.req.header('Authorization');
+  if (auth !== `Bearer ${metricsToken}`) {
+    return c.text('Forbidden', 403);
+  }
   return next();
 });
 
@@ -91,10 +85,11 @@ async function start() {
   connectRedis();
   initPubSub();
 
-  // Periodic cleanup of stale rooms and orphaned cursor entries
+  // Periodic cleanup of stale rooms, orphaned cursor entries, and zombie sessions
   const cleanupInterval = setInterval(() => {
     cleanupStaleRooms();
     cleanupStaleCursors();
+    cleanupStaleSessions();
   }, PLACE_INACTIVE_TIMEOUT / 2);
 
   // Periodic Redis stale entry cleanup (every 5 minutes)

@@ -64,7 +64,8 @@ places.post('/', rateLimiterMiddleware('createPlace'), async (c) => {
     return c.json({ error: 'Name is required' }, 400);
   }
 
-  const name = body.name.trim();
+  // Sanitize: trim, truncate, strip HTML and control characters
+  const name = body.name.trim().slice(0, MAX_PLACE_NAME_LENGTH).replace(/[<>&"']/g, '').replace(/[\x00-\x1f\x7f-\x9f]/g, '');
   const validThemes = ['rooftop', 'park', 'alley'];
   const theme = validThemes.includes(body.theme ?? '') ? body.theme! : 'rooftop';
   if (name.length === 0 || name.length > MAX_PLACE_NAME_LENGTH) {

@@ -66,7 +66,8 @@ auth.post('/ws-ticket', async (c) => {
     const secret = new TextEncoder().encode(config.JWT_SECRET);
     const { payload } = await jose.jwtVerify(token, secret);
     const userId = payload.sub;
-    const displayName = (payload.name as string) || (payload.username as string) || 'User';
+    const rawName = (payload.name as string) || (payload.username as string) || 'User';
+    const displayName = rawName.trim().slice(0, 30).replace(/[<>&"']/g, '').replace(/[\x00-\x1f\x7f-\x9f]/g, '');
 
     const ticket = await createTicket(userId, displayName);
     return c.json({ ticket });

@@ -57,7 +57,7 @@ export function cleanupStaleCursors(): void {
 }
 
 /** Clean up sessionStates entries for sessions with no recent ping (zombie TCP connections). */
-export function cleanupStaleSessions(): void {
+export async function cleanupStaleSessions(): Promise<void> {
   const now = Date.now();
   const STALE_SESSION_THRESHOLD = 2 * 60 * 1000; // 2 minutes
   for (const [sessionId, state] of sessionStates) {
@@ -70,7 +70,7 @@ export function cleanupStaleSessions(): void {
     const client = room.clients.get(sessionId);
     if (!client || now - client.lastPingAt > STALE_SESSION_THRESHOLD) {
       try {
-        leaveRoom(state.placeId, sessionId);
+        await leaveRoom(state.placeId, sessionId);
       } catch {
         // best-effort cleanup
       }
@@ -239,7 +239,7 @@ export function createWSHandlers(placeId: string, c: Context) {
             expiresAt,
           };
 
-          createBubble(pid, bubble);
+          await createBubble(pid, bubble);
           incPlaceStats(pid, 'totalBubbles');
 
           const createdMsg: ServerMessage = {
@@ -347,7 +347,7 @@ export function createWSHandlers(placeId: string, c: Context) {
           log.info('User renamed', { from: oldName, to: trimmed });
 
           // Sync updated name to Redis so cross-pod room_state is correct
-          updateMemberInRedis(pid, sessionId, user);
+          await updateMemberInRedis(pid, sessionId, user);
 
           const renameMsg: ServerMessage = {
             type: 'user_renamed', ts: Date.now(),
@@ -371,7 +371,7 @@ export function createWSHandlers(placeId: string, c: Context) {
           }
 
           // Sync updated color to Redis
-          updateMemberInRedis(pid, sessionId, user);
+          await updateMemberInRedis(pid, sessionId, user);
 
           const colorMsg: ServerMessage = {
             type: 'user_color_changed', ts: Date.now(),
@@ -416,7 +416,7 @@ export function createWSHandlers(placeId: string, c: Context) {
       log.info('User left room', { user: state.user.displayName, placeId: state.placeId.slice(0,8) });
       decGauge('ws_connections_active');
       try {
-        leaveRoom(state.placeId, sessionId);
+        await leaveRoom(state.placeId, sessionId);
       } catch (err) {
         log.error('Error leaving room on close', { err: String(err), sessionId: sessionId.slice(0,8) });
       }

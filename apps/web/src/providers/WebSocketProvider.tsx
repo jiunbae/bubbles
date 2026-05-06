@@ -14,6 +14,8 @@ import { useUIStore } from '@/stores/ui-store';
 import { useCursorStore } from '@/stores/cursor-store';
 import { playPop, playJoin } from '@/lib/sounds';
 import { showToast } from '@/components/shared/Toast';
+import { clearBubbleTimeouts } from '@/hooks/useBubbles';
+import { clearExpiryTimers } from '@/components/visual/BubbleScene';
 import i18n from '@/i18n';
 
 const MILESTONE_THRESHOLDS = [100, 500, 1000, 5000] as const;
@@ -66,6 +68,9 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
     client.onMessage = (msg: ServerMessage) => {
       switch (msg.type) {
         case 'room_state': {
+          // Clear local bubble expiry timers from previous room before loading new state
+          clearBubbleTimeouts();
+          clearExpiryTimers();
           setMySessionId(msg.data.mySessionId);
           setOnlineUsers(msg.data.users);
           setBubbles(msg.data.bubbles);

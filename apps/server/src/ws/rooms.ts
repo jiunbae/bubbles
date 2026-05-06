@@ -275,7 +275,7 @@ export async function joinRoom(
   updatePlaceActivity(placeId);
 }
 
-export function leaveRoom(placeId: string, sessionId: string): void {
+export async function leaveRoom(placeId: string, sessionId: string): Promise<void> {
   const room = rooms.get(placeId);
   if (!room) return;
 
@@ -283,8 +283,8 @@ export function leaveRoom(placeId: string, sessionId: string): void {
   room.lastActivity = Date.now();
   incTotalUsers(-1);
 
-  // Redis: remove member
-  redisRemoveMember(placeId, sessionId);
+  // Redis: remove member before broadcasting (prevents race with cross-pod joins)
+  await redisRemoveMember(placeId, sessionId);
 
   // Broadcast user_left (local + cross-pod)
   const leaveMsg: ServerMessage = {

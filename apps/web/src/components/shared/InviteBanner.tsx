@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { showToast } from '@/components/shared/Toast';
 import { analytics } from '@/lib/analytics';
 import { Z_INDEX } from '@/lib/z-index';
+import { useUIStore } from '@/stores/ui-store';
 
 const SESSION_KEY = 'bubbles_invite_shown';
 const STEALTH_HINT_KEY = 'bubbles_stealth_hint_shown';
@@ -26,15 +27,15 @@ export function InviteBanner() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Stealth mode hint — show once ever (localStorage), 10s after load
+  // Stealth mode hint — show once ever (localStorage), 10s after load, only if not already in stealth
   useEffect(() => {
     if (localStorage.getItem(STEALTH_HINT_KEY)) return;
 
     const timer = setTimeout(() => {
-      if (!localStorage.getItem(STEALTH_HINT_KEY)) {
-        showToast(t('place.stealthHint', 'Try Stealth Mode — looks like Excel! (Ctrl+Shift+M)'), 'success');
-        localStorage.setItem(STEALTH_HINT_KEY, '1');
-      }
+      if (localStorage.getItem(STEALTH_HINT_KEY)) return;
+      if (useUIStore.getState().mode === 'stealth') return;
+      showToast(t('place.stealthHint', 'Try Stealth Mode — looks like Excel! (Ctrl+Shift+M)'), 'success');
+      localStorage.setItem(STEALTH_HINT_KEY, '1');
     }, STEALTH_HINT_DELAY_MS);
 
     return () => clearTimeout(timer);

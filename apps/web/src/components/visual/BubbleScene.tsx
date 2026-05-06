@@ -37,6 +37,13 @@ function cancelExpiry(bubbleId: string) {
   }
 }
 
+export function clearExpiryTimers(): void {
+  for (const [id, timer] of expiryTimers) {
+    clearTimeout(timer);
+    expiryTimers.delete(id);
+  }
+}
+
 export { scheduleExpiry, cancelExpiry, expiryTimers };
 
 /**
@@ -169,6 +176,7 @@ function BubbleRenderer() {
 
   const handleExpire = useCallback(
     (bubbleId: string) => {
+      cancelExpiry(bubbleId);
       const b = useBubbleStore.getState().bubbles.get(bubbleId);
       if (b) {
         triggerPop(

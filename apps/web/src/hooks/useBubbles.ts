@@ -83,6 +83,13 @@ export function blowBubbleAtPosition(color: string, x: number, y: number, z: num
   createBubble(color, x, y, z);
 }
 
+export function clearBubbleTimeouts(): void {
+  for (const [id, timer] of bubbleTimeouts) {
+    clearTimeout(timer);
+    bubbleTimeouts.delete(id);
+  }
+}
+
 // React hook — thin wrapper for reading state
 export function useBubbles() {
   const bubblesMap = useBubbleStore((s) => s.bubbles);

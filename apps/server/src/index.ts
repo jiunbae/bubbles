@@ -118,7 +118,7 @@ async function start() {
     log.info('Cleaning up WebSocket sessions', { count: sessions.size });
     for (const [sessionId, session] of sessions) {
       try {
-        leaveRoom(session.placeId, sessionId);
+        await leaveRoom(session.placeId, sessionId);
       } catch {
         // best-effort cleanup
       }

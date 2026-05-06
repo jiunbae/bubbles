@@ -2,6 +2,12 @@ import type { ClientMessage, ServerMessage } from '@bubbles/shared';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
 
+function log(level: 'log' | 'warn' | 'error', msg: string, ...args: unknown[]) {
+  if (import.meta.env.DEV) {
+    console[level](`[WsClient] ${msg}`, ...args);
+  }
+}
+
 /** WebSocket close code sent by server during graceful shutdown / rolling deploy. */
 const CLOSE_CODE_SERVICE_RESTART = 1012;
 
@@ -108,7 +114,7 @@ export class WsClient {
 
     // Server restart (rolling deploy) — reconnect immediately, no retry count
     if (closeCode === CLOSE_CODE_SERVICE_RESTART) {
-      console.log('[WsClient] Server restarting, reconnecting immediately...');
+      log('log', 'Server restarting, reconnecting immediately...');
       const jitter = 200 + Math.random() * 1300; // 200-1500ms to avoid thundering herd
       this.reconnectTimer = setTimeout(() => {
         this.doConnect();
@@ -117,7 +123,7 @@ export class WsClient {
     }
 
     if (this.retryCount >= this.maxRetries) {
-      console.warn('[WsClient] Max retries reached, giving up');
+      log('warn', 'Max retries reached, giving up');
       this.onConnectionChange?.('disconnected');
       return;
     }

@@ -22,6 +22,7 @@ import type { BubbleSize } from '@bubbles/shared';
 const SIZES: BubbleSize[] = ['S', 'M', 'L'];
 
 function SizeSelector() {
+  const { t } = useTranslation();
   const selectedSize = useUIStore((s) => s.selectedSize);
   const setSelectedSize = useUIStore((s) => s.setSelectedSize);
   const interactionMode = useUIStore((s) => s.interactionMode);
@@ -50,6 +51,8 @@ function SizeSelector() {
         <button
           key={size}
           onClick={() => setSelectedSize(size)}
+          aria-label={t(`visual.size${size === 'S' ? 'Small' : size === 'M' ? 'Medium' : 'Large'}`)}
+          aria-pressed={selectedSize === size}
           style={{
             width: 32,
             height: 32,
@@ -201,6 +204,7 @@ function HelpButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
+      aria-label={t('visual.showHelp', 'Show controls')}
       title={t('visual.showHelp', 'Show controls')}
       style={{
         position: 'fixed',

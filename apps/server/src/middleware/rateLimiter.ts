@@ -50,7 +50,7 @@ function refillBucket(bucket: TokenBucket, maxTokens: number, refillRate: number
 
 export function checkRateLimit(
   sessionId: string,
-  action: 'blow' | 'pop' | 'createPlace',
+  action: 'blow' | 'pop' | 'createPlace' | 'set_color' | 'ping',
   isAuthenticated: boolean
 ): { allowed: boolean; retryAfter: number; remaining: number; limit: number } {
   const limits = isAuthenticated ? RATE_LIMITS.authenticated : RATE_LIMITS.anonymous;
@@ -71,7 +71,29 @@ export function checkRateLimit(
   return { allowed: false, retryAfter, remaining: 0, limit: maxTokens };
 }
 
-export function rateLimiterMiddleware(action: 'blow' | 'pop' | 'createPlace') {
+// Test helpers for clearing state and running cleanup synchronously
+export function _testClearBuckets(): void {
+  buckets.clear();
+}
+
+export function _testRunCleanup(): void {
+  const now = Date.now();
+  for (const [key, bucket] of buckets) {
+    if (now - bucket.lastRefill > CLEANUP_INTERVAL) {
+      buckets.delete(key);
+    }
+  }
+  if (buckets.size > MAX_BUCKETS) {
+    const overflow = buckets.size - MAX_BUCKETS;
+    let i = 0;
+    for (const key of buckets.keys()) {
+      if (i++ >= overflow) break;
+      buckets.delete(key);
+    }
+  }
+}
+
+export function rateLimiterMiddleware(action: 'blow' | 'pop' | 'createPlace' | 'set_color' | 'ping') {
   return async (c: Context, next: Next) => {
     const user = c.get('user');
     const result = checkRateLimit(user.sessionId, action, user.isAuthenticated);

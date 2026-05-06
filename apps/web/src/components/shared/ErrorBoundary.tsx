@@ -1,5 +1,16 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { trackEvent } from '@/lib/analytics';
 import i18n from '@/i18n';
+
+function reportError(error: Error, componentStack?: string | null) {
+  trackEvent('exception', {
+    description: error.message,
+    fatal: true,
+  });
+  if (import.meta.env.DEV) {
+    console.error('[ErrorBoundary] Uncaught error:', error, componentStack);
+  }
+}
 
 interface Props {
   children: ReactNode;
@@ -22,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[ErrorBoundary] Uncaught error:', error, info.componentStack);
+    reportError(error, info.componentStack);
   }
 
   render() {

@@ -116,6 +116,7 @@ export function ActivityLog({ placeId: _placeId, onClose }: ActivityLogProps) {
           </h2>
           <button
             onClick={onClose}
+            aria-label={t('activity.closeSidebar')}
             className="rounded p-2 text-text-muted transition-colors hover:text-text-primary"
           >
             <svg

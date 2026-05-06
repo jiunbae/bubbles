@@ -47,6 +47,7 @@ export function CreatePlaceForm() {
     return (
       <button
         onClick={() => setIsOpen(true)}
+        aria-expanded={isOpen}
         className="flex w-full items-center justify-between gap-4 rounded-xl border border-accent/30 bg-accent/10 p-4 text-left transition-all duration-200 hover:border-accent/50 hover:bg-accent/15 sm:p-5"
       >
         <div className="flex flex-col gap-1">
@@ -95,6 +96,7 @@ export function CreatePlaceForm() {
           setError(null);
         }}
         placeholder={t('lobby.placeNamePlaceholder')}
+        aria-label={t('lobby.placeNamePlaceholder')}
         maxLength={MAX_PLACE_NAME_LENGTH}
         autoFocus
         className="w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
@@ -107,6 +109,8 @@ export function CreatePlaceForm() {
             key={thm.value}
             type="button"
             onClick={() => setTheme(thm.value)}
+            aria-label={themeLabels[thm.value]?.label ?? thm.label}
+            aria-pressed={theme === thm.value}
             className={`flex-1 flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-xs transition-all ${
               theme === thm.value
                 ? 'border-accent bg-accent/10 text-text-primary'

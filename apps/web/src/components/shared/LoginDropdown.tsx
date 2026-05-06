@@ -30,6 +30,8 @@ export function LoginDropdown({ size = 'md' }: LoginDropdownProps) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
+        aria-label={t('auth.signIn')}
+        aria-expanded={open}
         className={`flex items-center gap-1.5 ${btnClass} text-text-secondary transition-colors hover:bg-bg-card-hover hover:text-text-primary`}
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -42,6 +44,7 @@ export function LoginDropdown({ size = 'md' }: LoginDropdownProps) {
         <div className="absolute right-0 top-full mt-1.5 min-w-[180px] rounded-lg border border-border bg-bg-card p-1.5 shadow-lg" style={{ zIndex: Z_INDEX.DROPDOWN }}>
           <button
             onClick={() => { setOpen(false); redirectToOAuth('google'); }}
+            aria-label={t('auth.signInWithGoogle')}
             className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-text-primary transition-colors hover:bg-bg-secondary"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -54,6 +57,7 @@ export function LoginDropdown({ size = 'md' }: LoginDropdownProps) {
           </button>
           <button
             onClick={() => { setOpen(false); redirectToOAuth('github'); }}
+            aria-label={t('auth.signInWithGithub')}
             className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-text-primary transition-colors hover:bg-bg-secondary"
           >
             <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">

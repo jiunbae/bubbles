@@ -7,6 +7,7 @@
     "create": "Create",
     "creating": "Creating...",
     "cancel": "Cancel",
+    "close": "Close",
     "more": "More"
   },
   "lobby": {
@@ -108,11 +109,15 @@
     "editName": "Click your name — Edit display name",
     "modeToggle": "Blow / Pop toggle in header",
     "dismissHint": "Click anywhere or press Escape to close",
-    "showHelp": "Show controls"
+    "showHelp": "Show controls",
+    "sizeSmall": "Small bubble size",
+    "sizeMedium": "Medium bubble size",
+    "sizeLarge": "Large bubble size"
   },
   "activity": {
     "title": "Activity Log",
     "empty": "No activity yet",
+    "closeSidebar": "Close activity log",
     "bubbleBlown_one": "A bubble was blown",
     "bubbleBlown_other": "{{count}} bubbles were blown",
     "userJoined": "{{name}} joined",

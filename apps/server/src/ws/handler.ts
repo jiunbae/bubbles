@@ -358,6 +358,15 @@ export function createWSHandlers(placeId: string, c: Context) {
         }
 
         case 'set_color': {
+          const rateCheck = checkRateLimit(sessionId, 'set_color', user.isAuthenticated);
+          if (!rateCheck.allowed) {
+            sendToClient(ws, {
+              type: 'error', ts: Date.now(),
+              data: { code: 'RATE_LIMITED', message: `Too many color changes. Try again in ${rateCheck.retryAfter}s` },
+            });
+            return;
+          }
+
           const newColor = msg.data.color;
           if (typeof newColor !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(newColor)) return;
 
@@ -398,6 +407,15 @@ export function createWSHandlers(placeId: string, c: Context) {
         }
 
         case 'ping': {
+          const rateCheck = checkRateLimit(sessionId, 'ping', user.isAuthenticated);
+          if (!rateCheck.allowed) {
+            sendToClient(ws, {
+              type: 'error', ts: Date.now(),
+              data: { code: 'RATE_LIMITED', message: `Too many pings. Try again in ${rateCheck.retryAfter}s` },
+            });
+            return;
+          }
+
           const room = getRoom(pid);
           if (room) {
             const client = room.clients.get(sessionId);

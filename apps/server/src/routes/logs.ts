@@ -21,7 +21,9 @@ logs.use('*', authMiddleware);
 // GET /places/:placeId/logs - paginated action logs for a place
 logs.get('/places/:placeId/logs', async (c) => {
   const placeId = c.req.param('placeId');
-  const limit = Math.min(parseInt(c.req.query('limit') || '50', 10), 100);
+  let limit = parseInt(c.req.query('limit') || '50', 10);
+  if (!Number.isFinite(limit) || limit < 1) limit = 50;
+  limit = Math.min(limit, 100);
   const before = c.req.query('before'); // cursor-based pagination
 
   const col = getCollection<ActionLogDoc>('action_logs');
@@ -35,7 +37,7 @@ logs.get('/places/:placeId/logs', async (c) => {
     }
   }
 
-  const docs = await col.find(query).sort({ createdAt: -1 }).limit(limit).toArray();
+  const docs = await col.find(query).sort({ _id: -1 }).limit(limit).toArray();
 
   const result = docs.map((doc) => ({
     id: doc._id.toHexString(),
@@ -56,7 +58,9 @@ logs.get('/places/:placeId/logs', async (c) => {
 // GET /logs/me - current user's action logs
 logs.get('/me', async (c) => {
   const user = c.get('user');
-  const limit = Math.min(parseInt(c.req.query('limit') || '50', 10), 100);
+  let limit = parseInt(c.req.query('limit') || '50', 10);
+  if (!Number.isFinite(limit) || limit < 1) limit = 50;
+  limit = Math.min(limit, 100);
   const before = c.req.query('before');
 
   const col = getCollection<ActionLogDoc>('action_logs');
@@ -70,7 +74,7 @@ logs.get('/me', async (c) => {
     }
   }
 
-  const docs = await col.find(query).sort({ createdAt: -1 }).limit(limit).toArray();
+  const docs = await col.find(query).sort({ _id: -1 }).limit(limit).toArray();
 
   const result = docs.map((doc) => ({
     id: doc._id.toHexString(),

@@ -97,6 +97,7 @@ export function BreakTimer() {
           </span>
           <button
             onClick={cancel}
+            aria-label={t('breakTimer.cancel')}
             className="ml-0.5 rounded-full p-0.5 text-white/50 transition-colors hover:text-white"
             title={t('breakTimer.cancel')}
           >
@@ -147,6 +148,7 @@ export function BreakTimer() {
                   start(preset.seconds);
                   setIsExpanded(false);
                 }}
+                aria-label={t(`breakTimer.${preset.key}`)}
                 className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent/30"
               >
                 {t(`breakTimer.${preset.key}`)}
@@ -162,6 +164,8 @@ export function BreakTimer() {
       ) : (
         <button
           onClick={() => setIsExpanded(true)}
+          aria-label={t('breakTimer.startBreak')}
+          aria-expanded={isExpanded}
           className="flex items-center gap-1.5 rounded-full border border-white/15 bg-[rgba(20,20,30,0.7)] px-3 py-1.5 text-xs font-medium text-white/70 shadow-md backdrop-blur-xl transition-colors hover:bg-[rgba(20,20,30,0.9)] hover:text-white"
           title={t('breakTimer.startBreak')}
         >

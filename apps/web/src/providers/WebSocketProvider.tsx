@@ -142,7 +142,7 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
           // heartbeat acknowledged
           break;
         case 'error':
-          console.error('[WS] Server error:', msg.data.message);
+          showToast(msg.data.message, 'error');
           break;
       }
     };

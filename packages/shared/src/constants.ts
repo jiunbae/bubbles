@@ -4,6 +4,6 @@ export const PLACE_INACTIVE_TIMEOUT = 7 * 24 * 60 * 60 * 1000; // 7 days
 export const LOG_RETENTION_DAYS = 90;
 export const MAX_PLACE_NAME_LENGTH = 50;
 export const RATE_LIMITS = {
-  authenticated: { blow: 300, pop: 300, createPlace: 20 },
-  anonymous: { blow: 200, pop: 200, createPlace: 5 },
+  authenticated: { blow: 300, pop: 300, createPlace: 20, set_color: 5, ping: 20 },
+  anonymous: { blow: 200, pop: 200, createPlace: 5, set_color: 3, ping: 20 },
 } as const;

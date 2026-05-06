@@ -7,6 +7,7 @@
     "create": "만들기",
     "creating": "만드는 중...",
     "cancel": "취소",
+    "close": "닫기",
     "more": "더보기"
   },
   "lobby": {
@@ -107,11 +108,15 @@
     "editName": "이름 클릭 — 표시 이름 편집",
     "modeToggle": "헤더의 불기 / 터뜨리기 전환",
     "dismissHint": "아무 곳이나 클릭하거나 Escape를 눌러 닫기",
-    "showHelp": "조작법 보기"
+    "showHelp": "조작법 보기",
+    "sizeSmall": "작은 방울 크기",
+    "sizeMedium": "중간 방울 크기",
+    "sizeLarge": "큰 방울 크기"
   },
   "activity": {
     "title": "활동 기록",
     "empty": "아직 활동이 없습니다",
+    "closeSidebar": "활동 기록 닫기",
     "bubbleBlown_one": "비눗방울 1개가 만들어졌습니다",
     "bubbleBlown_other": "비눗방울 {{count}}개가 만들어졌습니다",
     "userJoined": "{{name}}님이 참여했습니다",

@@ -28,7 +28,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 9.15.0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -47,8 +47,56 @@ jobs:
       - name: Test
         run: pnpm test
 
-  build-server:
+  validate-iac:
     needs: verify
+    runs-on: ubuntu-latest
+    outputs:
+      iac_sha: ${{ steps.iac-revision.outputs.sha }}
+    steps:
+      - name: Checkout application repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Install validator dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.33.4
+
+      - name: Clone IaC repo
+        run: |
+          git clone https://x-access-token:${{ secrets.IAC_GITHUB_TOKEN }}@github.com/${{ env.IAC_REPO }}.git iac
+
+      - name: Record validated IaC revision
+        id: iac-revision
+        run: |
+          echo "sha=$(git -C iac rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Validate rendered dev secrets
+        shell: bash
+        run: |
+          set -o pipefail
+          kubectl kustomize "iac/${{ env.DEV_PATH }}" | node scripts/validate-iac-secrets.mjs - dev
+
+      - name: Validate rendered prod secrets
+        shell: bash
+        run: |
+          set -o pipefail
+          kubectl kustomize "iac/${{ env.PROD_PATH }}" | node scripts/validate-iac-secrets.mjs - prod
+
+  build-server:
+    needs: [verify, validate-iac]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -74,12 +122,10 @@ jobs:
           file: apps/server/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/bubbles-server:${{ gitea.sha }}
-            ${{ env.REGISTRY }}/bubbles-server:latest
+          tags: ${{ env.REGISTRY }}/bubbles-server:${{ gitea.sha }}
 
   build-web:
-    needs: verify
+    needs: [verify, validate-iac]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -105,26 +151,33 @@ jobs:
           file: apps/web/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/bubbles-web:${{ gitea.sha }}
-            ${{ env.REGISTRY }}/bubbles-web:latest
+          tags: ${{ env.REGISTRY }}/bubbles-web:${{ gitea.sha }}
 
   update-manifests:
-    needs: [build-server, build-web]
+    needs: [build-server, build-web, validate-iac]
     runs-on: ubuntu-latest
     steps:
       - name: Clone IaC repo
         run: |
           git clone https://x-access-token:${{ secrets.IAC_GITHUB_TOKEN }}@github.com/${{ env.IAC_REPO }}.git iac
+          git -C iac checkout -B validated-main "${{ needs.validate-iac.outputs.iac_sha }}"
 
       - name: Update image tags
         run: |
           cd iac
+          updated_files=0
           for path in "${{ env.BASE_PATH }}" "${{ env.DEV_PATH }}" "${{ env.PROD_PATH }}"; do
-            if [ -f "${path}/kustomization.yaml" ]; then
-              sed -i "s/newTag: .*/newTag: ${{ gitea.sha }}/" "${path}/kustomization.yaml"
-            fi
+            file="${path}/kustomization.yaml"
+            [ -f "${file}" ] || continue
+            grep -qE '^[[:space:]]*newTag:' "${file}" || continue
+            sed -i "s/newTag: .*/newTag: ${{ gitea.sha }}/" "${file}"
+            updated_files=$((updated_files + 1))
           done
+          if [ "${updated_files}" -eq 0 ]; then
+            echo "No Bubbles image tags were found in the configured IaC paths" >&2
+            exit 1
+          fi
+          git diff --check
 
       - name: Commit and push
         run: |
@@ -133,4 +186,4 @@ jobs:
           git config user.email "ci@jiun.dev"
           git add -A
           git diff --staged --quiet || git commit -m "chore(bubbles): update image tags to ${{ gitea.sha }}"
-          git push
+          git push origin HEAD:main

@@ -1,23 +1,25 @@
 import { useEffect, useRef } from 'react';
-
-declare global {
-  interface Window {
-    adsbygoogle?: unknown[];
-  }
-}
+import { usePrivacyConsent } from '@/providers/PrivacyProvider';
 
 export function AdDisplay() {
+  const { choices } = usePrivacyConsent();
   const pushed = useRef(false);
 
   useEffect(() => {
+    if (!choices.advertising) {
+      pushed.current = false;
+      return;
+    }
     if (pushed.current) return;
     pushed.current = true;
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch {
-      // Ad blockers and delayed AdSense initialization can reject the push; the empty slot is safe.
+      // Blocking the optional provider never affects the surrounding content.
     }
-  }, []);
+  }, [choices.advertising]);
+
+  if (!choices.advertising) return null;
 
   return (
     <div style={{ margin: '16px 0', minHeight: 90 }}>

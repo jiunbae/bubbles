@@ -9,19 +9,27 @@ import {
   generateDisplayName,
 } from '../utils/session';
 import type { UserInfo } from '@bubbles/shared';
+import { createOwnerId } from '../utils/ownership';
 
 export interface BubblesUser extends UserInfo {
   userId?: string;
 }
 
+export interface RequestUser extends BubblesUser {
+  ownerId: string;
+}
+
 // Extend Hono's context variables
 declare module 'hono' {
   interface ContextVariableMap {
-    user: BubblesUser;
+    user: RequestUser;
   }
 }
 
-export async function authMiddleware(c: Context, next: Next): Promise<void | Response> {
+export async function authMiddleware(
+  c: Context,
+  next: Next
+): Promise<void | Response> {
   let userId: string | undefined;
   let displayName: string | undefined;
   let isAuthenticated = false;
@@ -33,10 +41,18 @@ export async function authMiddleware(c: Context, next: Next): Promise<void | Res
     try {
       const secret = new TextEncoder().encode(config.JWT_SECRET);
       const { payload } = await jose.jwtVerify(token, secret);
-      userId = payload.sub;
-      const rawName = (payload.name as string) || (payload.username as string) || '';
-      displayName = rawName.trim().slice(0, 30).replace(/[<>&"']/g, '').replace(/[\x00-\x1f\x7f-\x9f]/g, '');
-      isAuthenticated = true;
+      const subject = typeof payload.sub === 'string' ? payload.sub.trim() : '';
+      if (subject) {
+        userId = subject;
+        const rawName =
+          (payload.name as string) || (payload.username as string) || '';
+        displayName = rawName
+          .trim()
+          .slice(0, 30)
+          .replace(/[<>&"']/g, '')
+          .replace(/[\x00-\x1f\x7f-\x9f]/g, '');
+        isAuthenticated = true;
+      }
     } catch {
       // Invalid token — fall through to anonymous
     }
@@ -70,13 +86,30 @@ export async function authMiddleware(c: Context, next: Next): Promise<void | Res
   }
 
   // Assign a deterministic color from sessionId
-  const colorHash = sessionId.split('').reduce((acc, ch) => ((acc << 5) - acc + ch.charCodeAt(0)) | 0, 0);
-  const USER_COLORS = ['#FFB5C2', '#87CEEB', '#98FB98', '#DDA0DD', '#FFD700', '#FFDAB9', '#FF69B4', '#FFA07A'];
+  const colorHash = sessionId
+    .split('')
+    .reduce((acc, ch) => ((acc << 5) - acc + ch.charCodeAt(0)) | 0, 0);
+  const USER_COLORS = [
+    '#FFB5C2',
+    '#87CEEB',
+    '#98FB98',
+    '#DDA0DD',
+    '#FFD700',
+    '#FFDAB9',
+    '#FF69B4',
+    '#FFA07A',
+  ];
   const color = USER_COLORS[Math.abs(colorHash) % USER_COLORS.length];
+
+  const ownerId = await createOwnerId(
+    { sessionId, userId, isAuthenticated },
+    config.OWNER_ID_SECRET
+  );
 
   c.set('user', {
     sessionId,
     userId,
+    ownerId,
     displayName,
     isAuthenticated,
     color,

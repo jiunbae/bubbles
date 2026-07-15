@@ -18,6 +18,7 @@ import { GlobalStatsBanner } from '@/components/lobby/GlobalStatsBanner';
 import { BubbleLoader } from '@/components/shared/BubbleLoader';
 import { LoginDropdown } from '@/components/shared/LoginDropdown';
 import { Z_INDEX } from '@/lib/z-index';
+import { isPlaceOwnedByCurrentUser } from '@/lib/ownership';
 
 const BACKGROUND_BUBBLE_COUNT = 12;
 
@@ -82,9 +83,12 @@ export function LobbyPage() {
 
   const myRooms = useMemo(
     () =>
-      isAuthenticated && user
-        ? sortedPlaces.filter((place) => place.createdBy === user.name)
-        : [],
+      sortedPlaces.filter((place) =>
+        isPlaceOwnedByCurrentUser(
+          place,
+          isAuthenticated ? user?.name : undefined
+        )
+      ),
     [sortedPlaces, isAuthenticated, user]
   );
 
@@ -199,7 +203,7 @@ export function LobbyPage() {
               </div>
             </section>
 
-            {/* Your Rooms section (logged-in users with owned rooms) */}
+            {/* Rooms owned by the current account or anonymous cookie session. */}
             {myRooms.length > 0 && (
               <section aria-labelledby="your-rooms-heading">
                 <h2

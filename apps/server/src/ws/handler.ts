@@ -105,12 +105,12 @@ export function createWSHandlers(placeId: string, c: Context) {
       let authError: string | undefined;
       if (ticket) {
         const ticketData = await consumeTicket(ticket);
-        if (ticketData) {
+        if (ticketData?.userId) {
           userId = ticketData.userId;
           displayName = ticketData.displayName;
           isAuthenticated = true;
         } else {
-          log.warn('Invalid or expired WS ticket');
+          log.warn('Invalid, expired, or subjectless WS ticket');
           authError = 'TICKET_INVALID';
         }
       }

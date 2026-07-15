@@ -23,10 +23,30 @@ export type BubbleSize = 'S' | 'M' | 'L';
 export type BubblePattern = 'plain' | 'spiral' | 'dots' | 'star';
 export type PlaceTheme = 'rooftop' | 'park' | 'alley';
 
-export const PLACE_THEMES: { value: PlaceTheme; label: string; emoji: string; description: string }[] = [
-  { value: 'rooftop', label: 'Rooftop', emoji: '🏙️', description: 'City skyline & concrete' },
-  { value: 'park', label: 'Park', emoji: '🌳', description: 'Grass, trees & open sky' },
-  { value: 'alley', label: 'Alley', emoji: '🏮', description: 'Brick walls & warm lights' },
+export const PLACE_THEMES: {
+  value: PlaceTheme;
+  label: string;
+  emoji: string;
+  description: string;
+}[] = [
+  {
+    value: 'rooftop',
+    label: 'Rooftop',
+    emoji: '🏙️',
+    description: 'City skyline & concrete',
+  },
+  {
+    value: 'park',
+    label: 'Park',
+    emoji: '🌳',
+    description: 'Grass, trees & open sky',
+  },
+  {
+    value: 'alley',
+    label: 'Alley',
+    emoji: '🏮',
+    description: 'Brick walls & warm lights',
+  },
 ];
 
 export interface Place {
@@ -34,6 +54,8 @@ export interface Place {
   name: string;
   theme: PlaceTheme;
   createdBy: string;
+  /** Request-scoped ownership result; older API responses may omit it. */
+  isOwnedByCurrentUser?: boolean;
   userCount: number;
   bubbleCount: number;
   totalVisitors: number;

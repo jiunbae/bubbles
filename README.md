@@ -53,13 +53,13 @@ bubbles/
 └── turbo.json         # Turborepo build orchestration
 ```
 
-| Layer | Stack |
-|-------|-------|
+| Layer        | Stack                                                                 |
+| ------------ | --------------------------------------------------------------------- |
 | **Frontend** | React 19, React Router 7, Three.js + R3F, Zustand, Tailwind CSS, Vite |
-| **Backend** | Hono, Bun, WebSockets, JWT auth |
-| **State** | Redis 7 (pub/sub + room state for multi-pod sync) |
-| **Database** | MongoDB 7 (places, logs) |
-| **Infra** | Kubernetes (ArgoCD), Nginx, Cloudflare Tunnel, Prometheus + Grafana |
+| **Backend**  | Hono, Bun, WebSockets, JWT auth                                       |
+| **State**    | Redis 7 (pub/sub + room state for multi-pod sync)                     |
+| **Database** | MongoDB 7 (places, logs)                                              |
+| **Infra**    | Kubernetes (ArgoCD), Nginx, Cloudflare Tunnel, Prometheus + Grafana   |
 
 ### Multi-Pod Architecture
 
@@ -87,6 +87,7 @@ bubbles/
 ```
 
 Server pods share state via Redis:
+
 - **Pub/Sub**: Cross-pod WebSocket message relay (bubble events, user join/leave)
 - **Hash maps**: Room members and active bubbles (survives individual pod restarts)
 - **Graceful shutdown**: SIGTERM → close WS with code 1012 → clients auto-reconnect to healthy pod
@@ -98,7 +99,7 @@ Server pods share state via Redis:
 ### Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) & Docker Compose
-- Or: [pnpm](https://pnpm.io/) + [Bun](https://bun.sh/) for local dev
+- Or: Node.js 22/24, [pnpm](https://pnpm.io/) + [Bun](https://bun.sh/) for local dev
 
 ### Run with Docker
 
@@ -106,14 +107,19 @@ Server pods share state via Redis:
 git clone <repo-url> && cd bubbles
 cp .env.example .env   # configure your secrets
 
-docker compose up
+docker compose up --build --wait
 ```
 
-| Service | URL |
-|---------|-----|
-| Web | `http://localhost:8080` |
-| API | `http://localhost:3002` |
-| MongoDB | `localhost:27017` |
+| Service         | URL                      |
+| --------------- | ------------------------ |
+| Web             | `http://localhost:8080`  |
+| API replica A   | `http://localhost:3002`  |
+| API replica B   | `http://localhost:3003`  |
+| MongoDB / Redis | Internal Compose network |
+
+The default Compose topology includes two server replicas and persistent Redis. Verify cross-process
+room state and Pub/Sub relay with `bun scripts/smoke-multipod.mjs`.
+The Cloudflare tunnel is opt-in via `docker compose --profile tunnel up`.
 
 ### Local Development
 
@@ -134,28 +140,29 @@ cd apps/web && pnpm dev
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `JWT_SECRET` | JWT signing secret | *required* |
-| `SESSION_SECRET` | Session signing secret | *required* |
-| `MONGO_URI` | MongoDB connection string | `mongodb://localhost:27017/bubbles` |
-| `REDIS_URL` | Redis connection string | *optional* (runs local-only without it) |
-| `CORS_ORIGINS` | Allowed origins (comma-separated) | `http://localhost:5173` |
-| `CLOUDFLARE_TUNNEL_TOKEN` | Cloudflare Tunnel token | *optional* |
+| Variable                  | Description                                                                       | Default                                 |
+| ------------------------- | --------------------------------------------------------------------------------- | --------------------------------------- |
+| `JWT_SECRET`              | JWT signing secret                                                                | _required_                              |
+| `SESSION_SECRET`          | Session signing secret                                                            | _required_                              |
+| `OWNER_ID_SECRET`         | Stable HMAC secret for opaque room ownership IDs; do not rotate without migration | `SESSION_SECRET` fallback               |
+| `MONGO_URI`               | MongoDB connection string                                                         | `mongodb://localhost:27017/bubbles`     |
+| `REDIS_URL`               | Redis connection string                                                           | _optional_ (runs local-only without it) |
+| `CORS_ORIGINS`            | Allowed origins (comma-separated)                                                 | `http://localhost:5173`                 |
+| `CLOUDFLARE_TUNNEL_TOKEN` | Cloudflare Tunnel token                                                           | _optional_                              |
 
 ---
 
 ## API
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Liveness check |
-| `GET` | `/health/ready` | Readiness check (503 during shutdown) |
-| `GET` | `/metrics` | Prometheus metrics |
-| `GET` | `/places` | List active places |
-| `POST` | `/places` | Create a new place |
-| `GET` | `/places/:id` | Get place details |
-| `WS` | `/ws/place/:id` | Real-time bubble session |
+| Method | Endpoint        | Description                           |
+| ------ | --------------- | ------------------------------------- |
+| `GET`  | `/health`       | Liveness check                        |
+| `GET`  | `/health/ready` | Readiness check (503 during shutdown) |
+| `GET`  | `/metrics`      | Prometheus metrics                    |
+| `GET`  | `/places`       | List active places                    |
+| `POST` | `/places`       | Create a new place                    |
+| `GET`  | `/places/:id`   | Get place details                     |
+| `WS`   | `/ws/place/:id` | Real-time bubble session              |
 
 ### WebSocket Messages
 
@@ -169,16 +176,16 @@ cd apps/web && pnpm dev
 
 Built-in Prometheus metrics at `GET /metrics`:
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `http_requests_total` | counter | HTTP requests by method, path, status |
-| `http_request_duration_seconds` | histogram | Response time with standard buckets |
-| `ws_connections_active` | gauge | Current WebSocket connections |
-| `ws_connections_total` | counter | Total WS connections since start |
-| `bubbles_blown_total` | counter | Bubbles created (by size) |
-| `bubbles_popped_total` | counter | Bubbles popped |
-| `bubbles_expired_total` | counter | Bubbles expired |
-| `rooms_active` | gauge | Active rooms |
+| Metric                          | Type      | Description                           |
+| ------------------------------- | --------- | ------------------------------------- |
+| `http_requests_total`           | counter   | HTTP requests by method, path, status |
+| `http_request_duration_seconds` | histogram | Response time with standard buckets   |
+| `ws_connections_active`         | gauge     | Current WebSocket connections         |
+| `ws_connections_total`          | counter   | Total WS connections since start      |
+| `bubbles_blown_total`           | counter   | Bubbles created (by size)             |
+| `bubbles_popped_total`          | counter   | Bubbles popped                        |
+| `bubbles_expired_total`         | counter   | Bubbles expired                       |
+| `rooms_active`                  | gauge     | Active rooms                          |
 
 ---
 
@@ -186,23 +193,30 @@ Built-in Prometheus metrics at `GET /metrics`:
 
 Deployed on Kubernetes via ArgoCD with GitOps (IaC repo).
 
-| Feature | Detail |
-|---------|--------|
-| **Rolling updates** | `maxSurge: 1`, `maxUnavailable: 0` |
-| **Graceful shutdown** | SIGTERM → WS close 1012 → 2s drain → exit |
-| **Client reconnect** | Close code 1012 triggers immediate reconnect (no backoff) |
-| **Readiness probe** | `/health/ready` returns 503 during shutdown |
-| **Pre-stop hook** | `sleep 5` for K8s endpoint propagation |
-| **Replicas** | 2 server pods for high availability |
+The application implements the behavior below, while the Deployment, Service, Ingress, Redis HA,
+probes, rollout strategy, and rollback controls live in the external IaC repository and must be
+verified from rendered manifests before release.
+
+| Contract                     | Detail                                                     |
+| ---------------------------- | ---------------------------------------------------------- |
+| **Required rolling updates** | `maxSurge: 1`, `maxUnavailable: 0`                         |
+| **Graceful shutdown**        | SIGTERM → WS close 1012 → 2s drain → exit                  |
+| **Client reconnect**         | Close code 1012 triggers reconnect with 200–1500 ms jitter |
+| **Readiness probe**          | `/health/ready` returns 503 during shutdown                |
+| **Required pre-stop hook**   | `sleep 5` for K8s endpoint propagation                     |
+| **Required replicas**        | At least 2 server pods for high availability               |
+
+See the [production operations contract](docs/operations.md) for probe values, Redis durability and
+failure behavior, external IaC release gates, smoke tests, and rollback.
 
 ---
 
 ## Rate Limits
 
-| Action | Authenticated | Anonymous |
-|--------|--------------|-----------|
-| Blow / Pop | 300 | 200 |
-| Create Place | 20 | 5 |
+| Action       | Authenticated | Anonymous |
+| ------------ | ------------- | --------- |
+| Blow / Pop   | 300           | 200       |
+| Create Place | 20            | 5         |
 
 ---
 
@@ -211,6 +225,9 @@ Deployed on Kubernetes via ArgoCD with GitOps (IaC repo).
 ```bash
 pnpm build        # builds all packages via Turborepo
 ```
+
+Build with Node.js 22 or 24 (`.nvmrc` selects 22). Node 26 is excluded until Tailwind replaces its
+deprecated `module.register()` loader integration; see the operations contract for traced evidence.
 
 ---
 

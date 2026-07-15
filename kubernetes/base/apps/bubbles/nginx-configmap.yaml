@@ -8,18 +8,45 @@ data:
   default.conf: |
     server {
         listen 80;
+        server_tokens off;
         root /usr/share/nginx/html;
         index index.html;
+        set $bubbles_csp "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' https://*.googletagmanager.com; connect-src 'self' https://api.jiun.dev https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com wss://bubbles.jiun.dev ws://localhost:8080 ws://127.0.0.1:8080; img-src 'self' data: blob: https://*.google-analytics.com https://*.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; frame-src 'none'";
 
-        # SPA fallback — serve index.html for client-side routes
+        # Default-deny browser policy. GA is consent-gated in the app; AdSense
+        # domains stay excluded until a certified CMP integration is deployed.
+        add_header Content-Security-Policy $bubbles_csp always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(self), microphone=(), geolocation=()" always;
+
+        # SPA fallback — never cache the entry point across deployments.
         location / {
             try_files $uri $uri/ /index.html;
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+            add_header Content-Security-Policy $bubbles_csp always;
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header X-Frame-Options "DENY" always;
+            add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+            add_header Permissions-Policy "camera=(self), microphone=(), geolocation=()" always;
+        }
+
+        location = /index.html {
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+            add_header Content-Security-Policy $bubbles_csp always;
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header X-Frame-Options "DENY" always;
+            add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+            add_header Permissions-Policy "camera=(self), microphone=(), geolocation=()" always;
         }
 
         # Cache static assets (Vite hashed filenames)
         location /assets/ {
             expires 1y;
             add_header Cache-Control "public, immutable";
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header Referrer-Policy "strict-origin-when-cross-origin" always;
         }
 
         # No proxy_pass directives — in K8s, the Ingress routes

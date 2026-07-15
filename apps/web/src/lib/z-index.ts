@@ -3,7 +3,7 @@
  *
  * Hierarchy (lowest to highest):
  *   BACKGROUND / CAMERA_FEED < CONTENT < HEADER < PANEL < DROPDOWN
- *   < UI_CONTROLS < TOAST < ONBOARDING
+ *   < UI_CONTROLS < TOAST < ONBOARDING < PRIVACY
  */
 export const Z_INDEX = {
   /** Camera feed background (AR mode) */
@@ -30,4 +30,8 @@ export const Z_INDEX = {
   CANVAS_CAMERA: 1,
   /** Onboarding overlay — must be above everything */
   ONBOARDING: 20000,
+  /** Persistent privacy-settings shortcut */
+  PRIVACY_BUTTON: 20001,
+  /** Privacy banner and settings dialog */
+  PRIVACY: 30000,
 } as const;

@@ -1,6 +1,7 @@
 services:
   mongo:
     image: mongo:7
+    restart: unless-stopped
     volumes:
       - mongo-data:/data/db
     healthcheck:
@@ -8,41 +9,89 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    command:
+      ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   server:
     build:
       context: .
       dockerfile: apps/server/Dockerfile
     ports:
-      - "3002:3001"
+      # A host-port range lets Compose allocate one port per replica.
+      - '3002-3003:3001'
+    restart: unless-stopped
+    stop_signal: SIGTERM
+    stop_grace_period: 15s
     environment:
-      PORT: "3001"
-      MONGO_URI: "mongodb://mongo:27017/bubbles"
-      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required}"
-      SESSION_SECRET: "${SESSION_SECRET:?SESSION_SECRET is required}"
-      CORS_ORIGINS: "http://localhost:8080,http://localhost:5173,https://bubbles.jiun.dev"
-      NODE_ENV: "production"
+      PORT: '3001'
+      MONGO_URI: 'mongodb://mongo:27017/bubbles'
+      REDIS_URL: 'redis://redis:6379'
+      JWT_SECRET: '${JWT_SECRET:?JWT_SECRET is required}'
+      SESSION_SECRET: '${SESSION_SECRET:?SESSION_SECRET is required}'
+      OWNER_ID_SECRET: '${OWNER_ID_SECRET:-${SESSION_SECRET:?SESSION_SECRET is required}}'
+      CORS_ORIGINS: 'http://localhost:8080,http://localhost:5173,https://bubbles.jiun.dev'
+      NODE_ENV: 'production'
     depends_on:
       mongo:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bun',
+          '-e',
+          "const r=await fetch('http://127.0.0.1:3001/health/ready');process.exit(r.ok?0:1)",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    deploy:
+      replicas: 2
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
     ports:
-      - "8080:80"
+      - '8080:80'
+    restart: unless-stopped
     depends_on:
-      - server
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1/ >/dev/null || exit 1']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   tunnel:
     image: cloudflare/cloudflared:latest
+    profiles: ['tunnel']
     command: tunnel --no-autoupdate run
     environment:
-      TUNNEL_TOKEN: "${CLOUDFLARE_TUNNEL_TOKEN}"
+      TUNNEL_TOKEN: '${CLOUDFLARE_TUNNEL_TOKEN}'
     depends_on:
-      - web
+      web:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   mongo-data:
+  redis-data:

@@ -1,10 +1,10 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { trackEvent } from '@/lib/analytics';
+import { normalizeAnalyticsErrorType, trackEvent } from '@/lib/analytics';
 import i18n from '@/i18n';
 
 function reportError(error: Error, componentStack?: string | null) {
   trackEvent('exception', {
-    description: error.message,
+    error_type: normalizeAnalyticsErrorType(error.name),
     fatal: true,
   });
   if (import.meta.env.DEV) {

@@ -12,6 +12,7 @@ interface PlaceDoc {
   name: string;
   theme: string;
   createdBy: string;
+  ownerId?: string;
   totalVisitors: number;
   totalBubbles: number;
   createdAt: Date;
@@ -22,12 +23,23 @@ interface PlaceDoc {
 const places = new Hono();
 
 places.use('*', authMiddleware);
+places.use('*', async (c, next) => {
+  await next();
+  c.header('Cache-Control', 'private, no-store');
+  c.header('Vary', 'Authorization, Cookie');
+});
 
 // GET /places - list active places
 places.get('/', async (c) => {
+  const user = c.get('user');
   const col = getCollection<PlaceDoc>('places');
   const docs = await col
-    .find({ $or: [{ deleteAfter: { $exists: false } }, { deleteAfter: { $gt: new Date() } }] })
+    .find({
+      $or: [
+        { deleteAfter: { $exists: false } },
+        { deleteAfter: { $gt: new Date() } },
+      ],
+    })
     .sort({ lastActivityAt: -1 })
     .limit(100)
     .toArray();
@@ -43,6 +55,9 @@ places.get('/', async (c) => {
       name: doc.name,
       theme: doc.theme || 'rooftop',
       createdBy: doc.createdBy,
+      isOwnedByCurrentUser: doc.ownerId
+        ? doc.ownerId === user.ownerId
+        : user.isAuthenticated && doc.createdBy === user.displayName,
       userCount: userCounts.get(id) ?? 0,
       bubbleCount: 0,
       totalVisitors: doc.totalVisitors || 0,
@@ -65,12 +80,20 @@ places.post('/', rateLimiterMiddleware('createPlace'), async (c) => {
   }
 
   // Sanitize: trim, truncate, strip HTML and control characters
-  const name = body.name.trim().slice(0, MAX_PLACE_NAME_LENGTH).replace(/[<>&"']/g, '').replace(/[\x00-\x1f\x7f-\x9f]/g, '');
+  const name = body.name
+    .trim()
+    .slice(0, MAX_PLACE_NAME_LENGTH)
+    .replace(/[<>&"']/g, '')
+    .replace(/[\x00-\x1f\x7f-\x9f]/g, '');
   const validThemes = ['rooftop', 'park', 'alley'];
-  const theme = validThemes.includes(body.theme ?? '') ? body.theme! : 'rooftop';
+  const theme = validThemes.includes(body.theme ?? '')
+    ? body.theme!
+    : 'rooftop';
   if (name.length === 0 || name.length > MAX_PLACE_NAME_LENGTH) {
     return c.json(
-      { error: `Name must be between 1 and ${MAX_PLACE_NAME_LENGTH} characters` },
+      {
+        error: `Name must be between 1 and ${MAX_PLACE_NAME_LENGTH} characters`,
+      },
       400
     );
   }
@@ -92,6 +115,7 @@ places.post('/', rateLimiterMiddleware('createPlace'), async (c) => {
     name,
     theme,
     createdBy: user.displayName,
+    ownerId: user.ownerId,
     totalVisitors: 0,
     totalBubbles: 0,
     createdAt: now,
@@ -100,7 +124,10 @@ places.post('/', rateLimiterMiddleware('createPlace'), async (c) => {
 
   const placeId = result.insertedId.toHexString();
 
-  await logAction('create_place', placeId, user.sessionId, user, { name, theme });
+  await logAction('create_place', placeId, user.sessionId, user, {
+    name,
+    theme,
+  });
 
   return c.json(
     {
@@ -108,6 +135,7 @@ places.post('/', rateLimiterMiddleware('createPlace'), async (c) => {
       name,
       theme,
       createdBy: user.displayName,
+      isOwnedByCurrentUser: true,
       userCount: 0,
       bubbleCount: 0,
       totalVisitors: 0,
@@ -122,6 +150,7 @@ places.post('/', rateLimiterMiddleware('createPlace'), async (c) => {
 // GET /places/:placeId - get single place
 places.get('/:placeId', async (c) => {
   const placeId = c.req.param('placeId');
+  const user = c.get('user');
 
   let objectId: ObjectId;
   try {
@@ -141,6 +170,9 @@ places.get('/:placeId', async (c) => {
     name: doc.name,
     theme: doc.theme || 'rooftop',
     createdBy: doc.createdBy,
+    isOwnedByCurrentUser: doc.ownerId
+      ? doc.ownerId === user.ownerId
+      : user.isAuthenticated && doc.createdBy === user.displayName,
     userCount: await getRoomUserCountAsync(placeId),
     bubbleCount: 0,
     totalVisitors: doc.totalVisitors || 0,

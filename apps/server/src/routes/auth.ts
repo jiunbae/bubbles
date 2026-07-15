@@ -7,11 +7,14 @@ const TICKET_TTL_SEC = 30;
 const TICKET_PREFIX = 'ws-ticket:';
 
 interface TicketData {
-  userId: string | undefined;
+  userId: string;
   displayName: string;
 }
 
-export async function createTicket(userId: string | undefined, displayName: string): Promise<string> {
+export async function createTicket(
+  userId: string,
+  displayName: string
+): Promise<string> {
   const ticket = crypto.randomUUID();
   const data = JSON.stringify({ userId, displayName });
 
@@ -20,13 +23,18 @@ export async function createTicket(userId: string | undefined, displayName: stri
     await redis.set(`${TICKET_PREFIX}${ticket}`, data, 'EX', TICKET_TTL_SEC);
   } else {
     // Fallback: in-memory (single-instance only)
-    fallbackTickets.set(ticket, { data, expiresAt: Date.now() + TICKET_TTL_SEC * 1000 });
+    fallbackTickets.set(ticket, {
+      data,
+      expiresAt: Date.now() + TICKET_TTL_SEC * 1000,
+    });
   }
 
   return ticket;
 }
 
-export async function consumeTicket(ticket: string): Promise<TicketData | null> {
+export async function consumeTicket(
+  ticket: string
+): Promise<TicketData | null> {
   const redis = getRedis();
   if (redis) {
     // Atomic get-and-delete
@@ -65,9 +73,17 @@ auth.post('/ws-ticket', async (c) => {
   try {
     const secret = new TextEncoder().encode(config.JWT_SECRET);
     const { payload } = await jose.jwtVerify(token, secret);
-    const userId = payload.sub;
-    const rawName = (payload.name as string) || (payload.username as string) || 'User';
-    const displayName = rawName.trim().slice(0, 30).replace(/[<>&"']/g, '').replace(/[\x00-\x1f\x7f-\x9f]/g, '');
+    const userId = typeof payload.sub === 'string' ? payload.sub.trim() : '';
+    if (!userId) {
+      return c.json({ error: 'Token is missing a subject' }, 401);
+    }
+    const rawName =
+      (payload.name as string) || (payload.username as string) || 'User';
+    const displayName = rawName
+      .trim()
+      .slice(0, 30)
+      .replace(/[<>&"']/g, '')
+      .replace(/[\x00-\x1f\x7f-\x9f]/g, '');
 
     const ticket = await createTicket(userId, displayName);
     return c.json({ ticket });

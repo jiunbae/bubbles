@@ -5,7 +5,8 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "test": "bun test --pass-with-no-tests",
+    "build": "tsc -b",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

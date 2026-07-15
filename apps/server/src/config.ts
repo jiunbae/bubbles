@@ -12,6 +12,8 @@ export const config = {
   REDIS_URL: process.env.REDIS_URL || '',
   JWT_SECRET: requireEnv('JWT_SECRET'),
   SESSION_SECRET: requireEnv('SESSION_SECRET'),
+  // Keep this value stable: it pseudonymizes durable place ownership IDs.
+  OWNER_ID_SECRET: process.env.OWNER_ID_SECRET || requireEnv('SESSION_SECRET'),
   CORS_ORIGINS: process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
     : ['http://localhost:5173'],

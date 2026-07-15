@@ -5,12 +5,13 @@ import { PLACE_INACTIVE_TIMEOUT } from '@bubbles/shared';
 import { getCollection } from '../db/mongo';
 import { ObjectId } from 'mongodb';
 import { setGauge, incCounter } from '../metrics';
-import { getRedis, isRedisEnabled } from '../db/redis';
+import { getRedis } from '../db/redis';
 import { config } from '../config';
 import { publishToRoom, subscribeRoom, unsubscribeRoom, setPubSubHandler, setRemoteBubbleHandler } from './pubsub';
 import { createLogger } from '../logger';
 
 const log = createLogger('rooms');
+const REDIS_MEMBER_STALE_TIMEOUT = 2 * 60 * 1000;
 
 /** Validate placeId is a 24-character hex string (MongoDB ObjectId format). */
 export function isValidPlaceId(id: string): boolean {
@@ -71,12 +72,13 @@ async function redisAddMember(placeId: string, sessionId: string, user: BubblesU
   const redis = getRedis();
   if (!redis) return;
   try {
-    const info: UserInfo & { podId: string } = {
+    const info: UserInfo & { podId: string; lastSeenAt: number } = {
       sessionId: user.sessionId,
       displayName: user.displayName,
       isAuthenticated: user.isAuthenticated,
       color: user.color,
       podId: config.POD_ID,
+      lastSeenAt: Date.now(),
     };
     await redis.hset(memberKey(placeId), sessionId, JSON.stringify(info));
   } catch (err) {
@@ -297,8 +299,26 @@ export async function leaveRoom(placeId: string, sessionId: string): Promise<voi
 
   // Unsubscribe + cleanup if room is empty locally
   if (room.clients.size === 0) {
-    unsubscribeRoom(placeId);
-    markPlaceForDeletion(placeId);
+    await unsubscribeRoom(placeId);
+
+    const redis = getRedis();
+    if (!redis) {
+      // Single-pod/local fallback: local emptiness is authoritative.
+      await markPlaceForDeletion(placeId);
+    } else {
+      try {
+        // In multi-pod mode, never schedule deletion while another pod still
+        // has a member in the room.
+        const globalMemberCount = await redis.hlen(memberKey(placeId));
+        if (globalMemberCount === 0) await markPlaceForDeletion(placeId);
+      } catch (err) {
+        // Fail safe: a transient Redis error must not schedule a live room for deletion.
+        log.error('Failed to confirm global room emptiness', {
+          placeId,
+          err: String(err),
+        });
+      }
+    }
   }
 }
 
@@ -495,28 +515,38 @@ export async function cleanupRedisStaleEntries(): Promise<void> {
   try {
     const pipeline = redis.pipeline();
     let pipelineOps = 0;
+    const now = Date.now();
+    const staleMembers: Array<{ placeId: string; sessionId: string }> = [];
 
     // Find all room member keys using SCAN (non-blocking)
     const memberKeys = await redisScanKeys(redis, 'room:*:members');
     for (const key of memberKeys) {
+      const placeId = key.match(/^room:(.+):members$/)?.[1];
+      if (!placeId) continue;
       const members = await redis.hgetall(key);
       for (const [sessionId, data] of Object.entries(members)) {
         const parsed = JSON.parse(data);
-        if (parsed.podId === config.POD_ID) {
-          const placeId = key.match(/^room:(.+):members$/)?.[1];
-          if (!placeId) continue;
-          const room = rooms.get(placeId);
-          if (!room || !room.clients.has(sessionId)) {
-            pipeline.hdel(key, sessionId);
-            pipelineOps++;
-          }
+        if (typeof parsed.lastSeenAt !== 'number') {
+          // One-time rolling-upgrade migration for records written before
+          // heartbeat timestamps existed. A later cleanup will expire it if
+          // no ping refreshes the record.
+          pipeline.hset(
+            key,
+            sessionId,
+            JSON.stringify({ ...parsed, lastSeenAt: now }),
+          );
+          pipelineOps++;
+        } else if (now - parsed.lastSeenAt > REDIS_MEMBER_STALE_TIMEOUT) {
+          // Timestamp is global, so crashed pods' records are cleaned too.
+          pipeline.hdel(key, sessionId);
+          staleMembers.push({ placeId, sessionId });
+          pipelineOps++;
         }
       }
     }
 
     // Clean up expired bubbles using SCAN
     const bubbleKeys = await redisScanKeys(redis, 'room:*:bubbles');
-    const now = Date.now();
     for (const key of bubbleKeys) {
       const bubbles = await redis.hgetall(key);
       for (const [bubbleId, data] of Object.entries(bubbles)) {
@@ -531,6 +561,24 @@ export async function cleanupRedisStaleEntries(): Promise<void> {
     if (pipelineOps > 0) {
       await pipeline.exec();
       log.info('Redis cleanup executed', { ops: pipelineOps });
+
+      // A crashed pod cannot emit normal close events. Recreate those events
+      // after its stale records are removed so connected clients converge.
+      for (const { placeId, sessionId } of staleMembers) {
+        broadcastToRoom(placeId, {
+          type: 'user_left',
+          ts: now,
+          data: { sessionId },
+        });
+      }
+
+      // If stale-member cleanup emptied a room globally, apply the same
+      // deletion policy as a normal last-member leave.
+      for (const placeId of new Set(staleMembers.map((member) => member.placeId))) {
+        if (await redis.hlen(memberKey(placeId)) === 0) {
+          await markPlaceForDeletion(placeId);
+        }
+      }
     }
   } catch (err) {
     log.error('Redis cleanup failed', { err: String(err) });

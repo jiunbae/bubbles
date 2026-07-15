@@ -14,9 +14,6 @@ interface SheetTabsProps {
 export function SheetTabs({
   activeTab,
   onTabChange,
-  onlineUsers,
-  places,
-  onSwitchPlace,
 }: SheetTabsProps) {
   const { t } = useTranslation();
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; tab: number } | null>(null);

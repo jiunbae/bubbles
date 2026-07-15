@@ -95,7 +95,7 @@ export function PlacePage() {
         showToast(t('place.linkCopied', 'Link copied!'), 'success');
         analytics.share('clipboard_fallback');
       } catch {
-        // Clipboard also failed — silently ignore
+        showToast(t('place.shareFailed'), 'error');
       }
     }
   }, [currentPlace, t]);
@@ -207,11 +207,15 @@ export function PlacePage() {
             className={`inline-block h-2 w-2 shrink-0 rounded-full ${
               connectionStatus === 'connected'
                 ? 'bg-success'
-                : connectionStatus === 'connecting'
+                : connectionStatus === 'connecting' || connectionStatus === 'reconnecting'
                   ? 'bg-bubble-yellow animate-pulse'
                   : 'bg-error'
             }`}
-            title={connectionStatus}
+            role="status"
+            aria-label={t('place.connectionState', {
+              status: t(`place.connection.${connectionStatus}`),
+            })}
+            title={t(`place.connection.${connectionStatus}`)}
           />
           <ModeSwitch />
         </div>
@@ -223,7 +227,11 @@ export function PlacePage() {
             <div className="hidden items-center gap-1.5 sm:flex">
               <div className="relative">
                 <button
-                  onClick={() => setShowColorPicker((v) => !v)}
+                  onClick={() => {
+                    setShowUsers(false);
+                    setShowMoreMenu(false);
+                    setShowColorPicker((v) => !v);
+                  }}
                   className="h-4 w-4 rounded-full border-2 border-white/30 transition-transform hover:scale-125 active:scale-95"
                   style={{ backgroundColor: myUser.color }}
                   title={t('place.changeColor', 'Change bubble color')}
@@ -233,7 +241,7 @@ export function PlacePage() {
                 {showColorPicker && (
                   <div className="absolute left-0 top-full mt-2 rounded-lg border border-border bg-bg-card p-2 shadow-lg" style={{ zIndex: Z_INDEX.DROPDOWN }}>
                     <div className="grid grid-cols-4 gap-1.5">
-                      {BUBBLE_COLORS.map((color) => (
+                      {BUBBLE_COLORS.map((color, index) => (
                         <button
                           key={color}
                           onClick={() => {
@@ -244,6 +252,8 @@ export function PlacePage() {
                             myUser.color === color ? 'border-white scale-110' : 'border-transparent'
                           }`}
                           style={{ backgroundColor: color }}
+                          aria-label={t('place.selectColorOption', { index: index + 1 })}
+                          aria-pressed={myUser.color === color}
                         />
                       ))}
                     </div>
@@ -340,7 +350,17 @@ export function PlacePage() {
 
           {/* Online users */}
           <div className="relative">
-            <button onClick={() => setShowUsers(!showUsers)} className="flex items-center gap-1 rounded-md p-1.5" title={t('place.onlineUsers')} aria-label={t('place.onlineUsers')} aria-pressed={showUsers}>
+            <button
+              onClick={() => {
+                setShowMoreMenu(false);
+                setShowColorPicker(false);
+                setShowUsers(!showUsers);
+              }}
+              className="flex items-center gap-1 rounded-md p-1.5"
+              title={t('place.onlineUsers')}
+              aria-label={t('place.onlineUsers')}
+              aria-pressed={showUsers}
+            >
               <span className="text-xs text-text-secondary">{onlineUsers.length}</span>
               <div className="flex -space-x-1">
                 {onlineUsers.slice(0, 4).map((user) => (
@@ -372,6 +392,8 @@ export function PlacePage() {
                         onClick={() => setShowColorPicker((v) => !v)}
                         className="h-4 w-4 shrink-0 rounded-full border-2 border-white/30"
                         style={{ backgroundColor: myUser.color }}
+                        aria-label={t('place.changeColor')}
+                        aria-pressed={showColorPicker}
                       />
                       {isEditingName ? (
                         <input
@@ -394,7 +416,7 @@ export function PlacePage() {
                     </div>
                     {showColorPicker && (
                       <div className="mt-2 grid grid-cols-4 gap-1.5">
-                        {BUBBLE_COLORS.map((color) => (
+                        {BUBBLE_COLORS.map((color, index) => (
                           <button
                             key={color}
                             onClick={() => {
@@ -405,6 +427,8 @@ export function PlacePage() {
                               myUser.color === color ? 'border-white scale-110' : 'border-transparent'
                             }`}
                             style={{ backgroundColor: color }}
+                            aria-label={t('place.selectColorOption', { index: index + 1 })}
+                            aria-pressed={myUser.color === color}
                           />
                         ))}
                       </div>
@@ -430,7 +454,11 @@ export function PlacePage() {
           {/* More menu (overflow) — groups less-used actions */}
           <div className="relative" ref={moreMenuRef}>
             <button
-              onClick={() => setShowMoreMenu((v) => !v)}
+              onClick={() => {
+                setShowUsers(false);
+                setShowColorPicker(false);
+                setShowMoreMenu((v) => !v);
+              }}
               className="rounded-md p-1.5 text-text-secondary transition-colors hover:bg-bg-secondary hover:text-text-primary sm:p-2"
               title={t('common.more', 'More')}
               aria-label={t('common.more', 'More')}
@@ -536,7 +564,6 @@ export function PlacePage() {
         {/* Activity log sidebar */}
         {isLogOpen && (
           <ActivityLog
-            placeId={placeId!}
             onClose={() => setIsLogOpen(false)}
           />
         )}

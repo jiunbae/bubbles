@@ -63,7 +63,7 @@ function BubbleTooltip({ hoveredId, stateMapRef }: BubbleTooltipProps) {
     if (entry) {
       setDisplayName(entry.bubble.blownBy.displayName);
     }
-  }, [hoveredId]);
+  }, [hoveredId, stateMapRef]);
 
   useFrame(() => {
     if (!hoveredId) {

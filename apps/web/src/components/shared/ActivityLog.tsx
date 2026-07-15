@@ -5,7 +5,6 @@ import { usePlaceStore } from '@/stores/place-store';
 import { Z_INDEX } from '@/lib/z-index';
 
 interface ActivityLogProps {
-  placeId: string;
   onClose: () => void;
 }
 
@@ -19,7 +18,7 @@ interface LogEntry {
 const MAX_ENTRIES = 50;
 let _logId = 0;
 
-export function ActivityLog({ placeId: _placeId, onClose }: ActivityLogProps) {
+export function ActivityLog({ onClose }: ActivityLogProps) {
   const { t } = useTranslation();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -94,10 +93,12 @@ export function ActivityLog({ placeId: _placeId, onClose }: ActivityLogProps) {
   return (
     <>
       {/* Mobile overlay backdrop */}
-      <div
-        className="fixed inset-0 bg-black/40 md:hidden"
+      <button
+        type="button"
+        className="fixed inset-0 border-0 bg-black/40 p-0 md:hidden"
         style={{ zIndex: Z_INDEX.ACTIVITY_BACKDROP }}
         onClick={onClose}
+        aria-label={t('activity.closeSidebar')}
       />
 
       <aside

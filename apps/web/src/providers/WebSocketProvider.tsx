@@ -14,8 +14,11 @@ import { useUIStore } from '@/stores/ui-store';
 import { useCursorStore } from '@/stores/cursor-store';
 import { playPop, playJoin } from '@/lib/sounds';
 import { showToast } from '@/components/shared/Toast';
-import { clearBubbleTimeouts } from '@/hooks/useBubbles';
-import { clearExpiryTimers } from '@/components/visual/BubbleScene';
+import {
+  cancelBubbleExpiry,
+  clearBubbleExpiryTimers,
+  scheduleBubbleExpiry,
+} from '@/lib/bubble-expiry';
 import i18n from '@/i18n';
 
 const MILESTONE_THRESHOLDS = [100, 500, 1000, 5000] as const;
@@ -69,11 +72,13 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
       switch (msg.type) {
         case 'room_state': {
           // Clear local bubble expiry timers from previous room before loading new state
-          clearBubbleTimeouts();
-          clearExpiryTimers();
+          clearBubbleExpiryTimers();
           setMySessionId(msg.data.mySessionId);
           setOnlineUsers(msg.data.users);
           setBubbles(msg.data.bubbles);
+          for (const bubble of msg.data.bubbles) {
+            scheduleBubbleExpiry(bubble.bubbleId, bubble.expiresAt);
+          }
           // Reset milestone tracking for the new room
           totalBubbleCountRef.current = 0;
           shownMilestonesRef.current = new Set<number>();
@@ -96,14 +101,15 @@ export function WebSocketProvider({ children }: { children: ReactNode }) {
         }
         case 'bubble_created':
           addBubble(msg.data);
-          totalBubbleCountRef.current += 1;
-          checkMilestones();
+          scheduleBubbleExpiry(msg.data.bubbleId, msg.data.expiresAt);
           break;
         case 'bubble_popped':
+          cancelBubbleExpiry(msg.data.bubbleId);
           popBubble(msg.data.bubbleId);
           if (useUIStore.getState().isSoundEnabled) playPop();
           break;
         case 'bubble_expired':
+          cancelBubbleExpiry(msg.data.bubbleId);
           popBubble(msg.data.bubbleId);
           break;
         case 'user_joined':

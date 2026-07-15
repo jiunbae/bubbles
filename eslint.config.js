@@ -27,4 +27,11 @@ export default [
       'react/react-in-jsx-scope': 'off',
     },
   },
+  {
+    files: ['apps/web/src/components/visual/**/*.{ts,tsx}'],
+    rules: {
+      // React DOM validation does not understand React Three Fiber intrinsic elements.
+      'react/no-unknown-property': 'off',
+    },
+  },
 ];

@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useBubbles, blowBubbleRandom } from '@/hooks/useBubbles';
+import { useBubbles } from '@/hooks/useBubbles';
 import { globalWsClient } from '@/lib/ws-client';
+import { spawnBubble } from '@/lib/bubble-factory';
 import { useUIStore } from '@/stores/ui-store';
 import { useBubbleStore } from '@/stores/bubble-store';
 import { usePlaceStore } from '@/stores/place-store';
@@ -33,8 +34,6 @@ export function StealthMode() {
   const setSelectedPattern = useUIStore((s) => s.setSelectedPattern);
   const setMode = useUIStore((s) => s.setMode);
 
-  // Action log state
-  const [actionLog, setActionLog] = useState<ActionLogEntry[]>([]);
   const [spreadsheetRows, setSpreadsheetRows] = useState<SpreadsheetRow[]>([]);
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: string } | null>(null);
   const [activeTab, setActiveTab] = useState(0);
@@ -46,6 +45,13 @@ export function StealthMode() {
   const initializedRef = useRef(false);
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Flash "Calculating..." briefly
+  const flashCalculating = useCallback(() => {
+    setIsCalculating(true);
+    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
+    flashTimeoutRef.current = setTimeout(() => setIsCalculating(false), 800);
+  }, []);
+
   // Initialize from existing bubbles on mount
   useEffect(() => {
     if (initializedRef.current) return;
@@ -54,7 +60,6 @@ export function StealthMode() {
     const existing = Array.from(bubblesMap.values());
     if (existing.length > 0) {
       const entries = existing.map(bubbleToActionEntry);
-      setActionLog(entries);
       setSpreadsheetRows(entries.map(actionToRow));
       prevBubbleIdsRef.current = new Set(existing.map((b) => b.bubbleId));
     }
@@ -70,7 +75,6 @@ export function StealthMode() {
     for (const b of bubbles) {
       if (!prevIds.has(b.bubbleId)) {
         const entry = bubbleToActionEntry(b);
-        setActionLog((prev) => [...prev, entry]);
         setSpreadsheetRows((prev) => [...prev, actionToRow(entry)]);
         setNewRowId(b.bubbleId);
         flashCalculating();
@@ -87,7 +91,6 @@ export function StealthMode() {
           userName: 'System',
           bubbleId: id,
         };
-        setActionLog((prev) => [...prev, entry]);
         setSpreadsheetRows((prev) => [...prev, actionToRow(entry)]);
         setNewRowId(entry.id);
         flashCalculating();
@@ -95,7 +98,7 @@ export function StealthMode() {
     }
 
     prevBubbleIdsRef.current = currentIds;
-  }, [bubbles]);
+  }, [bubbles, flashCalculating]);
 
   // Watch for user join/leave
   useEffect(() => {
@@ -110,7 +113,6 @@ export function StealthMode() {
           kind: 'join',
           userName: u.displayName,
         };
-        setActionLog((prev) => [...prev, entry]);
         setSpreadsheetRows((prev) => [...prev, actionToRow(entry)]);
         setNewRowId(entry.id);
       }
@@ -124,7 +126,6 @@ export function StealthMode() {
           kind: 'leave',
           userName: id.slice(0, 8),
         };
-        setActionLog((prev) => [...prev, entry]);
         setSpreadsheetRows((prev) => [...prev, actionToRow(entry)]);
         setNewRowId(entry.id);
       }
@@ -133,20 +134,17 @@ export function StealthMode() {
     prevUserIdsRef.current = currentIds;
   }, [onlineUsers]);
 
-  // Flash "Calculating..." briefly
-  const flashCalculating = useCallback(() => {
-    setIsCalculating(true);
-    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
-    flashTimeoutRef.current = setTimeout(() => setIsCalculating(false), 800);
-  }, []);
-
   // Blow bubble handler
   const handleBlowBubble = useCallback(() => {
-    blowBubbleRandom(selectedColor);
-    if (globalWsClient.isConnected()) {
-      globalWsClient.send({ type: 'blow', data: { size: 'M', color: selectedColor, pattern: 'plain' } });
-    }
-    flashCalculating();
+    const angle = Math.random() * Math.PI * 2;
+    const spread = Math.random() * 2.5;
+    const bubble = spawnBubble(
+      Math.cos(angle) * spread,
+      0.2 + Math.random() * 0.5,
+      Math.sin(angle) * spread,
+      selectedColor,
+    );
+    if (bubble) flashCalculating();
   }, [selectedColor, flashCalculating]);
 
   // Pop bubble handler
@@ -192,7 +190,7 @@ export function StealthMode() {
       A: 'timestamp', B: 'status', C: 'assignee', D: 'task', E: 'priority', F: 'category', G: 'notes',
     };
     return dataRow[colMap[selectedCell.col]] ?? '';
-  }, [selectedCell, spreadsheetRows]);
+  }, [selectedCell, spreadsheetRows, t]);
 
   // Cleanup flash timeout on unmount
   useEffect(() => {

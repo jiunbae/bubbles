@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url("https://fonts.bunny.net/css?family=jetbrains-mono:400,500,600,700");
 
 @theme {
   --color-bubble-pink: #FFB5C2;
@@ -71,15 +70,6 @@ body {
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background-color: var(--color-border);
   border-radius: 3px;
-}
-
-@keyframes slideUp {
-  from { transform: translate(-50%, 100%); opacity: 0; }
-  to { transform: translate(-50%, 0); opacity: 1; }
-}
-
-.animate-slide-up {
-  animation: slideUp 0.3s ease-out;
 }
 
 @keyframes slideUp {

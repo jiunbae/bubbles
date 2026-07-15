@@ -9,7 +9,7 @@ const THROTTLE_MS = 100;
  * throttled to ~100ms to match server-side throttle.
  */
 export function CursorSender() {
-  const { pointer, gl } = useThree();
+  const { gl } = useThree();
   const { send, connectionStatus } = useWebSocket();
   const lastSentRef = useRef(0);
   const lastXRef = useRef<number | null>(null);

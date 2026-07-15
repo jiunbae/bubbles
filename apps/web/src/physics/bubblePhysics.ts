@@ -194,7 +194,7 @@ export function updateBubble(
   }
 
   // 5. Semi-implicit Euler integration (velocity updated first, then position)
-  let newPx = px + vx * dt;
+  const newPx = px + vx * dt;
   let newPy = py + vy * dt;
   const newPz = pz + vz * dt;
 

@@ -44,11 +44,15 @@ function CameraLighting({ sunPosition }: { sunPosition: [number, number, number]
   );
 }
 
-/** Manages scene.background — sets it to a color */
-function SceneBackground({ color }: { color: THREE.Color }) {
+/** Manages scene.background and restores the previous value on cleanup. */
+function SceneBackground({ color }: { color: THREE.Color | null }) {
   const { scene } = useThree();
   useEffect(() => {
+    const previous = scene.background;
     scene.background = color;
+    return () => {
+      scene.background = previous;
+    };
   }, [color, scene]);
   return null;
 }
@@ -170,7 +174,7 @@ function RooftopEnvironment({ time }: { time: TimeColors }) {
 
         {/* Water tower silhouette */}
         <group position={[6, -1, -5]}>
-          {[[-0.3, 0, -0.3], [0.3, 0, -0.3], [-0.3, 0, 0.3], [0.3, 0, 0.3]].map(([x, _, z], i) => (
+          {[[-0.3, 0, -0.3], [0.3, 0, -0.3], [-0.3, 0, 0.3], [0.3, 0, 0.3]].map(([x, , z], i) => (
             <mesh key={i} position={[x, 0.8, z]}>
               <cylinderGeometry args={[0.03, 0.03, 1.6, 4]} />
               <meshStandardMaterial color="#444" roughness={0.8} />
@@ -489,11 +493,11 @@ function AlleyEnvironment({ time }: { time: TimeColors }) {
 export function SkyEnvironment({ theme = 'rooftop', cameraMode }: SkyEnvironmentProps) {
   const time = useTimeOfDay();
 
-  // In camera/AR mode, skip theme geometry — just clear the background and add neutral lighting
+  // In camera/AR mode, skip theme geometry and keep the canvas transparent over the video feed.
   if (cameraMode) {
     return (
       <>
-        <SceneBackground color={new THREE.Color('#000000')} />
+        <SceneBackground color={null} />
         <CameraLighting sunPosition={time.sunPosition} />
         <GroundPlane />
       </>

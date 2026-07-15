@@ -107,8 +107,9 @@ function serialize(): string {
     for (const [key, entry] of map) {
       const labelPrefix = key ? `${key},` : '';
       for (let i = 0; i < histogramBuckets.length; i++) {
-        const cumulative = entry.buckets.slice(0, i + 1).reduce((a, b) => a + b, 0);
-        lines.push(`${name}_bucket{${labelPrefix}le="${histogramBuckets[i]}"} ${cumulative}`);
+        // observeHistogram already increments every matching upper-bound bucket,
+        // so each stored value is cumulative and must not be summed again here.
+        lines.push(`${name}_bucket{${labelPrefix}le="${histogramBuckets[i]}"} ${entry.buckets[i]}`);
       }
       lines.push(`${name}_bucket{${labelPrefix}le="+Inf"} ${entry.count}`);
       lines.push(`${name}_sum{${key}} ${entry.sum}`);

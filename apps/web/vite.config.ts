@@ -26,14 +26,34 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'three-core': ['three'],
-          r3f: [
-            '@react-three/fiber',
-            '@react-three/drei',
-            '@react-three/postprocessing',
-          ],
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+        manualChunks(id) {
+          if (id.includes('vite/preload-helper')) {
+            return 'vendor';
+          }
+          if (id.includes('/node_modules/three/')) {
+            return 'three-core';
+          }
+          if (
+            id.includes('/node_modules/@react-three/') ||
+            id.includes('/node_modules/postprocessing/')
+          ) {
+            return 'r3f';
+          }
+          if (
+            id.includes('/node_modules/react/') ||
+            id.includes('/node_modules/react-dom/') ||
+            id.includes('/node_modules/react-router/') ||
+            id.includes('/node_modules/react-router-dom/') ||
+            id.includes('/node_modules/i18next/') ||
+            id.includes('/node_modules/i18next-browser-languagedetector/') ||
+            id.includes('/node_modules/react-i18next/') ||
+            id.includes('/node_modules/zustand/') ||
+            id.includes('/node_modules/scheduler/') ||
+            id.includes('/node_modules/use-sync-external-store/') ||
+            id.includes('/node_modules/@remix-run/')
+          ) {
+            return 'vendor';
+          }
         },
       },
     },

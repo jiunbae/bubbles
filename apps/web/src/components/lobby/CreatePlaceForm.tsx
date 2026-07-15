@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { createPlace } from '@/lib/api';
@@ -14,6 +14,11 @@ export function CreatePlaceForm() {
   const [theme, setTheme] = useState<PlaceTheme>('rooftop');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) nameInputRef.current?.focus();
+  }, [isOpen]);
 
   const trimmedName = name.trim();
   const isValid = trimmedName.length >= 1 && trimmedName.length <= MAX_PLACE_NAME_LENGTH;
@@ -32,7 +37,7 @@ export function CreatePlaceForm() {
         place,
         ...usePlaceStore.getState().places,
       ]);
-      showToast(`Created "${place.name}"`, 'success');
+      showToast(t('lobby.placeCreated', { name: place.name }), 'success');
       navigate(`/place/${place.id}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('errors.failedToCreatePlace');
@@ -89,6 +94,7 @@ export function CreatePlaceForm() {
       className="flex max-h-[90vh] flex-col gap-3 overflow-y-auto rounded-xl border border-accent/40 bg-bg-card p-4 sm:p-5"
     >
       <input
+        ref={nameInputRef}
         type="text"
         value={name}
         onChange={(e) => {
@@ -98,7 +104,6 @@ export function CreatePlaceForm() {
         placeholder={t('lobby.placeNamePlaceholder')}
         aria-label={t('lobby.placeNamePlaceholder')}
         maxLength={MAX_PLACE_NAME_LENGTH}
-        autoFocus
         className="w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
       />
 

@@ -2,7 +2,7 @@ import type { UserInfo, BubbleInfo } from './types';
 
 // Client -> Server
 export type ClientMessage =
-  | { type: 'blow'; data: { size: 'S' | 'M' | 'L'; color: string; pattern: 'plain' | 'spiral' | 'dots' | 'star'; x?: number; y?: number; z?: number; seed?: number; expiresAt?: number } }
+  | { type: 'blow'; data: { bubbleId?: string; size: 'S' | 'M' | 'L'; color: string; pattern: 'plain' | 'spiral' | 'dots' | 'star'; x?: number; y?: number; z?: number; seed?: number; expiresAt?: number } }
   | { type: 'pop'; data: { bubbleId: string } }
   | { type: 'cursor'; data: { x: number; y: number } }
   | { type: 'set_name'; data: { displayName: string } }

@@ -4,24 +4,16 @@ import { useBubbleStore } from '@/stores/bubble-store';
 import { useUIStore } from '@/stores/ui-store';
 import { spawnBubble } from '@/lib/bubble-factory';
 import { Z_INDEX } from '@/lib/z-index';
-import { scheduleExpiry } from './BubbleScene';
 
 const BLOW_INTERVAL = 250; // ~4 bubbles/sec, feels natural
-const MAX_BUBBLES = 80;
 
-function spawnBatch(color: string): number {
-  const store = useBubbleStore.getState();
-  if (store.bubbles.size >= MAX_BUBBLES) return store.bubbles.size;
-
-  spawnBubble(
+function spawnBatch(color: string): boolean {
+  return spawnBubble(
     (Math.random() - 0.5) * 0.3,  // tight spawn near center
     0.5 + Math.random() * 0.3,
     (Math.random() - 0.5) * 0.3,
     color,
-    scheduleExpiry,
-  );
-
-  return useBubbleStore.getState().bubbles.size;
+  ) !== null;
 }
 
 // Global flag to prevent canvas spawner from firing when button is clicked
@@ -48,19 +40,6 @@ export function BubbleControls() {
     return useBubbleStore.subscribe((s) => setBubbleCount(s.bubbles.size));
   }, []);
 
-  const startBlowing = useCallback(() => {
-    if (intervalRef.current !== null) return;
-    buttonActive = true;
-    setIsBlowing(true);
-    const color = useUIStore.getState().selectedColor;
-    spawnBatch(color);
-
-    // Continue spawning — read selectedColor each tick so mid-blow color changes apply
-    intervalRef.current = window.setInterval(() => {
-      spawnBatch(useUIStore.getState().selectedColor);
-    }, BLOW_INTERVAL);
-  }, []);
-
   const stopBlowing = useCallback(() => {
     buttonActive = false;
     setIsBlowing(false);
@@ -69,6 +48,22 @@ export function BubbleControls() {
       intervalRef.current = null;
     }
   }, []);
+
+  const startBlowing = useCallback(() => {
+    if (intervalRef.current !== null) return;
+    buttonActive = true;
+    setIsBlowing(true);
+    const color = useUIStore.getState().selectedColor;
+    if (!spawnBatch(color)) {
+      stopBlowing();
+      return;
+    }
+
+    // Continue spawning — read selectedColor each tick so mid-blow color changes apply
+    intervalRef.current = window.setInterval(() => {
+      if (!spawnBatch(useUIStore.getState().selectedColor)) stopBlowing();
+    }, BLOW_INTERVAL);
+  }, [stopBlowing]);
 
   // Spacebar — stable refs ensure the exact same function is removed on cleanup
   useEffect(() => {

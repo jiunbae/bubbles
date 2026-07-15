@@ -28,7 +28,7 @@
     "globalStats": "{{bubbles}} bubbles blown \u00B7 {{visitors}} visitors",
     "createPlaceButton": "Create a new place",
     "createPlacePrompt": "Start your own bubble room",
-    "yourRooms": "Your Rooms",
+    "placeCreated": "Created \"{{name}}\"",
     "bubblesBlown": "bubbles blown",
     "visitorsTotal": "visitors"
   },
@@ -62,6 +62,7 @@
     "cameraError": "Camera error",
     "cameraBatteryWarning": "Camera mode has been active for a while. Consider disabling it to save battery.",
     "linkCopied": "Link copied!",
+    "shareFailed": "Could not share or copy the link. Please copy it from the address bar.",
     "milestone": "\ud83c\udf89 This room hit {{count}} bubbles!",
     "inviteBanner": "\ud83e\udee7 Bubbles are better together \u2014 invite a friend",
     "copyLink": "Copy Link",
@@ -76,6 +77,14 @@
     "shareText": "Come blow bubbles together! 🫧",
     "stealthHint": "Try Stealth Mode — looks like Excel! (Ctrl+Shift+M)",
     "selectColor": "Select bubble color",
+    "selectColorOption": "Select bubble color {{index}}",
+    "connectionState": "Connection: {{status}}",
+    "connection": {
+      "connecting": "Connecting",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "reconnecting": "Reconnecting"
+    },
     "showOnlineUsers": "Show online users",
     "toggleMoreMenu": "Toggle more options menu"
   },
@@ -83,7 +92,8 @@
     "bubblesFloating": "{{count}} bubbles floating",
     "holdToStart": "Hold button or press Space",
     "blowing": "Blowing...",
-    "blow": "Blow"
+    "blow": "Blow",
+    "limitReached": "This room can hold up to {{count}} bubbles at once. Pop one to keep blowing."
   },
   "auth": {
     "login": "Login",
@@ -108,6 +118,8 @@
     "sizeSelector": "S / M / L buttons — Change bubble size",
     "editName": "Click your name — Edit display name",
     "modeToggle": "Blow / Pop toggle in header",
+    "interactionMode": "Bubble interaction mode",
+    "tapToPop": "Tap a bubble to pop it",
     "dismissHint": "Click anywhere or press Escape to close",
     "showHelp": "Show controls",
     "sizeSmall": "Small bubble size",

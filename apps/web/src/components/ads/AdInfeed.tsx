@@ -14,7 +14,9 @@ export function AdInfeed() {
     pushed.current = true;
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch {}
+    } catch {
+      // Ad blockers and delayed AdSense initialization can reject the push; the feed remains usable.
+    }
   }, []);
 
   return (

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from 'bun:test';
+import { describe, test, expect } from 'bun:test';
 
 // Re-import fresh module state by importing the functions directly.
 // Note: since the metrics module uses module-level Maps, we test against
@@ -47,9 +47,19 @@ describe('metrics', () => {
     const text = await getMetricsText();
     expect(text).toContain('# TYPE test_hist histogram');
     expect(text).toContain('test_hist_bucket{route="/",le="0.005"} 0');
+    expect(text).toContain('test_hist_bucket{route="/",le="0.05"} 1');
+    expect(text).toContain('test_hist_bucket{route="/",le="0.5"} 2');
+    expect(text).toContain('test_hist_bucket{route="/",le="2.5"} 3');
     expect(text).toContain('test_hist_bucket{route="/",le="+Inf"} 3');
     expect(text).toContain('test_hist_sum{route="/"} 2.55');
     expect(text).toContain('test_hist_count{route="/"} 3');
+
+    const bucketCounts = [...text.matchAll(/^test_hist_bucket\{[^}]+\} (\d+)$/gm)]
+      .map((match) => Number(match[1]));
+    expect(bucketCounts.length).toBeGreaterThan(0);
+    for (const count of bucketCounts) {
+      expect(count).toBeLessThanOrEqual(3);
+    }
   });
 
   test('setGauge sets value', async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect, useMemo, useState } from 'react';
+import { useCallback, useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import { useBubbleStore } from '@/stores/bubble-store';
@@ -6,45 +6,12 @@ import { useUIStore } from '@/stores/ui-store';
 import { isButtonBlowing } from './BubbleControls';
 import { playBlow } from '@/lib/sounds';
 import { spawnBubble } from '@/lib/bubble-factory';
+import { cancelBubbleExpiry } from '@/lib/bubble-expiry';
 import { BubbleInstances } from './BubbleInstances';
 import { PopEffectRenderer, usePopEffect } from './PopEffect';
 import { SIZE_RADIUS } from '@/physics/bubblePhysics';
 
 const HOLD_INTERVAL = 250;
-const MAX_BUBBLES = 80;
-
-// ---------------------------------------------------------------------------
-// Expiry timer manager – prevents setTimeout leaks on unmount / manual pop
-// ---------------------------------------------------------------------------
-const expiryTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
-function scheduleExpiry(bubbleId: string, delay: number) {
-  const existing = expiryTimers.get(bubbleId);
-  if (existing) clearTimeout(existing);
-
-  const timer = setTimeout(() => {
-    useBubbleStore.getState().removeBubble(bubbleId);
-    expiryTimers.delete(bubbleId);
-  }, delay);
-  expiryTimers.set(bubbleId, timer);
-}
-
-function cancelExpiry(bubbleId: string) {
-  const timer = expiryTimers.get(bubbleId);
-  if (timer) {
-    clearTimeout(timer);
-    expiryTimers.delete(bubbleId);
-  }
-}
-
-export function clearExpiryTimers(): void {
-  for (const [id, timer] of expiryTimers) {
-    clearTimeout(timer);
-    expiryTimers.delete(id);
-  }
-}
-
-export { scheduleExpiry, cancelExpiry, expiryTimers };
 
 /**
  * BubbleSpawner: pointer-hold spawning.
@@ -69,8 +36,6 @@ function BubbleSpawner() {
 
   const spawnBatch = useCallback(() => {
     if (isButtonBlowing()) return; // button handles its own spawning
-    const store = useBubbleStore.getState();
-    if (store.bubbles.size >= MAX_BUBBLES) return;
 
     // Raycast from mouse into scene, place bubbles at halfway to origin
     _raycaster.setFromCamera(ptRef.current, camRef.current);
@@ -80,13 +45,16 @@ function BubbleSpawner() {
     const center = _raycaster.ray.origin.clone().addScaledVector(dir, spawnDist);
 
     const spread = 0.15;
-    spawnBubble(
+    const bubble = spawnBubble(
       center.x + (Math.random() - 0.5) * spread,
       center.y + (Math.random() - 0.5) * spread * 0.5,
       center.z + (Math.random() - 0.5) * spread,
       colorRef.current,
-      scheduleExpiry,
     );
+    if (!bubble) {
+      setHolding(false);
+      return;
+    }
     playBlow();
   }, []);
 
@@ -167,7 +135,7 @@ function BubbleRenderer() {
 
   const handlePop = useCallback(
     (bubbleId: string, position: THREE.Vector3, color: THREE.Color, size: number) => {
-      cancelExpiry(bubbleId);
+      cancelBubbleExpiry(bubbleId);
       triggerPop(position, color, size);
       removeBubble(bubbleId);
     },
@@ -176,7 +144,7 @@ function BubbleRenderer() {
 
   const handleExpire = useCallback(
     (bubbleId: string) => {
-      cancelExpiry(bubbleId);
+      cancelBubbleExpiry(bubbleId);
       const b = useBubbleStore.getState().bubbles.get(bubbleId);
       if (b) {
         triggerPop(
@@ -199,14 +167,6 @@ function BubbleRenderer() {
 }
 
 export function BubbleScene() {
-  // Clear all expiry timers on unmount to prevent leaked timeouts
-  useEffect(() => {
-    return () => {
-      for (const timer of expiryTimers.values()) clearTimeout(timer);
-      expiryTimers.clear();
-    };
-  }, []);
-
   return (
     <group>
       <BubbleSpawner />

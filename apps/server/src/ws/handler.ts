@@ -12,7 +12,6 @@ import {
   joinRoom,
   leaveRoom,
   broadcastToRoom,
-  broadcastSerializedToLocal,
   sendToClient,
   getRoom,
   createBubble,
@@ -23,10 +22,13 @@ import {
 import { logAction } from './actions';
 import type { BubblesUser } from '../middleware/auth';
 import type { ClientMessage, ServerMessage, BubbleSize, BubblePattern } from '@bubbles/shared';
-import { BUBBLE_LIFETIME } from '@bubbles/shared';
 import { isAllowedOrigin } from '../middleware/cors';
 import { incCounter, incGauge, decGauge } from '../metrics';
 import { createLogger } from '../logger';
+import {
+  clampBubbleDuration,
+  isValidClientBubbleId,
+} from './bubbleProtocol';
 
 const log = createLogger('ws');
 
@@ -200,20 +202,36 @@ export function createWSHandlers(placeId: string, c: Context) {
             return;
           }
 
-          const { size, color, pattern, x, y, z, seed: clientSeed, expiresAt: clientExpiresAt } = msg.data;
+          const {
+            bubbleId: clientBubbleId,
+            size,
+            color,
+            pattern,
+            x,
+            y,
+            z,
+            seed: clientSeed,
+            expiresAt: clientExpiresAt,
+          } = msg.data;
           if (!(['S', 'M', 'L'] as string[]).includes(size)) return;
 
           // Validate color is a valid hex
           const validColor = typeof color === 'string' && /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#87CEEB';
 
-          const bubbleId = crypto.randomUUID();
+          const existingBubbles = getRoom(pid)?.bubbles;
+          const bubbleId =
+            isValidClientBubbleId(clientBubbleId) &&
+            !existingBubbles?.has(clientBubbleId)
+              ? clientBubbleId
+              : crypto.randomUUID();
           const now = Date.now();
 
           const seed = typeof clientSeed === 'number' ? clientSeed : Math.floor(Math.random() * 1000000);
-          const lifetime = BUBBLE_LIFETIME[size as BubbleSize];
-          const duration = typeof clientExpiresAt === 'number'
-            ? Math.min(Math.max(clientExpiresAt - now, 3000), 60000)
-            : lifetime.min + Math.random() * (lifetime.max - lifetime.min);
+          const duration = clampBubbleDuration(
+            size as BubbleSize,
+            clientExpiresAt,
+            now,
+          );
 
           const bx = typeof x === 'number' ? x : (Math.random() - 0.5) * 2;
           const by = typeof y === 'number' ? y : 0.5 + Math.random();
@@ -259,7 +277,9 @@ export function createWSHandlers(placeId: string, c: Context) {
 
           log.debug('Bubble blown', { user: user.displayName, size });
           incCounter('bubbles_blown_total', { size });
-          broadcastToRoom(pid, createdMsg, sessionId);
+          // Echo to the sender as an acknowledgement. The client reconciles
+          // its optimistic entry under the same validated ID.
+          broadcastToRoom(pid, createdMsg);
 
           try {
             await logAction('blow', pid, sessionId, user, { bubbleId, size, color });
@@ -397,12 +417,11 @@ export function createWSHandlers(placeId: string, c: Context) {
           if (now - last < CURSOR_THROTTLE_MS) return;
           lastCursorSent.set(key, now);
 
-          // Use pre-serialized broadcast to avoid JSON.stringify per-client
           const cursorMsg: ServerMessage = {
             type: 'cursor_moved', ts: now,
             data: { sessionId, x: msg.data.x, y: msg.data.y },
           };
-          broadcastSerializedToLocal(pid, JSON.stringify(cursorMsg), sessionId);
+          broadcastToRoom(pid, cursorMsg, sessionId);
           break;
         }
 
@@ -421,6 +440,9 @@ export function createWSHandlers(placeId: string, c: Context) {
             const client = room.clients.get(sessionId);
             if (client) client.lastPingAt = Date.now();
           }
+          // Keep cross-pod presence fresh. The helper handles Redis failures,
+          // so the pong does not wait on an optional dependency.
+          void updateMemberInRedis(pid, sessionId, user);
           sendToClient(ws, { type: 'pong', ts: Date.now() });
           break;
         }

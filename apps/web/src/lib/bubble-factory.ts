@@ -8,14 +8,19 @@ import { useBubbleStore } from '@/stores/bubble-store';
 import { useUIStore } from '@/stores/ui-store';
 import { globalWsClient } from '@/lib/ws-client';
 import { analytics } from '@/lib/analytics';
+import { scheduleBubbleExpiry } from '@/lib/bubble-expiry';
+import { showToast } from '@/components/shared/Toast';
+import i18n from '@/i18n';
 import { BUBBLE_LIFETIME } from '@bubbles/shared';
 import type { BubbleInfo, BubbleSize } from '@bubbles/shared';
 
-let _idCounter = 0;
+export const MAX_BUBBLES = 80;
+const LIMIT_TOAST_COOLDOWN_MS = 3000;
+let lastLimitToastAt = 0;
 
 /** Generate a unique client-side bubble ID. */
 export function makeId(): string {
-  return `b${Date.now()}_${++_idCounter}`;
+  return crypto.randomUUID();
 }
 
 /** Weighted random size: 35% S, 45% M, 20% L. */
@@ -45,7 +50,7 @@ export function createBubbleInfo(
   z: number,
   color: string,
 ): BubbleInfo {
-  const size = useUIStore.getState().selectedSize;
+  const { selectedSize: size, selectedPattern: pattern } = useUIStore.getState();
   const now = Date.now();
   const range = BUBBLE_LIFETIME[size];
   const lifetime = range.min + Math.random() * (range.max - range.min);
@@ -58,7 +63,7 @@ export function createBubbleInfo(
     z,
     size,
     color: c,
-    pattern: 'plain',
+    pattern,
     seed: Math.random() * 10000,
     createdAt: now,
     expiresAt: now + lifetime,
@@ -69,29 +74,36 @@ export function createBubbleInfo(
  * Full spawn pipeline: create bubble info, insert into store, schedule
  * expiry, track analytics, and send to server.
  *
- * @param scheduleExpiry  Function that schedules client-side expiry removal.
  */
 export function spawnBubble(
   x: number,
   y: number,
   z: number,
   color: string,
-  scheduleExpiry: (bubbleId: string, delay: number) => void,
-): BubbleInfo {
+): BubbleInfo | null {
+  if (useBubbleStore.getState().bubbles.size >= MAX_BUBBLES) {
+    const now = Date.now();
+    if (now - lastLimitToastAt >= LIMIT_TOAST_COOLDOWN_MS) {
+      lastLimitToastAt = now;
+      showToast(i18n.t('controls.limitReached', { count: MAX_BUBBLES }), 'info');
+    }
+    return null;
+  }
+
   const bubble = createBubbleInfo(x, y, z, color);
-  const lifetime = bubble.expiresAt - bubble.createdAt;
 
   useBubbleStore.getState().addBubble(bubble);
-  scheduleExpiry(bubble.bubbleId, lifetime);
+  scheduleBubbleExpiry(bubble.bubbleId, bubble.expiresAt);
   analytics.bubbleBlow(bubble.size);
 
   if (globalWsClient.isConnected()) {
     globalWsClient.send({
       type: 'blow',
       data: {
+        bubbleId: bubble.bubbleId,
         size: bubble.size,
         color: bubble.color,
-        pattern: 'plain',
+        pattern: bubble.pattern,
         x: bubble.x,
         y: bubble.y,
         z: bubble.z,

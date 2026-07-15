@@ -23,7 +23,7 @@ export function GlobalStatsBanner() {
   if (totalBubbles === 0 && totalVisitors === 0) return null;
 
   return (
-    <p className="text-sm text-text-muted">
+    <p className="mx-auto mt-4 w-fit rounded-full border border-border/70 bg-bg-card/60 px-3 py-1.5 text-center text-sm text-text-secondary shadow-sm backdrop-blur-sm">
       {t('lobby.globalStats', {
         bubbles: animatedBubbles.toLocaleString(),
         visitors: animatedVisitors.toLocaleString(),

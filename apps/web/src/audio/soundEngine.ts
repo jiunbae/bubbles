@@ -1,5 +1,11 @@
 import type { BubbleSize } from '@bubbles/shared';
 
+const BLOW_FREQUENCIES: Record<BubbleSize, { start: number; end: number }> = {
+  S: { start: 750, end: 1500 },
+  M: { start: 600, end: 1200 },
+  L: { start: 450, end: 900 },
+};
+
 /**
  * Web Audio API-based sound engine for bubble sounds.
  * All sounds are synthesised – no audio files needed.
@@ -65,7 +71,7 @@ export class SoundEngine {
    * Start playing the blow sound. Call once when the user begins holding.
    * The sound sustains until stopBlow() is called.
    *
-   * Synthesis: white noise -> bandpass filter (800Hz, Q=2)
+   * Synthesis: white noise -> size-dependent bandpass filter (Q=2).
    * Gain ramps from 0 to 0.1 over 100ms then sustains at 0.08.
    */
   playBlow(size: BubbleSize): void {
@@ -74,6 +80,7 @@ export class SoundEngine {
 
     const ctx = this.ctx!;
     const now = ctx.currentTime;
+    const frequency = BLOW_FREQUENCIES[size];
 
     // White noise buffer (1 second, looping)
     const bufferSize = ctx.sampleRate;
@@ -90,9 +97,9 @@ export class SoundEngine {
     // Bandpass filter
     const filter = ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(600, now);
+    filter.frequency.setValueAtTime(frequency.start, now);
     // Slowly ramp frequency upward to simulate pitch rise
-    filter.frequency.linearRampToValueAtTime(1200, now + 2.0);
+    filter.frequency.linearRampToValueAtTime(frequency.end, now + 2.0);
     filter.Q.value = 2;
 
     // Gain envelope

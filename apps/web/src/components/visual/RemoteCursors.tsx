@@ -16,10 +16,8 @@ const LERP_SPEED = 0.12;
  */
 function RemoteWand({
   cursor,
-  sessionId,
 }: {
   cursor: RemoteCursor;
-  sessionId: string;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const targetRef = useRef(new THREE.Vector3());
@@ -126,7 +124,7 @@ export function RemoteCursors() {
   return (
     <group>
       {entries.map(([sessionId, cursor]) => (
-        <RemoteWand key={sessionId} sessionId={sessionId} cursor={cursor} />
+        <RemoteWand key={sessionId} cursor={cursor} />
       ))}
     </group>
   );

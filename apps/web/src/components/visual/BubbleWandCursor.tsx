@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -8,18 +8,21 @@ const _target = new THREE.Vector3();
 export function BubbleWandCursor() {
   const groupRef = useRef<THREE.Group>(null);
   const targetRef = useRef(new THREE.Vector3());
+  const lastPointerRef = useRef({ x: Number.NaN, y: Number.NaN });
   const { camera, raycaster, pointer } = useThree();
 
-  // Recalculate 3D target only when pointer actually moves
-  useEffect(() => {
-    raycaster.setFromCamera(pointer, camera);
-    _dir.copy(raycaster.ray.direction).normalize();
-    _target.copy(raycaster.ray.origin).addScaledVector(_dir, 5);
-    targetRef.current.copy(_target);
-  }, [pointer.x, pointer.y, camera, raycaster]);
-
-  // Per-frame: lerp smoothing only
+  // Recalculate the target only when the mutable R3F pointer changes, then smooth every frame.
   useFrame(() => {
+    const lastPointer = lastPointerRef.current;
+    if (pointer.x !== lastPointer.x || pointer.y !== lastPointer.y) {
+      lastPointer.x = pointer.x;
+      lastPointer.y = pointer.y;
+      raycaster.setFromCamera(pointer, camera);
+      _dir.copy(raycaster.ray.direction).normalize();
+      _target.copy(raycaster.ray.origin).addScaledVector(_dir, 5);
+      targetRef.current.copy(_target);
+    }
+
     const g = groupRef.current;
     if (!g) return;
     g.position.lerp(targetRef.current, 0.2);

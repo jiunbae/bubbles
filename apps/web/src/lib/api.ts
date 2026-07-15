@@ -22,8 +22,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.message ?? `Request failed: ${res.status}`);
+    const body = (await res.json().catch(() => null)) as {
+      error?: unknown;
+      message?: unknown;
+    } | null;
+    const serverMessage =
+      typeof body?.error === 'string'
+        ? body.error
+        : typeof body?.message === 'string'
+          ? body.message
+          : null;
+    throw new Error(
+      serverMessage || res.statusText || `Request failed: ${res.status}`,
+    );
   }
 
   return res.json();

@@ -28,7 +28,17 @@ export const useBubbleStore = create<BubbleState>((set) => ({
   addBubble: (bubble: BubbleInfo) =>
     set((state) => {
       const next = new Map(state.bubbles);
-      next.set(bubble.bubbleId, bubble);
+      const existing = next.get(bubble.bubbleId);
+      if (existing) {
+        // BubbleInstances retains the original object outside React for its
+        // animation state. Reconcile the optimistic object in place so the
+        // server's authoritative owner/timestamps are visible without
+        // restarting the animation or temporarily changing the Map size.
+        Object.assign(existing, bubble);
+        next.set(bubble.bubbleId, existing);
+      } else {
+        next.set(bubble.bubbleId, bubble);
+      }
       return { bubbles: next };
     }),
 

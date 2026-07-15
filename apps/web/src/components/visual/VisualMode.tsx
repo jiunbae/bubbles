@@ -81,6 +81,71 @@ function SizeSelector() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Mobile interaction mode control                                    */
+/* ------------------------------------------------------------------ */
+
+function MobileInteractionModeControl() {
+  const { t } = useTranslation();
+  const interactionMode = useUIStore((s) => s.interactionMode);
+  const setInteractionMode = useUIStore((s) => s.setInteractionMode);
+
+  return (
+    <>
+      <div
+        className="fixed left-3 flex rounded-xl border border-white/15 bg-[rgba(20,20,30,0.85)] p-1 shadow-lg backdrop-blur-xl sm:hidden"
+        style={{
+          bottom: 'calc(env(safe-area-inset-bottom, 0px) + 176px)',
+          zIndex: Z_INDEX.UI_CONTROLS,
+        }}
+        role="group"
+        aria-label={t('visual.interactionMode')}
+      >
+        <button
+          type="button"
+          onClick={() => setInteractionMode('blow')}
+          aria-label={t('place.switchToBlow')}
+          aria-pressed={interactionMode === 'blow'}
+          className={`min-h-11 min-w-[52px] rounded-lg px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${
+            interactionMode === 'blow'
+              ? 'bg-accent text-white shadow-sm'
+              : 'text-white/65 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          {t('place.blowMode')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setInteractionMode('pop')}
+          aria-label={t('place.switchToPop')}
+          aria-pressed={interactionMode === 'pop'}
+          className={`min-h-11 min-w-[52px] rounded-lg px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 ${
+            interactionMode === 'pop'
+              ? 'bg-error/80 text-white shadow-sm'
+              : 'text-white/65 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          {t('place.popMode')}
+        </button>
+      </div>
+
+      {interactionMode === 'pop' && (
+        <div
+          className="pointer-events-none fixed left-1/2 max-w-[calc(100vw-9rem)] -translate-x-1/2 rounded-full border border-white/15 bg-[rgba(20,20,30,0.85)] px-3 py-2 text-center text-xs font-medium text-white/85 shadow-lg backdrop-blur-xl sm:hidden"
+          style={{
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
+            zIndex: Z_INDEX.UI_CONTROLS,
+          }}
+          role="status"
+          aria-live="polite"
+        >
+          {t('visual.tapToPop')}
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Onboarding / help overlay                                          */
 /* ------------------------------------------------------------------ */
 
@@ -93,7 +158,9 @@ function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss
     setFading(true);
     try {
       localStorage.setItem('bubbles_onboarded', '1');
-    } catch {}
+    } catch {
+      // Storage may be unavailable in private browsing; dismissal still works for this session.
+    }
     if (dismissTimeoutRef.current) clearTimeout(dismissTimeoutRef.current);
     dismissTimeoutRef.current = setTimeout(() => {
       setFading(false);
@@ -131,7 +198,6 @@ function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss
 
   return (
     <div
-      onClick={dismiss}
       style={{
         position: 'absolute',
         inset: 0,
@@ -145,9 +211,26 @@ function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss
         transition: 'opacity 0.4s ease',
       }}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
+      <button
+        type="button"
+        onClick={dismiss}
+        aria-label={t('visual.dismissHint', 'Close controls')}
         style={{
+          position: 'absolute',
+          inset: 0,
+          border: 0,
+          padding: 0,
+          background: 'transparent',
+          cursor: 'pointer',
+        }}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="visual-help-title"
+        style={{
+          position: 'relative',
+          zIndex: 1,
           background: 'rgba(10, 10, 20, 0.9)',
           color: 'white',
           padding: '28px 36px',
@@ -160,9 +243,9 @@ function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss
           cursor: 'default',
         }}
       >
-        <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>
+        <h2 id="visual-help-title" style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>
           {t('visual.helpTitle', 'Controls')}
-        </div>
+        </h2>
 
         {/* Blow & pop */}
         <div>{'\u{1FAE7}'} {t('visual.blowBubbles')}</div>
@@ -182,14 +265,23 @@ function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss
         <div>{'\u270F\uFE0F'} {t('visual.editName', 'Click your name — Edit display name')}</div>
         <div>{'\u{1F504}'} {t('visual.modeToggle', 'Blow / Pop toggle in header')}</div>
 
-        <div style={{
-          marginTop: 12,
-          fontSize: 12,
-          color: 'rgba(255,255,255,0.5)',
-          textAlign: 'center',
-        }}>
+        <button
+          type="button"
+          onClick={dismiss}
+          style={{
+            display: 'block',
+            margin: '12px auto 0',
+            border: '1px solid rgba(255,255,255,0.25)',
+            borderRadius: 8,
+            padding: '6px 14px',
+            background: 'rgba(255,255,255,0.1)',
+            color: 'rgba(255,255,255,0.75)',
+            cursor: 'pointer',
+            fontSize: 12,
+          }}
+        >
           {t('visual.dismissHint', 'Click anywhere or press Escape to close')}
-        </div>
+        </button>
       </div>
     </div>
   );
@@ -302,7 +394,7 @@ export function VisualMode() {
             autoRotate={false}
             makeDefault
             mouseButtons={{
-              LEFT: -1 as any,          // disable left click orbit
+              LEFT: undefined,          // disable left click orbit
               MIDDLE: MOUSE.DOLLY,       // middle = zoom
               RIGHT: MOUSE.ROTATE,       // right click drag = orbit
             }}
@@ -316,6 +408,7 @@ export function VisualMode() {
 
       <BubbleControls />
       <SizeSelector />
+      <MobileInteractionModeControl />
       <HelpButton onClick={() => setShowHelp(true)} />
       <OnboardingOverlay visible={showHelp} onDismiss={() => setShowHelp(false)} />
     </div>

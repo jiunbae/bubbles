@@ -27,6 +27,7 @@
     "globalStats": "비눗방울 {{bubbles}}개 \u00B7 방문자 {{visitors}}명",
     "createPlaceButton": "새 장소 만들기",
     "createPlacePrompt": "나만의 방울 공간을 만들어보세요",
+    "placeCreated": "\"{{name}}\" 장소를 만들었습니다",
     "yourRooms": "내 방",
     "bubblesBlown": "비눗방울 생성됨",
     "visitorsTotal": "방문자"
@@ -61,6 +62,7 @@
     "cameraError": "카메라 오류",
     "cameraBatteryWarning": "카메라 모드가 오랫동안 활성화되어 있습니다. 배터리 절약을 위해 비활성화를 고려해 주세요.",
     "linkCopied": "링크 복사됨!",
+    "shareFailed": "공유하거나 링크를 복사하지 못했습니다. 주소창에서 직접 복사해 주세요.",
     "milestone": "🎉 이 방에서 비눗방울 {{count}}개를 달성했어요!",
     "inviteBanner": "🫧 함께하면 더 즐거워요 — 친구를 초대해보세요",
     "copyLink": "링크 복사",
@@ -75,6 +77,14 @@
     "shareText": "같이 비눗방울 불자! 🫧",
     "stealthHint": "스텔스 모드를 써보세요 — 엑셀처럼 보여요! (Ctrl+Shift+M)",
     "selectColor": "방울 색상 선택",
+    "selectColorOption": "방울 색상 {{index}} 선택",
+    "connectionState": "연결 상태: {{status}}",
+    "connection": {
+      "connecting": "연결 중",
+      "connected": "연결됨",
+      "disconnected": "연결 끊김",
+      "reconnecting": "재연결 중"
+    },
     "showOnlineUsers": "접속 중인 사용자 보기",
     "toggleMoreMenu": "추가 옵션 메뉴 열기"
   },
@@ -82,7 +92,8 @@
     "bubblesFloating": "비눗방울 {{count}}개 떠다니는 중",
     "holdToStart": "버튼을 누르거나 스페이스바를 누르세요",
     "blowing": "불고 있어요...",
-    "blow": "불기"
+    "blow": "불기",
+    "limitReached": "이 방에는 한 번에 비눗방울을 {{count}}개까지 띄울 수 있어요. 계속 불려면 하나를 터뜨려 주세요."
   },
   "auth": {
     "login": "로그인",
@@ -107,6 +118,8 @@
     "sizeSelector": "S / M / L 버튼 — 방울 크기 변경",
     "editName": "이름 클릭 — 표시 이름 편집",
     "modeToggle": "헤더의 불기 / 터뜨리기 전환",
+    "interactionMode": "방울 상호작용 모드",
+    "tapToPop": "비눗방울을 탭해 터뜨리세요",
     "dismissHint": "아무 곳이나 클릭하거나 Escape를 눌러 닫기",
     "showHelp": "조작법 보기",
     "sizeSmall": "작은 방울 크기",

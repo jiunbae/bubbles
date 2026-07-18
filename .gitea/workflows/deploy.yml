@@ -125,7 +125,10 @@ jobs:
           tags: ${{ env.REGISTRY }}/bubbles-server:${{ gitea.sha }}
 
   build-web:
-    needs: [verify, validate-iac]
+    # The self-hosted act runner shares its action cache across jobs. Running
+    # both multi-arch Buildx jobs concurrently can delete another job's cached
+    # action while it is starting, so serialize the image builds.
+    needs: [verify, validate-iac, build-server]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

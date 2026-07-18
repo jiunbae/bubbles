@@ -28,6 +28,10 @@ export default defineConfig({
     },
   },
   build: {
+    // The lazy visual payload has a stricter gzip budget enforced after every
+    // production build. Keep Vite's raw warning above the optimized Three.js
+    // chunk so it remains useful for genuinely unexpected chunks.
+    chunkSizeWarningLimit: 550,
     rollupOptions: {
       output: {
         manualChunks(id) {

@@ -5,7 +5,7 @@
     "dev": "bun run --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
     "start": "bun dist/index.js",
-    "test": "JWT_SECRET=test-jwt-secret SESSION_SECRET=test-session-secret bun test",
+    "test": "JWT_SECRET=test-jwt-secret SESSION_SECRET=test-session-secret OWNER_ID_SECRET=test-owner-secret OWNER_ID_SECRET_PREVIOUS=test-previous-owner-secret bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

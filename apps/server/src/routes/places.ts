@@ -1,18 +1,21 @@
 import { Hono } from 'hono';
-import { ObjectId } from 'mongodb';
+import { ObjectId, type Collection } from 'mongodb';
 import { getCollection } from '../db/mongo';
 import { authMiddleware } from '../middleware/auth';
+import type { RequestUser } from '../middleware/auth';
 import { rateLimiterMiddleware } from '../middleware/rateLimiter';
 import { getRoomUserCountAsync, getRoomUserCountsBatch } from '../ws/rooms';
 import { logAction } from '../ws/actions';
 import { MAX_PLACE_NAME_LENGTH } from '@bubbles/shared';
+import { createLogger } from '../logger';
+import type { OwnershipIds } from '../utils/ownership';
 
 interface PlaceDoc {
   _id: ObjectId;
   name: string;
   theme: string;
   createdBy: string;
-  ownerId?: string;
+  ownerId?: string | null;
   totalVisitors: number;
   totalBubbles: number;
   createdAt: Date;
@@ -21,6 +24,43 @@ interface PlaceDoc {
 }
 
 const places = new Hono();
+const log = createLogger('places');
+
+/**
+ * Matches a place against the current request identity. A previous-key match
+ * is considered owned immediately, then migrated with a compare-and-set so a
+ * concurrent write cannot be overwritten. Migration failure does not turn a
+ * read into an outage; a later read can retry while the overlap key remains.
+ */
+async function isOwnedByCurrentUser(
+  col: Collection<PlaceDoc>,
+  doc: PlaceDoc,
+  user: RequestUser,
+  ownershipIds: OwnershipIds
+): Promise<boolean> {
+  if (doc.ownerId === undefined || doc.ownerId === null) {
+    return user.isAuthenticated && doc.createdBy === user.displayName;
+  }
+
+  if (doc.ownerId === ownershipIds.current) return true;
+  if (!ownershipIds.previous || doc.ownerId !== ownershipIds.previous) {
+    return false;
+  }
+
+  try {
+    await col.updateOne(
+      { _id: doc._id, ownerId: ownershipIds.previous },
+      { $set: { ownerId: ownershipIds.current } }
+    );
+  } catch (err) {
+    log.error('Failed to migrate place owner ID', {
+      placeId: doc._id.toHexString(),
+      err: String(err),
+    });
+  }
+
+  return true;
+}
 
 places.use('*', authMiddleware);
 places.use('*', async (c, next) => {
@@ -32,6 +72,7 @@ places.use('*', async (c, next) => {
 // GET /places - list active places
 places.get('/', async (c) => {
   const user = c.get('user');
+  const ownershipIds = c.get('ownershipIds');
   const col = getCollection<PlaceDoc>('places');
   const docs = await col
     .find({
@@ -48,24 +89,29 @@ places.get('/', async (c) => {
   const placeIds = docs.map((d) => d._id.toHexString());
   const userCounts = await getRoomUserCountsBatch(placeIds);
 
-  const result = docs.map((doc) => {
-    const id = doc._id.toHexString();
-    return {
-      id,
-      name: doc.name,
-      theme: doc.theme || 'rooftop',
-      createdBy: doc.createdBy,
-      isOwnedByCurrentUser: doc.ownerId
-        ? doc.ownerId === user.ownerId
-        : user.isAuthenticated && doc.createdBy === user.displayName,
-      userCount: userCounts.get(id) ?? 0,
-      bubbleCount: 0,
-      totalVisitors: doc.totalVisitors || 0,
-      totalBubbles: doc.totalBubbles || 0,
-      createdAt: doc.createdAt.toISOString(),
-      lastActivityAt: doc.lastActivityAt.toISOString(),
-    };
-  });
+  const result = await Promise.all(
+    docs.map(async (doc) => {
+      const id = doc._id.toHexString();
+      return {
+        id,
+        name: doc.name,
+        theme: doc.theme || 'rooftop',
+        createdBy: doc.createdBy,
+        isOwnedByCurrentUser: await isOwnedByCurrentUser(
+          col,
+          doc,
+          user,
+          ownershipIds
+        ),
+        userCount: userCounts.get(id) ?? 0,
+        bubbleCount: 0,
+        totalVisitors: doc.totalVisitors || 0,
+        totalBubbles: doc.totalBubbles || 0,
+        createdAt: doc.createdAt.toISOString(),
+        lastActivityAt: doc.lastActivityAt.toISOString(),
+      };
+    })
+  );
 
   return c.json(result);
 });
@@ -151,6 +197,7 @@ places.post('/', rateLimiterMiddleware('createPlace'), async (c) => {
 places.get('/:placeId', async (c) => {
   const placeId = c.req.param('placeId');
   const user = c.get('user');
+  const ownershipIds = c.get('ownershipIds');
 
   let objectId: ObjectId;
   try {
@@ -170,9 +217,12 @@ places.get('/:placeId', async (c) => {
     name: doc.name,
     theme: doc.theme || 'rooftop',
     createdBy: doc.createdBy,
-    isOwnedByCurrentUser: doc.ownerId
-      ? doc.ownerId === user.ownerId
-      : user.isAuthenticated && doc.createdBy === user.displayName,
+    isOwnedByCurrentUser: await isOwnedByCurrentUser(
+      col,
+      doc,
+      user,
+      ownershipIds
+    ),
     userCount: await getRoomUserCountAsync(placeId),
     bubbleCount: 0,
     totalVisitors: doc.totalVisitors || 0,

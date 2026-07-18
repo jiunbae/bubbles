@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { createOwnerId } from '../utils/ownership';
+import { createOwnerId, createOwnershipIds } from '../utils/ownership';
 
 const secret = 'ownership-test-secret';
 
@@ -49,5 +49,41 @@ describe('createOwnerId', () => {
     );
 
     expect(anonymous).not.toBe(authenticated);
+  });
+
+  it('derives distinct current and previous IDs during key overlap', async () => {
+    const identity = {
+      sessionId: 'unused',
+      userId: 'account-rotation',
+      isAuthenticated: true,
+    };
+    const ids = await createOwnershipIds(
+      identity,
+      'current-owner-secret',
+      'previous-owner-secret'
+    );
+
+    expect(ids.current).toBe(
+      await createOwnerId(identity, 'current-owner-secret')
+    );
+    expect(ids.previous).toBe(
+      await createOwnerId(identity, 'previous-owner-secret')
+    );
+    expect(ids.previous).not.toBe(ids.current);
+    expect(JSON.stringify(ids)).not.toContain('account-rotation');
+  });
+
+  it('omits a redundant previous ID when no distinct key is configured', async () => {
+    const identity = {
+      sessionId: 'anonymous-overlap',
+      isAuthenticated: false,
+    };
+
+    const missing = await createOwnershipIds(identity, secret);
+    const equal = await createOwnershipIds(identity, secret, secret);
+
+    expect(missing.previous).toBeUndefined();
+    expect(equal.previous).toBeUndefined();
+    expect(equal.current).toBe(missing.current);
   });
 });

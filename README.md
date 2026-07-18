@@ -140,17 +140,18 @@ cd apps/web && pnpm dev
 
 ### Environment Variables
 
-| Variable                  | Description                                                                       | Default                                 |
-| ------------------------- | --------------------------------------------------------------------------------- | --------------------------------------- |
-| `JWT_SECRET`              | JWT signing secret                                                                | _required_                              |
-| `JWT_SECRET_PREVIOUS`     | Previous JWT key accepted only during a coordinated rotation                      | _empty_                                 |
-| `SESSION_SECRET`          | Session signing secret                                                            | _required_                              |
-| `SESSION_SECRET_PREVIOUS` | Previous cookie key; accepted cookies are transparently re-signed                 | _empty_                                 |
-| `OWNER_ID_SECRET`         | Stable HMAC secret for opaque room ownership IDs; do not rotate without migration | `SESSION_SECRET` fallback               |
-| `MONGO_URI`               | MongoDB connection string                                                         | `mongodb://localhost:27017/bubbles`     |
-| `REDIS_URL`               | Redis connection string                                                           | _optional_ (runs local-only without it) |
-| `CORS_ORIGINS`            | Allowed origins (comma-separated)                                                 | `http://localhost:5173`                 |
-| `CLOUDFLARE_TUNNEL_TOKEN` | Cloudflare Tunnel token                                                           | _optional_                              |
+| Variable                   | Description                                                       | Default                                 |
+| -------------------------- | ----------------------------------------------------------------- | --------------------------------------- |
+| `JWT_SECRET`               | JWT signing secret                                                | _required_                              |
+| `JWT_SECRET_PREVIOUS`      | Previous JWT key accepted only during a coordinated rotation      | _empty_                                 |
+| `SESSION_SECRET`           | Session signing secret                                            | _required_                              |
+| `SESSION_SECRET_PREVIOUS`  | Previous cookie key; accepted cookies are transparently re-signed | _empty_                                 |
+| `OWNER_ID_SECRET`          | Current HMAC key for opaque room ownership IDs                    | `SESSION_SECRET` fallback               |
+| `OWNER_ID_SECRET_PREVIOUS` | Previous owner-ID key; matching places are lazily re-keyed        | _empty_                                 |
+| `MONGO_URI`                | MongoDB connection string                                         | `mongodb://localhost:27017/bubbles`     |
+| `REDIS_URL`                | Redis connection string                                           | _optional_ (runs local-only without it) |
+| `CORS_ORIGINS`             | Allowed origins (comma-separated)                                 | `http://localhost:5173`                 |
+| `CLOUDFLARE_TUNNEL_TOKEN`  | Cloudflare Tunnel token                                           | _optional_                              |
 
 ---
 

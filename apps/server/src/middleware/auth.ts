@@ -8,7 +8,7 @@ import {
   generateDisplayName,
 } from '../utils/session';
 import type { UserInfo } from '@bubbles/shared';
-import { createOwnerId } from '../utils/ownership';
+import { createOwnershipIds, type OwnershipIds } from '../utils/ownership';
 import { verifyJwtWithRotation } from '../utils/jwt';
 
 export interface BubblesUser extends UserInfo {
@@ -23,6 +23,7 @@ export interface RequestUser extends BubblesUser {
 declare module 'hono' {
   interface ContextVariableMap {
     user: RequestUser;
+    ownershipIds: OwnershipIds;
   }
 }
 
@@ -118,19 +119,23 @@ export async function authMiddleware(
   ];
   const color = USER_COLORS[Math.abs(colorHash) % USER_COLORS.length];
 
-  const ownerId = await createOwnerId(
+  const ownershipIds = await createOwnershipIds(
     { sessionId, userId, isAuthenticated },
-    config.OWNER_ID_SECRET
+    config.OWNER_ID_SECRET,
+    config.OWNER_ID_SECRET_PREVIOUS
   );
 
   c.set('user', {
     sessionId,
     userId,
-    ownerId,
+    ownerId: ownershipIds.current,
     displayName,
     isAuthenticated,
     color,
   });
+  // Keep the previous identifier separate from the user DTO so it cannot be
+  // serialized accidentally by routes that return user details.
+  c.set('ownershipIds', ownershipIds);
 
   await next();
 }

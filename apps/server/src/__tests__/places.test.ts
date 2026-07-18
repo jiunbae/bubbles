@@ -2,9 +2,14 @@ import { describe, it, expect, beforeAll, beforeEach, mock } from 'bun:test';
 import { Hono } from 'hono';
 import { ObjectId } from 'mongodb';
 import { SignJWT } from 'jose';
+import { createOwnerId } from '../utils/ownership';
+
+const CURRENT_OWNER_SECRET = 'test-owner-secret';
+const PREVIOUS_OWNER_SECRET = 'test-previous-owner-secret';
 
 // In-memory mock data
 const mockPlaces: any[] = [];
+const mockUpdateFilters: any[] = [];
 
 const mockCollection = {
   find: (filter: any) => ({
@@ -49,8 +54,12 @@ const mockCollection = {
     return { deletedCount: 0 };
   },
   updateOne: async (filter: any, update: any) => {
+    mockUpdateFilters.push(filter);
     const place = mockPlaces.find(
-      (p) => filter?._id && p._id.equals(filter._id)
+      (p) =>
+        filter?._id &&
+        p._id.equals(filter._id) &&
+        (filter.ownerId === undefined || p.ownerId === filter.ownerId)
     );
     if (place) {
       if (update?.$set) Object.assign(place, update.$set);
@@ -112,6 +121,7 @@ describe('places routes', () => {
 
   beforeEach(() => {
     mockPlaces.length = 0;
+    mockUpdateFilters.length = 0;
   });
 
   it('GET /places returns active places', async () => {
@@ -217,6 +227,15 @@ describe('places routes', () => {
     const createdBody = await created.json();
     expect(createdBody.ownerId).toBeUndefined();
     const storedOwnerId = mockPlaces[0].ownerId;
+    const expectedCurrentOwnerId = await createOwnerId(
+      {
+        sessionId: 'ignored-for-authenticated-users',
+        userId: 'account-1',
+        isAuthenticated: true,
+      },
+      CURRENT_OWNER_SECRET
+    );
+    expect(storedOwnerId).toBe(expectedCurrentOwnerId);
 
     const renamedToken = await authToken('account-1', 'Renamed Alice');
     const renamed = await app.fetch(
@@ -237,6 +256,130 @@ describe('places routes', () => {
     );
     const sameNameBody = await sameName.json();
     expect(sameNameBody[0].isOwnedByCurrentUser).toBe(false);
+    expect(mockUpdateFilters).toHaveLength(0);
+  });
+
+  it('recognizes and lazily migrates an authenticated previous-key owner', async () => {
+    const now = new Date();
+    const placeId = new ObjectId();
+    const identity = {
+      sessionId: 'ignored-for-authenticated-users',
+      userId: 'rotating-account',
+      isAuthenticated: true,
+    };
+    const previousOwnerId = await createOwnerId(
+      identity,
+      PREVIOUS_OWNER_SECRET
+    );
+    const currentOwnerId = await createOwnerId(identity, CURRENT_OWNER_SECRET);
+    mockPlaces.push({
+      _id: placeId,
+      name: 'Rotating Place',
+      theme: 'park',
+      createdBy: 'Original Name',
+      ownerId: previousOwnerId,
+      totalVisitors: 0,
+      totalBubbles: 0,
+      createdAt: now,
+      lastActivityAt: now,
+    });
+    const token = await authToken('rotating-account', 'Renamed Owner');
+    const app = new Hono();
+    app.route('/places', places);
+
+    const res = await app.fetch(
+      new Request('http://localhost/places', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body[0].isOwnedByCurrentUser).toBe(true);
+    expect(mockPlaces[0].ownerId).toBe(currentOwnerId);
+    expect(mockUpdateFilters).toHaveLength(1);
+    expect(mockUpdateFilters[0]._id.equals(placeId)).toBe(true);
+    expect(mockUpdateFilters[0].ownerId).toBe(previousOwnerId);
+  });
+
+  it('recognizes and lazily migrates an anonymous previous-key owner', async () => {
+    const app = new Hono();
+    app.route('/places', places);
+    const sessionResponse = await app.fetch(
+      new Request('http://localhost/places')
+    );
+    const rawCookie = sessionResponse.headers.get('Set-Cookie') || '';
+    const sessionCookie = rawCookie.match(/bubbles_session=([^;]+)/)?.[1];
+    expect(sessionCookie).toBeDefined();
+    const sessionId = sessionCookie!.split('.')[0];
+    const identity = { sessionId, isAuthenticated: false };
+    const previousOwnerId = await createOwnerId(
+      identity,
+      PREVIOUS_OWNER_SECRET
+    );
+    const currentOwnerId = await createOwnerId(identity, CURRENT_OWNER_SECRET);
+    const now = new Date();
+    const placeId = new ObjectId();
+    mockPlaces.push({
+      _id: placeId,
+      name: 'Anonymous Rotating Place',
+      theme: 'rooftop',
+      createdBy: 'Unrelated Display Name',
+      ownerId: previousOwnerId,
+      totalVisitors: 0,
+      totalBubbles: 0,
+      createdAt: now,
+      lastActivityAt: now,
+    });
+
+    const res = await app.fetch(
+      new Request(`http://localhost/places/${placeId.toHexString()}`, {
+        headers: { Cookie: `bubbles_session=${sessionCookie}` },
+      })
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.isOwnedByCurrentUser).toBe(true);
+    expect(mockPlaces[0].ownerId).toBe(currentOwnerId);
+    expect(mockUpdateFilters[0].ownerId).toBe(previousOwnerId);
+  });
+
+  it('does not migrate or grant ownership for an unrelated previous-key ID', async () => {
+    const now = new Date();
+    const unrelatedOwnerId = await createOwnerId(
+      {
+        sessionId: 'ignored-for-authenticated-users',
+        userId: 'different-account',
+        isAuthenticated: true,
+      },
+      PREVIOUS_OWNER_SECRET
+    );
+    mockPlaces.push({
+      _id: new ObjectId(),
+      name: 'Someone Else Place',
+      theme: 'rooftop',
+      createdBy: 'Same Display Name',
+      ownerId: unrelatedOwnerId,
+      totalVisitors: 0,
+      totalBubbles: 0,
+      createdAt: now,
+      lastActivityAt: now,
+    });
+    const token = await authToken('request-account', 'Same Display Name');
+    const app = new Hono();
+    app.route('/places', places);
+
+    const res = await app.fetch(
+      new Request('http://localhost/places', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    );
+    const body = await res.json();
+
+    expect(body[0].isOwnedByCurrentUser).toBe(false);
+    expect(mockPlaces[0].ownerId).toBe(unrelatedOwnerId);
+    expect(mockUpdateFilters).toHaveLength(0);
   });
 
   it('keeps display-name detection for ownerless legacy documents', async () => {
@@ -263,6 +406,34 @@ describe('places routes', () => {
     const body = await res.json();
     expect(body[0].ownerId).toBeUndefined();
     expect(body[0].isOwnedByCurrentUser).toBe(true);
+  });
+
+  it('does not use display-name fallback when an owner ID field is present', async () => {
+    const now = new Date();
+    mockPlaces.push({
+      _id: new ObjectId(),
+      name: 'Malformed Legacy Place',
+      theme: 'rooftop',
+      createdBy: 'Legacy Alice',
+      ownerId: '',
+      totalVisitors: 0,
+      totalBubbles: 0,
+      createdAt: now,
+      lastActivityAt: now,
+    });
+    const token = await authToken('legacy-account', 'Legacy Alice');
+    const app = new Hono();
+    app.route('/places', places);
+
+    const res = await app.fetch(
+      new Request('http://localhost/places', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+    );
+    const body = await res.json();
+
+    expect(body[0].isOwnedByCurrentUser).toBe(false);
+    expect(mockUpdateFilters).toHaveLength(0);
   });
 
   it('POST /places rejects duplicate names', async () => {

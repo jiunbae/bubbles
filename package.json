@@ -9,7 +9,7 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
-    "test": "turbo test && node --test scripts/validate-iac-secrets.test.mjs",
+    "test": "turbo test && node --test scripts/*.test.mjs",
     "typecheck": "turbo typecheck",
     "clean": "turbo clean"
   },

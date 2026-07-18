@@ -14,8 +14,9 @@ export const config = {
   JWT_SECRET_PREVIOUS: process.env.JWT_SECRET_PREVIOUS || '',
   SESSION_SECRET: requireEnv('SESSION_SECRET'),
   SESSION_SECRET_PREVIOUS: process.env.SESSION_SECRET_PREVIOUS || '',
-  // Keep this value stable: it pseudonymizes durable place ownership IDs.
+  // Rotate with OWNER_ID_SECRET_PREVIOUS so durable ownership can migrate.
   OWNER_ID_SECRET: process.env.OWNER_ID_SECRET || requireEnv('SESSION_SECRET'),
+  OWNER_ID_SECRET_PREVIOUS: process.env.OWNER_ID_SECRET_PREVIOUS || '',
   CORS_ORIGINS: process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
     : ['http://localhost:5173'],

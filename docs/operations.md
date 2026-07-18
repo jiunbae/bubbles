@@ -104,10 +104,37 @@ tickets are not guaranteed. Alert immediately, avoid rolling another workload du
 restore Redis, then drain/restart server pods so clients rebuild presence. Active bubble state is
 ephemeral and may be lost after a full Redis data loss.
 
-Keep `OWNER_ID_SECRET` stable and separate from session/JWT secrets in production. The server has a
-backward-compatible `SESSION_SECRET` fallback, but changing the effective owner-ID secret changes
-derived opaque owner identifiers. Rotate it only with an ownership migration or an explicit plan to
-accept loss of legacy owner matching.
+Keep `OWNER_ID_SECRET` separate from session/JWT secrets in production. The server retains a
+backward-compatible `SESSION_SECRET` fallback for old installations, but production should set an
+independent value explicitly. Both the current and previous owner-ID keys are application secrets.
+
+## Owner-ID secret rotation
+
+`OWNER_ID_SECRET_PREVIOUS` provides an overlap window without exposing account subjects or signed
+session IDs. New places always store the ID derived from `OWNER_ID_SECRET`. When a list or detail read
+matches the previous-key ID for that same authenticated account or anonymous session, the response
+still reports ownership and the server lazily replaces the stored value using an `_id` plus old
+`ownerId` compare-and-set. A concurrent change is therefore not overwritten. Display-name matching
+remains limited to legacy documents where `ownerId` is absent or null.
+
+1. Back up MongoDB and deploy this server version with `OWNER_ID_SECRET_PREVIOUS` unset. Verify that
+   ownership is unchanged before changing either key.
+2. Generate an independent random value. Put it in the encrypted secret source as
+   `OWNER_ID_SECRET`; move the old value to `OWNER_ID_SECRET_PREVIOUS`. Never put either value in a
+   ConfigMap, manifest, CI log, shell history, or migration report.
+3. Roll out the server, create a new controlled place, and verify it is owned on a second request.
+   Read a controlled pre-rotation place and confirm ownership is retained. That read exercises the
+   lazy compare-and-set migration.
+4. Keep the previous key throughout the intended migration window. Removing it immediately does not
+   delete places, but an owner who has not read a pre-rotation place will no longer match that place.
+   Roll back by restoring the old value as current and retaining the new value as previous.
+
+Owner IDs deliberately do not reveal which HMAC key produced them, and a place that is never entered
+may remain in MongoDB without a deletion deadline. Therefore elapsed time alone cannot prove that all
+dormant ownership records migrated. Retire `OWNER_ID_SECRET_PREVIOUS` only after an explicit product
+decision to accept unmatched dormant records, or after a separate identity-aware migration backed by
+the authoritative account/session mapping. A compromised old owner-ID key is a pseudonymization risk,
+not by itself an authentication credential; JWT/session revocation remains a separate urgent action.
 
 ## Coordinated application-secret rotation
 
@@ -125,7 +152,7 @@ output, CI log, or commit message.
 3. Generate independent new JWT and session secrets. In both services set the new JWT value as
    `JWT_SECRET` and the old JWT value as `JWT_SECRET_PREVIOUS`. In Bubbles set the new session value
    as `SESSION_SECRET` and the old value as `SESSION_SECRET_PREVIOUS`. Do not change
-   `OWNER_ID_SECRET`.
+   `OWNER_ID_SECRET`; rotate owner IDs only through the separate overlap procedure above.
 4. Roll out `jiun-api` and Bubbles, then verify old and newly issued JWTs, an existing session cookie,
    WebSocket ticket creation, and a fresh anonymous session. A cookie accepted through the previous
    key must be re-signed with the current key.
@@ -134,11 +161,29 @@ output, CI log, or commit message.
    lifetime if uninterrupted sessions are required). Remove previous keys only after their observed
    use has ceased.
 
-Rollback by restoring the just-replaced key as current while retaining the other key as previous;
-never rotate `OWNER_ID_SECRET` as part of a rollback. Revoke any exposed source-control credential
-after the encrypted-secret deployment has been verified.
+Rollback JWT/session keys by restoring the just-replaced key as current while retaining the other key
+as previous; do not mix an owner-ID rotation into that rollback. Revoke any exposed source-control
+credential after the encrypted-secret deployment has been verified.
 
 ## Staging browser release checklist
+
+Every production web build runs `apps/web/scripts/verify-production-bundle.mjs` against the generated
+artifact. It fails if Three.js, R3F, or `VisualMode` appears in the initial HTML modulepreload list;
+if the built HTML eagerly includes an analytics/advertising loader; if basic language, title, viewport,
+or user-zoom metadata regresses; or if the measured level-9 gzip sizes exceed these budgets:
+
+| Artifact          | Gzip budget |
+| ----------------- | ----------- |
+| `three-core`      | 140,000 B   |
+| `r3f`             | 56,000 B    |
+| `VisualMode`      | 18,000 B    |
+| Combined lazy set | 210,000 B   |
+
+The budgets include only small headroom over the measured release artifact. When an intentional
+dependency change needs more space, inspect the emitted chunks and the initial HTML, record the new
+gzip measurements and user-facing benefit in the change review, then update the constants in the
+verifier. Do not raise the limits merely to make a build pass. The Vite raw-size warning is set above
+the expected optimized Three.js chunk because the executable gzip budgets are the release boundary.
 
 Run this matrix against the immutable staging build in a fresh profile before promoting it. Save the
 browser/version, viewport, result, and evidence link with the release record.

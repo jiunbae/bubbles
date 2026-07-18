@@ -13,6 +13,7 @@ RUN pnpm install --frozen-lockfile --prod=false
 FROM base AS build
 ARG VITE_JIUN_API_URL=https://api.jiun.dev
 ENV VITE_JIUN_API_URL=$VITE_JIUN_API_URL
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY --from=deps /app/node_modules node_modules
 COPY --from=deps /app/packages/shared/node_modules packages/shared/node_modules
 COPY --from=deps /app/apps/web/node_modules apps/web/node_modules

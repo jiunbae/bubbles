@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { showToast } from '@/components/shared/Toast';
 import { useUIStore } from '@/stores/ui-store';
 import { Z_INDEX } from '@/lib/z-index';
+import { cameraErrorMessage } from '@/lib/camera-errors';
 import i18n from '@/i18n';
 
 /**
@@ -26,11 +27,24 @@ export function CameraFeed() {
       }
     }
 
+    function reportCameraError(error: unknown) {
+      if (cancelled) return;
+      const message = cameraErrorMessage(error);
+      showToast(i18n.t(message.key, message.fallback), 'error');
+      useUIStore.getState().setCameraMode(false);
+    }
+
     async function startCamera() {
       // Secure context check — getUserMedia requires HTTPS or localhost
       if (!navigator.mediaDevices?.getUserMedia) {
         if (!cancelled) {
-          showToast(i18n.t('place.cameraNotAvailable', 'Camera not available (HTTPS required)'), 'error');
+          showToast(
+            i18n.t(
+              'place.cameraNotAvailable',
+              'Camera not available (HTTPS required)'
+            ),
+            'error'
+          );
           useUIStore.getState().setCameraMode(false);
         }
         return;
@@ -56,14 +70,14 @@ export function CameraFeed() {
           stream = await requestCamera('environment');
         } catch (firstErr) {
           // If rear camera fails with OverconstrainedError, retry with front camera
-          if (firstErr instanceof DOMException && firstErr.name === 'OverconstrainedError') {
+          if (
+            firstErr instanceof DOMException &&
+            firstErr.name === 'OverconstrainedError'
+          ) {
             try {
               stream = await requestCamera('user');
-            } catch {
-              if (!cancelled) {
-                showToast(i18n.t('place.cameraOverconstrained', 'Could not access the requested camera.'), 'error');
-                useUIStore.getState().setCameraMode(false);
-              }
+            } catch (secondErr) {
+              reportCameraError(secondErr);
               return;
             }
           } else {
@@ -85,31 +99,16 @@ export function CameraFeed() {
         if (videoTrack) {
           videoTrack.onended = () => {
             if (!cancelled) {
-              showToast(i18n.t('place.cameraDisconnected', 'Camera disconnected'), 'error');
+              showToast(
+                i18n.t('place.cameraDisconnected', 'Camera disconnected'),
+                'error'
+              );
               useUIStore.getState().setCameraMode(false);
             }
           };
         }
       } catch (err) {
-        if (!cancelled) {
-          let msg: string;
-          if (err instanceof DOMException) {
-            switch (err.name) {
-              case 'NotAllowedError':
-                msg = i18n.t('place.cameraAccessDenied', 'Camera access denied. Please allow camera access in your browser settings.');
-                break;
-              case 'NotReadableError':
-                msg = i18n.t('place.cameraInUse', 'Camera is in use by another application.');
-                break;
-              default:
-                msg = i18n.t('place.cameraError', 'Camera error');
-            }
-          } else {
-            msg = i18n.t('place.cameraError', 'Camera error');
-          }
-          showToast(msg, 'error');
-          useUIStore.getState().setCameraMode(false);
-        }
+        reportCameraError(err);
       }
     }
 

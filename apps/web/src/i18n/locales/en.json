@@ -57,6 +57,7 @@
     "cameraAccessDenied": "Camera access denied. Please allow camera access in your browser settings.",
     "cameraInUse": "Camera is in use by another application.",
     "cameraOverconstrained": "Could not access the requested camera.",
+    "cameraNoDevice": "No camera was found on this device.",
     "cameraNotAvailable": "Camera not available (HTTPS required)",
     "cameraDisconnected": "Camera disconnected",
     "cameraError": "Camera error",

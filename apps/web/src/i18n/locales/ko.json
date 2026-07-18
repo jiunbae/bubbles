@@ -57,6 +57,7 @@
     "cameraAccessDenied": "카메라 접근이 거부되었습니다. 브라우저 설정에서 카메라 접근을 허용해 주세요.",
     "cameraInUse": "카메라가 다른 애플리케이션에서 사용 중입니다.",
     "cameraOverconstrained": "요청한 카메라에 접근할 수 없습니다.",
+    "cameraNoDevice": "이 기기에서 카메라를 찾을 수 없습니다.",
     "cameraNotAvailable": "카메라를 사용할 수 없습니다 (HTTPS 필요)",
     "cameraDisconnected": "카메라 연결이 끊어졌습니다",
     "cameraError": "카메라 오류",

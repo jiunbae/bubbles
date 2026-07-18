@@ -7,6 +7,11 @@ const REQUIRED_SECRET_KEYS = [
   'SESSION_SECRET',
   'OWNER_ID_SECRET',
 ];
+const FORBIDDEN_CONFIG_KEYS = [
+  ...REQUIRED_SECRET_KEYS,
+  'JWT_SECRET_PREVIOUS',
+  'SESSION_SECRET_PREVIOUS',
+];
 const WORKLOAD_KINDS = new Set([
   'CronJob',
   'DaemonSet',
@@ -175,7 +180,7 @@ export function validateRenderedManifest(renderedYaml, environment) {
       ...Object.keys(object(resource.data)),
       ...Object.keys(object(resource.binaryData)),
     ]);
-    if (REQUIRED_SECRET_KEYS.some((key) => configKeys.has(key))) {
+    if (FORBIDDEN_CONFIG_KEYS.some((key) => configKeys.has(key))) {
       errors.push(
         `[${environment}] Forbidden application secret key in ConfigMap ${namespaceOf(resource)}/${object(resource.metadata).name || 'unnamed'}`
       );

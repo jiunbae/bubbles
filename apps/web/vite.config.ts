@@ -7,9 +7,13 @@ import path from 'node:path';
 export default defineConfig({
   plugins: [react(), tailwindcss(), glsl()],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+    alias: [
+      {
+        find: /^three$/,
+        replacement: path.resolve(__dirname, './src/lib/three-runtime.ts'),
+      },
+      { find: '@', replacement: path.resolve(__dirname, './src') },
+    ],
   },
   server: {
     proxy: {

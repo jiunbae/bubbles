@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html } from '@react-three/drei/web/Html.js';
 import * as THREE from 'three';
 import { usePlaceStore } from '@/stores/place-store';
 
@@ -31,8 +31,14 @@ export function UserPresence() {
 }
 
 const PRESENCE_COLORS = [
-  '#FFB5C2', '#87CEEB', '#98FB98', '#DDA0DD',
-  '#FFD700', '#FFDAB9', '#FF69B4', '#00CED1',
+  '#FFB5C2',
+  '#87CEEB',
+  '#98FB98',
+  '#DDA0DD',
+  '#FFD700',
+  '#FFDAB9',
+  '#FF69B4',
+  '#00CED1',
 ];
 
 function UserDot({

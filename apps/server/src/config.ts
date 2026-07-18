@@ -11,7 +11,9 @@ export const config = {
   MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/bubbles',
   REDIS_URL: process.env.REDIS_URL || '',
   JWT_SECRET: requireEnv('JWT_SECRET'),
+  JWT_SECRET_PREVIOUS: process.env.JWT_SECRET_PREVIOUS || '',
   SESSION_SECRET: requireEnv('SESSION_SECRET'),
+  SESSION_SECRET_PREVIOUS: process.env.SESSION_SECRET_PREVIOUS || '',
   // Keep this value stable: it pseudonymizes durable place ownership IDs.
   OWNER_ID_SECRET: process.env.OWNER_ID_SECRET || requireEnv('SESSION_SECRET'),
   CORS_ORIGINS: process.env.CORS_ORIGINS

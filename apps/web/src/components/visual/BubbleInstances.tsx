@@ -1,6 +1,6 @@
 import { useRef, useMemo, useEffect, useCallback, useState } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html } from '@react-three/drei/web/Html.js';
 import * as THREE from 'three';
 import { globalWsClient } from '@/lib/ws-client';
 import { playPop } from '@/lib/sounds';
@@ -39,7 +39,7 @@ interface BubbleInstancesProps {
     bubbleId: string,
     position: THREE.Vector3,
     color: THREE.Color,
-    size: number,
+    size: number
   ) => void;
   onExpire: (bubbleId: string) => void;
 }
@@ -50,7 +50,9 @@ interface BubbleTooltipProps {
 }
 
 function BubbleTooltip({ hoveredId, stateMapRef }: BubbleTooltipProps) {
-  const [tooltipPos, setTooltipPos] = useState<[number, number, number] | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<[number, number, number] | null>(
+    null
+  );
   const [displayName, setDisplayName] = useState<string>('');
 
   useEffect(() => {
@@ -126,7 +128,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
 
   // Slot allocator: recycled indices for the InstancedMesh
   const freeSlotsRef = useRef<number[]>(
-    Array.from({ length: MAX_BUBBLES }, (_, i) => MAX_BUBBLES - 1 - i),
+    Array.from({ length: MAX_BUBBLES }, (_, i) => MAX_BUBBLES - 1 - i)
   );
   const activeCountRef = useRef(0);
 
@@ -148,57 +150,53 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
     // Inject per-instance opacity + Fresnel rim glow via onBeforeCompile.
     mat.onBeforeCompile = (shader) => {
       // Vertex: pass instance opacity + world normal/view dir for Fresnel
-      shader.vertexShader = shader.vertexShader
-        .replace(
+      shader.vertexShader = shader.vertexShader.replace(
+        'void main() {',
+        [
+          'attribute float instanceOpacity;',
+          'varying float vInstanceOpacity;',
+          'varying vec3 vWorldNormal;',
+          'varying vec3 vViewDir;',
           'void main() {',
-          [
-            'attribute float instanceOpacity;',
-            'varying float vInstanceOpacity;',
-            'varying vec3 vWorldNormal;',
-            'varying vec3 vViewDir;',
-            'void main() {',
-            '  vInstanceOpacity = instanceOpacity;',
-          ].join('\n'),
-        );
+          '  vInstanceOpacity = instanceOpacity;',
+        ].join('\n')
+      );
       // Compute world normal and view direction after position is known
-      shader.vertexShader = shader.vertexShader
-        .replace(
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <worldpos_vertex>',
+        [
           '#include <worldpos_vertex>',
-          [
-            '#include <worldpos_vertex>',
-            'vWorldNormal = normalize((modelMatrix * vec4(objectNormal, 0.0)).xyz);',
-            'vViewDir = normalize(cameraPosition - (modelMatrix * vec4(position, 1.0)).xyz);',
-          ].join('\n'),
-        );
+          'vWorldNormal = normalize((modelMatrix * vec4(objectNormal, 0.0)).xyz);',
+          'vViewDir = normalize(cameraPosition - (modelMatrix * vec4(position, 1.0)).xyz);',
+        ].join('\n')
+      );
 
       // Fragment: Fresnel rim glow + per-instance opacity
-      shader.fragmentShader = shader.fragmentShader
-        .replace(
+      shader.fragmentShader = shader.fragmentShader.replace(
+        'void main() {',
+        [
+          'varying float vInstanceOpacity;',
+          'varying vec3 vWorldNormal;',
+          'varying vec3 vViewDir;',
           'void main() {',
-          [
-            'varying float vInstanceOpacity;',
-            'varying vec3 vWorldNormal;',
-            'varying vec3 vViewDir;',
-            'void main() {',
-          ].join('\n'),
-        );
+        ].join('\n')
+      );
       // Apply Fresnel rim glow + instance opacity before final output
-      shader.fragmentShader = shader.fragmentShader
-        .replace(
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <dithering_fragment>',
+        [
+          '// Fresnel rim glow — edges of bubble glow brighter',
+          'float fresnelDot = max(dot(normalize(vWorldNormal), normalize(vViewDir)), 0.0);',
+          'float fresnel = pow(1.0 - fresnelDot, 3.0);',
+          '// Add rim glow: tinted by diffuse color, additive blend',
+          'vec3 rimColor = gl_FragColor.rgb * 1.5 + vec3(0.3, 0.5, 0.8);',
+          'gl_FragColor.rgb += rimColor * fresnel * 0.6;',
+          '// Fresnel also boosts alpha at edges (like real soap film)',
+          'float fresnelAlpha = mix(0.15, 0.7, fresnel);',
+          'gl_FragColor.a = fresnelAlpha * vInstanceOpacity;',
           '#include <dithering_fragment>',
-          [
-            '// Fresnel rim glow — edges of bubble glow brighter',
-            'float fresnelDot = max(dot(normalize(vWorldNormal), normalize(vViewDir)), 0.0);',
-            'float fresnel = pow(1.0 - fresnelDot, 3.0);',
-            '// Add rim glow: tinted by diffuse color, additive blend',
-            'vec3 rimColor = gl_FragColor.rgb * 1.5 + vec3(0.3, 0.5, 0.8);',
-            'gl_FragColor.rgb += rimColor * fresnel * 0.6;',
-            '// Fresnel also boosts alpha at edges (like real soap film)',
-            'float fresnelAlpha = mix(0.15, 0.7, fresnel);',
-            'gl_FragColor.a = fresnelAlpha * vInstanceOpacity;',
-            '#include <dithering_fragment>',
-          ].join('\n'),
-        );
+        ].join('\n')
+      );
     };
 
     return mat;
@@ -223,7 +221,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
     // Add instanceOpacity attribute
     mesh.geometry.setAttribute(
       'instanceOpacity',
-      new THREE.InstancedBufferAttribute(opacityArray, 1),
+      new THREE.InstancedBufferAttribute(opacityArray, 1)
     );
 
     // Hide all instances initially — move far away so they don't intercept raycasts
@@ -284,7 +282,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
               bubble.y,
               bubble.z,
               bubble.size,
-              bubble.seed,
+              bubble.seed
             ),
             radius,
             color,
@@ -344,7 +342,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
       _dummy.position.set(
         physics.position[0],
         physics.position[1],
-        physics.position[2],
+        physics.position[2]
       );
 
       // Scale + opacity (opacity is a multiplier for the Fresnel shader)
@@ -356,8 +354,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
       if (age < GROW_DURATION) {
         const t = age / GROW_DURATION;
         const eased = 1 - Math.pow(1 - t, 2.5);
-        const wobble =
-          Math.sin(age * (5 + (bubble.seed % 7))) * 0.06 * (1 - t);
+        const wobble = Math.sin(age * (5 + (bubble.seed % 7))) * 0.06 * (1 - t);
         scale = entry.radius * Math.max(0.01, eased + wobble);
         opacity = Math.min(1, t * 3);
       }
@@ -404,7 +401,8 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
     if (matrixDirty) {
       mesh.instanceMatrix.needsUpdate = true;
       const opacityAttr = mesh.geometry.getAttribute('instanceOpacity');
-      if (opacityAttr && 'needsUpdate' in opacityAttr) (opacityAttr as THREE.BufferAttribute).needsUpdate = true;
+      if (opacityAttr && 'needsUpdate' in opacityAttr)
+        (opacityAttr as THREE.BufferAttribute).needsUpdate = true;
     }
 
     // Fire expire callbacks outside the loop to avoid mutating during iteration
@@ -427,7 +425,7 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
     _pos.set(
       entry.physics.position[0],
       entry.physics.position[1],
-      entry.physics.position[2],
+      entry.physics.position[2]
     );
     onPopRef.current(id, _pos.clone(), entry.color, entry.radius);
     playPop();
@@ -442,9 +440,10 @@ export function BubbleInstances({ onPop, onExpire }: BubbleInstancesProps) {
   const hoveredIdRef = useRef<string | null>(null);
   const handlePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
     const instanceId = e.instanceId;
-    const newId = instanceId !== undefined
-      ? (slotToIdRef.current.get(instanceId) ?? null)
-      : null;
+    const newId =
+      instanceId !== undefined
+        ? (slotToIdRef.current.get(instanceId) ?? null)
+        : null;
     if (newId !== hoveredIdRef.current) {
       hoveredIdRef.current = newId;
       setHoveredId(newId);

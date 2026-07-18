@@ -126,6 +126,26 @@ data:
     );
   });
 
+  test('rejects temporary rotation keys stored in a ConfigMap', () => {
+    const configMap = `
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bubbles-config
+  namespace: bubbles
+data:
+  JWT_SECRET_PREVIOUS: plaintext-is-forbidden
+`;
+    const errors = validateRenderedManifest(
+      `${server()}---${sealedSecret()}---${configMap}`,
+      'prod'
+    );
+    assert.match(
+      errors.join('\n'),
+      /Forbidden application secret key in ConfigMap/
+    );
+  });
+
   test('rejects one-of-three individual secretKeyRef mappings', () => {
     const workload = server({
       body: `

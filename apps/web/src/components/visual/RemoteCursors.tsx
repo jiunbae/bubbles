@@ -1,6 +1,6 @@
 import { useRef, useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html } from '@react-three/drei/web/Html.js';
 import * as THREE from 'three';
 import { useCursorStore, type RemoteCursor } from '@/stores/cursor-store';
 
@@ -14,11 +14,7 @@ const LERP_SPEED = 0.12;
 /**
  * A single remote user's wand cursor in 3D space.
  */
-function RemoteWand({
-  cursor,
-}: {
-  cursor: RemoteCursor;
-}) {
+function RemoteWand({ cursor }: { cursor: RemoteCursor }) {
   const groupRef = useRef<THREE.Group>(null);
   const targetRef = useRef(new THREE.Vector3());
   const initializedRef = useRef(false);
@@ -119,7 +115,10 @@ export function RemoteCursors() {
     return () => clearInterval(interval);
   }, [pruneStale]);
 
-  const entries = useMemo(() => Array.from(remoteCursors.entries()), [remoteCursors]);
+  const entries = useMemo(
+    () => Array.from(remoteCursors.entries()),
+    [remoteCursors]
+  );
 
   return (
     <group>

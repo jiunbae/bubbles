@@ -109,6 +109,51 @@ backward-compatible `SESSION_SECRET` fallback, but changing the effective owner-
 derived opaque owner identifiers. Rotate it only with an ownership migration or an explicit plan to
 accept loss of legacy owner matching.
 
+## Coordinated application-secret rotation
+
+JWT rotation spans both `jiun-api` (issuer) and Bubbles (verifier), so use a two-key overlap instead
+of changing the key in one deployment. Keep every value in a SealedSecret/ExternalSecret; the
+current and previous values are application secrets and must never appear in a ConfigMap, command
+output, CI log, or commit message.
+
+1. Before changing any value, move the existing `JWT_SECRET` and `SESSION_SECRET` unchanged into the
+   encrypted secret source. If `OWNER_ID_SECRET` did not previously exist, set it once to the old
+   effective session secret so existing ownership identifiers remain stable.
+2. Deploy Bubbles with support for `JWT_SECRET_PREVIOUS` and `SESSION_SECRET_PREVIOUS`, and deploy
+   `jiun-api` with previous-key JWT verification support. Confirm both deployments are healthy before
+   proceeding.
+3. Generate independent new JWT and session secrets. In both services set the new JWT value as
+   `JWT_SECRET` and the old JWT value as `JWT_SECRET_PREVIOUS`. In Bubbles set the new session value
+   as `SESSION_SECRET` and the old value as `SESSION_SECRET_PREVIOUS`. Do not change
+   `OWNER_ID_SECRET`.
+4. Roll out `jiun-api` and Bubbles, then verify old and newly issued JWTs, an existing session cookie,
+   WebSocket ticket creation, and a fresh anonymous session. A cookie accepted through the previous
+   key must be re-signed with the current key.
+5. Keep the previous JWT key for at least the maximum JWT lifetime plus rollout/clock-skew margin.
+   Keep the previous session key for the intended session migration window (up to the 30-day cookie
+   lifetime if uninterrupted sessions are required). Remove previous keys only after their observed
+   use has ceased.
+
+Rollback by restoring the just-replaced key as current while retaining the other key as previous;
+never rotate `OWNER_ID_SECRET` as part of a rollback. Revoke any exposed source-control credential
+after the encrypted-secret deployment has been verified.
+
+## Staging browser release checklist
+
+Run this matrix against the immutable staging build in a fresh profile before promoting it. Save the
+browser/version, viewport, result, and evidence link with the release record.
+
+| Check                      | Required evidence                                                                                                                                        |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mobile and desktop layout  | Lobby, room, auth callback, settings, empty/error/loading states at 360×800, 768×1024, and 1440×900 with no clipping or horizontal overflow              |
+| Keyboard and screen reader | Complete primary flow without a pointer; visible focus; meaningful names/status announcements; VoiceOver or NVDA transcript for lobby and room           |
+| Camera permission          | Allow, deny, dismiss, blocked-at-OS, no-device, and permission-revoked paths recover without a reload and explain the next action                        |
+| Analytics consent          | Tag Assistant plus network trace show no GA request before opt-in, sanitized explicit page views after opt-in, and no further analytics after withdrawal |
+| Visual mode loading        | Initial lobby has no Three.js chunk request; entering visual mode loads it once; returning to normal mode remains responsive                             |
+
+Any failure blocks promotion. Automated lint/unit/build checks reduce regression risk but do not
+replace these real browser, assistive-technology, permission, and vendor-tool checks.
+
 ## Local production-like smoke test
 
 Create `.env` from `.env.example`, use development-only secrets, and start the topology:

@@ -1,6 +1,6 @@
 import { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html } from '@react-three/drei/web/Html.js';
 import * as THREE from 'three';
 import { globalWsClient } from '@/lib/ws-client';
 import type { BubbleInfo } from '@bubbles/shared';
@@ -20,7 +20,7 @@ interface BubbleMeshProps {
     bubbleId: string,
     position: THREE.Vector3,
     color: THREE.Color,
-    size: number,
+    size: number
   ) => void;
 }
 
@@ -38,10 +38,13 @@ export function BubbleMesh({
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const radius = SIZE_RADIUS[bubble.size] * (0.8 + (bubble.seed % 100) * 0.004);
-  const bubbleColor = useMemo(() => new THREE.Color(bubble.color), [bubble.color]);
+  const bubbleColor = useMemo(
+    () => new THREE.Color(bubble.color),
+    [bubble.color]
+  );
 
   const physicsRef = useRef<BubblePhysicsState>(
-    createBubbleState(bubble.x, bubble.y, bubble.z, bubble.size, bubble.seed),
+    createBubbleState(bubble.x, bubble.y, bubble.z, bubble.size, bubble.seed)
   );
   const poppingRef = useRef(false);
   const popStartRef = useRef(0);
@@ -57,7 +60,12 @@ export function BubbleMesh({
   }, [sharedMaterial, bubbleColor]);
 
   // Dispose cloned material on unmount to prevent GPU memory leak
-  useEffect(() => () => { material.dispose(); }, [material]);
+  useEffect(
+    () => () => {
+      material.dispose();
+    },
+    [material]
+  );
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
@@ -92,7 +100,11 @@ export function BubbleMesh({
     }
 
     // Keep updating position even during pop animation (no freeze)
-    mesh.position.set(physics.position[0], physics.position[1], physics.position[2]);
+    mesh.position.set(
+      physics.position[0],
+      physics.position[1],
+      physics.position[2]
+    );
 
     const age = physics.age;
     let scale = radius;
@@ -101,7 +113,7 @@ export function BubbleMesh({
     if (age < GROW_DURATION) {
       const t = age / GROW_DURATION;
       const eased = 1 - Math.pow(1 - t, 2.5);
-      const wobble = Math.sin(age * (5 + bubble.seed % 7)) * 0.06 * (1 - t);
+      const wobble = Math.sin(age * (5 + (bubble.seed % 7))) * 0.06 * (1 - t);
       scale = radius * Math.max(0.01, eased + wobble);
       opacity = 0.25 * Math.min(1, t * 3);
     }
@@ -149,11 +161,16 @@ export function BubbleMesh({
           distanceFactor={8}
           style={{ pointerEvents: 'none' }}
         >
-          <div style={{
-            color: 'white', fontSize: 11,
-            background: 'rgba(0,0,0,0.5)',
-            padding: '2px 8px', borderRadius: 8, whiteSpace: 'nowrap',
-          }}>
+          <div
+            style={{
+              color: 'white',
+              fontSize: 11,
+              background: 'rgba(0,0,0,0.5)',
+              padding: '2px 8px',
+              borderRadius: 8,
+              whiteSpace: 'nowrap',
+            }}
+          >
             {bubble.blownBy.displayName}
           </div>
         </Html>

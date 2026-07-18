@@ -1,6 +1,5 @@
 import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
 import { MOUSE, TOUCH } from 'three';
 import { useTranslation } from 'react-i18next';
 import { SkyEnvironment } from './SkyEnvironment';
@@ -10,6 +9,7 @@ import { BubbleWandCursor } from './BubbleWandCursor';
 import { RemoteCursors } from './RemoteCursors';
 import { CursorSender } from './CursorSender';
 import { CameraFeed } from './CameraFeed';
+import { OrbitControls } from './OrbitControls';
 import { usePlaceStore } from '@/stores/place-store';
 import { useUIStore } from '@/stores/ui-store';
 import { Z_INDEX } from '@/lib/z-index';
@@ -30,39 +30,45 @@ function SizeSelector() {
   if (interactionMode !== 'blow') return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: 'calc(env(safe-area-inset-bottom, 16px) + 120px)',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      zIndex: Z_INDEX.UI_CONTROLS,
-      pointerEvents: 'auto',
-      display: 'flex',
-      gap: 6,
-      padding: '6px 10px',
-      borderRadius: 20,
-      background: 'rgba(20, 20, 30, 0.8)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
-      border: '1px solid rgba(255,255,255,0.15)',
-      fontFamily: 'system-ui, sans-serif',
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 'calc(env(safe-area-inset-bottom, 16px) + 120px)',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: Z_INDEX.UI_CONTROLS,
+        pointerEvents: 'auto',
+        display: 'flex',
+        gap: 6,
+        padding: '6px 10px',
+        borderRadius: 20,
+        background: 'rgba(20, 20, 30, 0.8)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255,255,255,0.15)',
+        fontFamily: 'system-ui, sans-serif',
+      }}
+    >
       {SIZES.map((size) => (
         <button
           key={size}
           onClick={() => setSelectedSize(size)}
-          aria-label={t(`visual.size${size === 'S' ? 'Small' : size === 'M' ? 'Medium' : 'Large'}`)}
+          aria-label={t(
+            `visual.size${size === 'S' ? 'Small' : size === 'M' ? 'Medium' : 'Large'}`
+          )}
           aria-pressed={selectedSize === size}
           style={{
             width: 32,
             height: 32,
             borderRadius: '50%',
-            border: selectedSize === size
-              ? '2px solid rgba(255,255,255,0.8)'
-              : '1px solid rgba(255,255,255,0.25)',
-            background: selectedSize === size
-              ? 'rgba(100, 180, 255, 0.35)'
-              : 'rgba(255,255,255,0.1)',
+            border:
+              selectedSize === size
+                ? '2px solid rgba(255,255,255,0.8)'
+                : '1px solid rgba(255,255,255,0.25)',
+            background:
+              selectedSize === size
+                ? 'rgba(100, 180, 255, 0.35)'
+                : 'rgba(255,255,255,0.1)',
             color: '#fff',
             fontSize: size === 'S' ? 11 : size === 'M' ? 13 : 15,
             fontWeight: 700,
@@ -149,7 +155,13 @@ function MobileInteractionModeControl() {
 /*  Onboarding / help overlay                                          */
 /* ------------------------------------------------------------------ */
 
-function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss: () => void }) {
+function OnboardingOverlay({
+  visible,
+  onDismiss,
+}: {
+  visible: boolean;
+  onDismiss: () => void;
+}) {
   const { t } = useTranslation();
   const [fading, setFading] = useState(false);
   const dismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -243,27 +255,52 @@ function OnboardingOverlay({ visible, onDismiss }: { visible: boolean; onDismiss
           cursor: 'default',
         }}
       >
-        <h2 id="visual-help-title" style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}>
+        <h2
+          id="visual-help-title"
+          style={{ fontWeight: 700, fontSize: 17, marginBottom: 8 }}
+        >
           {t('visual.helpTitle', 'Controls')}
         </h2>
 
         {/* Blow & pop */}
-        <div>{'\u{1FAE7}'} {t('visual.blowBubbles')}</div>
-        <div>{'\u{1F5B1}\uFE0F'} {t('visual.lookAround')}</div>
-        <div>{'\u{1F4A5}'} {t('visual.popBubble')}</div>
+        <div>
+          {'\u{1FAE7}'} {t('visual.blowBubbles')}
+        </div>
+        <div>
+          {'\u{1F5B1}\uFE0F'} {t('visual.lookAround')}
+        </div>
+        <div>
+          {'\u{1F4A5}'} {t('visual.popBubble')}
+        </div>
 
         {/* Touch or keyboard */}
         {isTouch ? (
-          <div>{'\u{1F44B}'} {t('visual.touchControls', 'Tap to blow, drag to look around')}</div>
+          <div>
+            {'\u{1F44B}'}{' '}
+            {t('visual.touchControls', 'Tap to blow, drag to look around')}
+          </div>
         ) : (
-          <div>{'\u2328\uFE0F'} {t('visual.spaceBlowBubbles')}</div>
+          <div>
+            {'\u2328\uFE0F'} {t('visual.spaceBlowBubbles')}
+          </div>
         )}
 
         {/* Extra controls */}
-        <div>{'\u{1F3A8}'} {t('visual.colorPicker', 'Header dot — Change bubble color')}</div>
-        <div>{'\u{1F4CF}'} {t('visual.sizeSelector', 'S / M / L buttons — Change bubble size')}</div>
-        <div>{'\u270F\uFE0F'} {t('visual.editName', 'Click your name — Edit display name')}</div>
-        <div>{'\u{1F504}'} {t('visual.modeToggle', 'Blow / Pop toggle in header')}</div>
+        <div>
+          {'\u{1F3A8}'}{' '}
+          {t('visual.colorPicker', 'Header dot — Change bubble color')}
+        </div>
+        <div>
+          {'\u{1F4CF}'}{' '}
+          {t('visual.sizeSelector', 'S / M / L buttons — Change bubble size')}
+        </div>
+        <div>
+          {'\u270F\uFE0F'}{' '}
+          {t('visual.editName', 'Click your name — Edit display name')}
+        </div>
+        <div>
+          {'\u{1F504}'} {t('visual.modeToggle', 'Blow / Pop toggle in header')}
+        </div>
 
         <button
           type="button"
@@ -354,13 +391,17 @@ export function VisualMode() {
   });
 
   return (
-    <div style={{
-      width: '100%', height: '100%', position: 'relative',
-      background: cameraMode ? 'transparent' : '#0a0a14',
-      cursor: interactionMode === 'pop' ? 'crosshair' : 'none',
-      touchAction: 'none',       // prevent browser zoom/scroll on touch
-      overscrollBehavior: 'none', // prevent pull-to-refresh
-    }}>
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        background: cameraMode ? 'transparent' : '#0a0a14',
+        cursor: interactionMode === 'pop' ? 'crosshair' : 'none',
+        touchAction: 'none', // prevent browser zoom/scroll on touch
+        overscrollBehavior: 'none', // prevent pull-to-refresh
+      }}
+    >
       {cameraMode && <CameraFeed />}
       <Canvas
         key={cameraMode ? 'ar' : 'default'}
@@ -368,7 +409,8 @@ export function VisualMode() {
         camera={{ fov: 50, near: 0.1, far: 100, position: [0, 2, 8] }}
         gl={{ antialias: true, alpha: cameraMode, premultipliedAlpha: false }}
         style={{
-          width: '100%', height: '100%',
+          width: '100%',
+          height: '100%',
           position: cameraMode ? 'absolute' : undefined,
           inset: cameraMode ? 0 : undefined,
           zIndex: cameraMode ? Z_INDEX.CANVAS_CAMERA : undefined,
@@ -394,13 +436,13 @@ export function VisualMode() {
             autoRotate={false}
             makeDefault
             mouseButtons={{
-              LEFT: undefined,          // disable left click orbit
-              MIDDLE: MOUSE.DOLLY,       // middle = zoom
-              RIGHT: MOUSE.ROTATE,       // right click drag = orbit
+              LEFT: undefined, // disable left click orbit
+              MIDDLE: MOUSE.DOLLY, // middle = zoom
+              RIGHT: MOUSE.ROTATE, // right click drag = orbit
             }}
             touches={{
-              ONE: TOUCH.ROTATE,          // single finger = rotate camera
-              TWO: TOUCH.DOLLY_ROTATE,    // two fingers = zoom + rotate
+              ONE: TOUCH.ROTATE, // single finger = rotate camera
+              TWO: TOUCH.DOLLY_ROTATE, // two fingers = zoom + rotate
             }}
           />
         </Suspense>
@@ -410,7 +452,10 @@ export function VisualMode() {
       <SizeSelector />
       <MobileInteractionModeControl />
       <HelpButton onClick={() => setShowHelp(true)} />
-      <OnboardingOverlay visible={showHelp} onDismiss={() => setShowHelp(false)} />
+      <OnboardingOverlay
+        visible={showHelp}
+        onDismiss={() => setShowHelp(false)}
+      />
     </div>
   );
 }

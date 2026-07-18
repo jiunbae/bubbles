@@ -1,15 +1,15 @@
 import type { Context, Next } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
-import * as jose from 'jose';
 import { config } from '../config';
 import {
   generateSessionId,
   signSession,
-  verifySession,
+  verifySessionWithRotation,
   generateDisplayName,
 } from '../utils/session';
 import type { UserInfo } from '@bubbles/shared';
 import { createOwnerId } from '../utils/ownership';
+import { verifyJwtWithRotation } from '../utils/jwt';
 
 export interface BubblesUser extends UserInfo {
   userId?: string;
@@ -39,8 +39,11 @@ export async function authMiddleware(
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7);
     try {
-      const secret = new TextEncoder().encode(config.JWT_SECRET);
-      const { payload } = await jose.jwtVerify(token, secret);
+      const { payload } = await verifyJwtWithRotation(
+        token,
+        config.JWT_SECRET,
+        config.JWT_SECRET_PREVIOUS
+      );
       const subject = typeof payload.sub === 'string' ? payload.sub.trim() : '';
       if (subject) {
         userId = subject;
@@ -63,9 +66,23 @@ export async function authMiddleware(
   const sessionCookie = getCookie(c, 'bubbles_session');
 
   if (sessionCookie) {
-    const verified = await verifySession(sessionCookie, config.SESSION_SECRET);
+    const verified = await verifySessionWithRotation(
+      sessionCookie,
+      config.SESSION_SECRET,
+      config.SESSION_SECRET_PREVIOUS
+    );
     if (verified) {
-      sessionId = verified;
+      sessionId = verified.sessionId;
+      if (verified.needsResign) {
+        const signed = await signSession(sessionId, config.SESSION_SECRET);
+        setCookie(c, 'bubbles_session', signed, {
+          httpOnly: true,
+          secure: config.IS_PRODUCTION,
+          sameSite: config.IS_PRODUCTION ? 'None' : 'Lax',
+          path: '/',
+          maxAge: 30 * 24 * 60 * 60,
+        });
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import * as jose from 'jose';
 import { config } from '../config';
 import { getRedis } from '../db/redis';
+import { verifyJwtWithRotation } from '../utils/jwt';
 
 const TICKET_TTL_SEC = 30;
 const TICKET_PREFIX = 'ws-ticket:';
@@ -71,8 +71,11 @@ auth.post('/ws-ticket', async (c) => {
 
   const token = authHeader.slice(7);
   try {
-    const secret = new TextEncoder().encode(config.JWT_SECRET);
-    const { payload } = await jose.jwtVerify(token, secret);
+    const { payload } = await verifyJwtWithRotation(
+      token,
+      config.JWT_SECRET,
+      config.JWT_SECRET_PREVIOUS
+    );
     const userId = typeof payload.sub === 'string' ? payload.sub.trim() : '';
     if (!userId) {
       return c.json({ error: 'Token is missing a subject' }, 401);

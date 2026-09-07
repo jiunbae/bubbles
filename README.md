@@ -151,6 +151,7 @@ cd apps/web && pnpm dev
 | `MONGO_URI`                | MongoDB connection string                                         | `mongodb://localhost:27017/bubbles`     |
 | `REDIS_URL`                | Redis connection string                                           | _optional_ (runs local-only without it) |
 | `CORS_ORIGINS`             | Allowed origins (comma-separated)                                 | `http://localhost:5173`                 |
+| `METRICS_TOKEN`            | Bearer token required to scrape `GET /metrics`                    | _empty_ (`/metrics` returns 403)        |
 | `CLOUDFLARE_TUNNEL_TOKEN`  | Cloudflare Tunnel token                                           | _optional_                              |
 
 ---
@@ -177,7 +178,19 @@ cd apps/web && pnpm dev
 
 ## Observability
 
-Built-in Prometheus metrics at `GET /metrics`:
+Built-in Prometheus metrics at `GET /metrics`.
+
+The endpoint is closed by default: without `METRICS_TOKEN` set on the server, **every**
+request to `/metrics` is answered with `403 Forbidden`. Set the variable and have the
+scraper send a matching bearer token:
+
+```bash
+curl -H "Authorization: Bearer $METRICS_TOKEN" http://localhost:3002/metrics
+```
+
+In Kubernetes the token lives in the app Secret and the scrape job's `bearer_token`
+(or `authorization` for a ServiceMonitor) — both are managed in the IaC repo, so a
+rotation must land on both sides or scrapes start returning 403.
 
 | Metric                          | Type      | Description                           |
 | ------------------------------- | --------- | ------------------------------------- |

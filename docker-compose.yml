@@ -45,6 +45,8 @@ services:
       SESSION_SECRET_PREVIOUS: '${SESSION_SECRET_PREVIOUS:-}'
       OWNER_ID_SECRET: '${OWNER_ID_SECRET:-${SESSION_SECRET:?SESSION_SECRET is required}}'
       OWNER_ID_SECRET_PREVIOUS: '${OWNER_ID_SECRET_PREVIOUS:-}'
+      # Empty by default: /metrics stays closed (403) until a token is supplied.
+      METRICS_TOKEN: '${METRICS_TOKEN:-}'
       CORS_ORIGINS: 'http://localhost:8080,http://localhost:5173,https://bubbles.jiun.dev'
       NODE_ENV: 'production'
     depends_on:

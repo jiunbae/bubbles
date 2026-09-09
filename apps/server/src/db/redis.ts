@@ -20,9 +20,13 @@ export function connectRedis(): void {
   const sharedOptions = {
     maxRetriesPerRequest: 3,
     lazyConnect: false,
+    // Never stop reconnecting. Returning a non-number here makes ioredis give
+    // up permanently, and nothing brings the client back: /health stays 200 so
+    // the kubelet never restarts the pod, while /health/ready keeps failing on
+    // the dead client. A Redis restart longer than the retry budget then wedges
+    // the pod at 0/1 forever. Cap the backoff instead of bounding the attempts.
     retryStrategy(times: number) {
-      if (times > 10) return null;
-      return Math.min(times * 200, 2000);
+      return Math.min(times * 200, 5000);
     },
   };
 
@@ -33,6 +37,12 @@ export function connectRedis(): void {
   sub.on('error', (err) => log.error('Sub connection error', { err: err.message }));
   redis.on('connect', () => log.info('Command connection established'));
   sub.on('connect', () => log.info('Sub connection established'));
+  // A silent, permanently-closed client is what made the previous outage hard
+  // to see: surface every reconnect attempt and every terminal close.
+  redis.on('reconnecting', (delay: number) => log.warn('Command connection reconnecting', { delay }));
+  sub.on('reconnecting', (delay: number) => log.warn('Sub connection reconnecting', { delay }));
+  redis.on('end', () => log.error('Command connection closed and will not retry'));
+  sub.on('end', () => log.error('Sub connection closed and will not retry'));
 }
 
 export function getRedis(): Redis | null {

@@ -5,7 +5,9 @@
 
 type Level = 'debug' | 'info' | 'warn' | 'error';
 
-const IS_PROD = process.env.NODE_ENV === 'production';
+// Bracket access on purpose — see the note in config.ts: dot notation is
+// inlined by `bun build` and would freeze this to the build-time value.
+const IS_PROD = process.env['NODE_ENV'] === 'production';
 
 function write(level: Level, module: string, msg: string, meta?: Record<string, unknown>) {
   if (IS_PROD) {

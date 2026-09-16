@@ -182,11 +182,58 @@ jobs:
           fi
           git diff --check
 
+      # This is the only step that makes a freshly built image reachable, so it
+      # must never fail quietly. The branch is checked out at the IaC revision
+      # validated at the start of the run, so any commit that lands in IaC while
+      # we build — it takes several a day — makes `push HEAD:main` a
+      # non-fast-forward. That leaves images in the registry, no manifest bump,
+      # and ArgoCD reporting Synced against the stale tag: exactly how Bubbles
+      # sat nine days behind its own fixes. Rebase onto whatever landed and
+      # retry, then fail loudly rather than leave the deploy silently frozen.
       - name: Commit and push
         run: |
           cd iac
           git config user.name "CI Bot"
           git config user.email "ci@jiun.dev"
           git add -A
-          git diff --staged --quiet || git commit -m "chore(bubbles): update image tags to ${{ gitea.sha }}"
-          git push origin HEAD:main
+          if git diff --staged --quiet; then
+            echo "Image tags already up to date; nothing to push"
+            exit 0
+          fi
+          git commit -m "chore(bubbles): update image tags to ${{ gitea.sha }}"
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then
+              echo "Pushed image tag bump on attempt ${attempt}"
+              exit 0
+            fi
+            echo "Push rejected on attempt ${attempt}; rebasing onto origin/main" >&2
+            git fetch origin main
+            if ! git rebase FETCH_HEAD; then
+              git rebase --abort || true
+              echo "Rebase onto origin/main conflicted; aborting" >&2
+              exit 1
+            fi
+            sleep $((attempt * 5))
+          done
+          echo "Could not push the Bubbles image tag bump after 5 attempts" >&2
+          exit 1
+
+      # Read the bump back from origin rather than trusting the push. A deploy
+      # that ends without the overlays carrying this SHA is a frozen deploy,
+      # and the whole point of this job is that such a state is never silent.
+      - name: Verify the tag landed on main
+        run: |
+          cd iac
+          git fetch origin main
+          git checkout -q FETCH_HEAD
+          for path in "${{ env.DEV_PATH }}" "${{ env.PROD_PATH }}"; do
+            file="${path}/kustomization.yaml"
+            if [ ! -f "${file}" ]; then
+              continue
+            fi
+            if ! grep -q "newTag: ${{ gitea.sha }}" "${file}"; then
+              echo "${file} does not carry ${{ gitea.sha }} after the push" >&2
+              exit 1
+            fi
+          done
+          echo "Overlays on main carry ${{ gitea.sha }}"

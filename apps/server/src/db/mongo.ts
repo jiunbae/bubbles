@@ -9,15 +9,53 @@ let client: MongoClient;
 let db: Db;
 
 export async function connectMongo(): Promise<void> {
-  client = new MongoClient(config.MONGO_URI, {
+  const candidate = new MongoClient(config.MONGO_URI, {
     connectTimeoutMS: 10000,
     serverSelectionTimeoutMS: 10000,
     socketTimeoutMS: 30000,
   });
 
-  await client.connect();
+  try {
+    await candidate.connect();
+  } catch (err) {
+    // Drop the failed client before rethrowing. Callers retry, and a client
+    // that never connected still holds its monitoring timers open.
+    await candidate.close().catch(() => {});
+    throw err;
+  }
+
+  client = candidate;
   db = client.db();
   log.info('Connected to MongoDB');
+}
+
+/**
+ * Connect and build indexes, retrying until it succeeds.
+ *
+ * Exiting on the first failure was worse than waiting: every node restart
+ * raced both server pods against a single mongod that needs longer than the
+ * 10s selection timeout to come up, so the process died, CrashLoopBackOff
+ * took over, and its backoff grew to minutes — far outlasting the blip that
+ * caused it. The startup probe already grants 150s; spend it here instead.
+ * Readiness keeps returning 503 until this resolves, so no traffic arrives
+ * before the database is usable.
+ */
+export async function connectMongoWithRetry(): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await connectMongo();
+      await ensureIndexes();
+      return;
+    } catch (err) {
+      const delayMs = Math.min(attempt * 1000, 15000);
+      log.error('MongoDB unavailable, retrying', {
+        err: String(err),
+        attempt,
+        delayMs,
+      });
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
 }
 
 export function getDb(): Db {

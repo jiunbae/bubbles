@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { createBunWebSocket } from 'hono/bun';
 import { config } from './config';
-import { connectMongo, ensureIndexes, disconnectMongo } from './db/mongo';
+import { connectMongoWithRetry, disconnectMongo } from './db/mongo';
 import { connectRedis, disconnectRedis } from './db/redis';
 import { corsMiddleware, isAllowedOrigin } from './middleware/cors';
 import { health, setShuttingDown } from './routes/health';
@@ -82,16 +82,12 @@ app.get(
 
 // Startup
 async function start() {
-  try {
-    await connectMongo();
-    await ensureIndexes();
-  } catch (err) {
-    log.error('Failed to connect to MongoDB', { err: String(err) });
-    process.exit(1);
-  }
-
-  // Connect Redis (optional — runs without it)
+  // Connect Redis (optional — runs without it). Started first so its client
+  // is already reconnecting in the background while Mongo comes up.
   connectRedis();
+
+  await connectMongoWithRetry();
+
   initPubSub();
 
   // Periodic cleanup of stale rooms, orphaned cursor entries, and zombie sessions

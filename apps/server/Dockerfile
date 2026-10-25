@@ -10,7 +10,7 @@ COPY apps/server/package.json apps/server/
 RUN pnpm install --frozen-lockfile --prod=false
 
 # Build with bun
-FROM registry.jiun.dev/oven/bun:1-alpine AS build
+FROM registry.jiun.dev/oven/bun:1.4.4-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules node_modules
 COPY --from=deps /app/packages/shared/node_modules packages/shared/node_modules
@@ -21,7 +21,7 @@ WORKDIR /app/apps/server
 RUN bun build src/index.ts --outdir dist --target bun
 
 # Run
-FROM registry.jiun.dev/oven/bun:1-alpine
+FROM registry.jiun.dev/oven/bun:1.4.4-alpine
 WORKDIR /app
 COPY --from=build /app/apps/server/dist ./
 USER bun

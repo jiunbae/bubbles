@@ -1,7 +1,14 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, mock } from 'bun:test';
 import { Hono } from 'hono';
 import { SignJWT } from 'jose';
-import { auth, consumeTicket } from '../routes/auth';
+import * as redisModule from '../db/redis';
+
+// bun:test shares one module registry across test files, so a redis stand-in
+// mocked by another file (health.test.ts) can leak in here depending on file
+// order. Pin the no-Redis path these tests assume: tickets live in memory.
+mock.module('../db/redis', () => ({ ...redisModule, getRedis: () => null }));
+
+const { auth, consumeTicket } = await import('../routes/auth');
 
 async function token(payload: Record<string, unknown>): Promise<string> {
   const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
